@@ -1,4 +1,4 @@
-const usuario = [
+const usuarios = [
     { username: "Juan", password: "1234"},
     { username: "Maria", password: "abcd"},
     { username: "Pedro", password: "qwerty"}
@@ -15,7 +15,7 @@ document.querySelector('.login-form').addEventListener('submit', function(event)
     if (!username || !password) {
         alert("Por favor, complete todos los campos.");
     } else if (usuarioValido) {
-        alert(`Bienvenido, ${username}!`);
+        window.location.href = "/src/pages/dashboard.html";
     } else {
         alert("Usario o contreña incorrectos.");
     }
