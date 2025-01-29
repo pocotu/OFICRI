@@ -22,7 +22,7 @@ body {
     top: 0;
     left: 0;
     z-index: 9999;
-    padding-left: 100px;
+    padding-left: 50px;
 }
 
 .logo-container {
@@ -50,7 +50,7 @@ body {
 .pnp-logo {
     height: 40px; /* Ajusta este valor según sea necesario */
     margin-left: auto; /* Ajusta este valor según sea necesario */
-    margin-right: 130px; /* Ajusta este valor según sea necesario */
+    margin-right: 105px; /* Ajusta este valor según sea necesario */
 }
 
 /* Media query for responsiveness */
