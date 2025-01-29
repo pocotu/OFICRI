@@ -20,21 +20,31 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     position: fixed;
     top: 0;
-    left: 5;
+    left: 0;
     z-index: 9999;
     padding-left: 100px;
 }
 
 .logo {
+    display: flex;
+    align-items: center;
+}
+
+
+.logo-image {
+    margin-right: 5px; /* Ajusta este valor según sea necesario */
+    height: 35px; /* Ajusta este valor según sea necesario */
+}
+
+.logo-text {
     font-size: 1.5em;
     font-weight: bold;
-    margin-right: 20px; /* Ajusta este valor según sea necesario */
 }
 
 .pnp-logo {
-    font-size: 1em;
+    height: 40px; /* Ajusta este valor según sea necesario */
     margin-left: auto; /* Ajusta este valor según sea necesario */
-    margin-right: 60px; /* Ajusta este valor según sea necesario */
+    margin-right: 130px; /* Ajusta este valor según sea necesario */
 }
 
 /* Media query for responsiveness */
