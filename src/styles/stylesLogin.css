@@ -1,4 +1,3 @@
-/*comentario*/
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -38,8 +37,8 @@ body {
 }
 
 .logo-image {
-    margin-right: 5px; /* Ajusta este valor según sea necesario */
-    height: 35px; /* Ajusta este valor según sea necesario */
+    margin-right: 5px; 
+    height: 35px; 
 }
 
 .logo-text {
@@ -48,9 +47,9 @@ body {
 }
 
 .pnp-logo {
-    height: 40px; /* Ajusta este valor según sea necesario */
-    margin-left: auto; /* Ajusta este valor según sea necesario */
-    margin-right: 105px; /* Ajusta este valor según sea necesario */
+    height: 40px; 
+    margin-left: auto; 
+    margin-right: 105px; 
 }
 
 /* Media query for responsiveness */
