@@ -1,3 +1,4 @@
+/*comentario*/
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -28,9 +29,8 @@ body {
 .logo-container {
     display: flex;
     align-items: center;
-    margin-left: 0px;
+    margin-left: 0;
 }
-
 
 .logo {
     display: flex;
@@ -61,7 +61,7 @@ body {
         padding-left: 20px;
     }
 
-    .logo {
+    .logo-container {
         margin-bottom: 10px;
     }
 
