@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!username || !password) {
                 alert("Por favor, complete todos los campos.");
             } else if (usuarioValido) {
-                window.location.href = "/src/pages/dashboard.html";
+                window.location.href = "/src/pages/dashboard_toxicologia.html";
             } else {
                 alert("Usario o contreña incorrectos.");
             }
