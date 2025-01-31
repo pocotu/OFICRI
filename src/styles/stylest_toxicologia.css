@@ -45,6 +45,15 @@ body {
     font-weight: bold;
 }
 
+.new-text {
+    font-family: 'Glegoo', sans-serif; /* Aplica la nueva fuente */
+    font-size: 1.0em;
+    margin-bottom: 10px;
+    font-weight: bold;
+    border-left: 4px solid white; /* Agrega una línea blanca al lado izquierdo */
+    padding-left: 10px; /* Espacio entre la línea y el texto */
+}
+
 
 .logo-container {
     display: flex;
