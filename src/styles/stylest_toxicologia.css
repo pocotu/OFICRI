@@ -33,6 +33,18 @@ body {
     background-position: center;
     margin-top: 80px; /* Ajusta este valor según sea necesario para que la imagen esté debajo del header */
 }
+.centered-text {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    transform: translateY(-50%);
+    color: white;
+    font-size: 1.5em;
+    text-align: left;
+    font-family: 'Michroma', sans-serif; 
+    font-weight: bold;
+}
+
 
 .logo-container {
     display: flex;
