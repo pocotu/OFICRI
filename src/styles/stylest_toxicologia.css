@@ -153,51 +153,90 @@ body {
     flex: 1;
     margin-left: 250px;
     padding: 2rem;
-    background: #f4f4f4;
+    background: linear-gradient(
+        rgba(244, 244, 244, 0.0), /* Reducir opacidad significativamente */
+        rgba(244, 244, 244, 0.0)
+    ), url('../images/fondo_toxicologia.jpg'); /* Actualizar ruta relativa */
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     min-height: calc(100vh - 80px);
     width: calc(100% - 250px);
+    position: relative;
+}
+
+/* Ajustar el contraste para mejorar legibilidad */
+.documents-section, 
+.stat-box,
+.search-filters input,
+.search-filters select,
+.date-filters input {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Actualizar section-title y stats container */
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
 }
 
 .section-title h1 {
-    color: #005c2b;
-    text-align: center;
-    margin-bottom: 2rem;
+    color: #ffffff;
     font-family: 'Michroma', sans-serif;
+    margin: 0; /* Eliminar margen */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* Añadir sombra al texto */
+    background: rgba(255, 255, 255, 0.0);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
 }
 
-/* Stats container */
 .stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    margin: 0; /* Eliminar margen */
 }
 
 .stat-box {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    padding: 0.75rem; /* Reducir padding */
+    border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     text-align: center;
+    min-width: 150px; /* Reducir ancho mínimo */
 }
 
 .stat-box h3 {
-    color: #005c2b;
-    font-family: 'Michroma', sans-serif;
-    font-size: 1rem;
-    margin-bottom: 1rem;
+    font-size: 0.7rem; /* Reducir más el tamaño de fuente */
+    margin-bottom: 0.25rem;
 }
 
 .stat-box .number {
-    font-size: 2.5rem;
-    color: #0a8741;
-    font-weight: bold;
-    font-family: 'Glegoo', sans-serif;
+    font-size: 1.5rem; /* Reducir más el tamaño del número */
+    margin: 0.25rem 0;
 }
 
-/* Documents section */
+/* Actualizar responsive */
+@media (max-width: 1200px) {
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .stats-container {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
 .documents-section {
-    background: white;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px); /* Añadir efecto de desenfoque */
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -211,24 +250,41 @@ body {
 
 .table-container {
     overflow-x: auto;
+    margin-top: 1rem;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.85rem; /* Reducir tamaño de fuente para mejor ajuste */
 }
 
 th, td {
-    padding: 1rem;
+    padding: 0.75rem;
     text-align: left;
     border-bottom: 1px solid #e0e0e0;
     font-family: 'Glegoo', sans-serif;
 }
 
 th {
-    background-color: #f5f5f5;
-    color: #005c2b;
+    background-color: #005c2b;
+    color: white;
     font-weight: bold;
+    white-space: nowrap;
+}
+
+/* Estilos para la información del agraviado */
+.agraviado-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.agraviado-info .nombre {
+    font-weight: bold;
+}
+
+.agraviado-info .apellido {
+    color: #666;
 }
 
 .status {
@@ -254,17 +310,108 @@ th {
 }
 
 .action-btn {
-    padding: 0.5rem;
+    padding: 0.4rem;
     border: none;
     border-radius: 4px;
-    margin: 0 0.25rem;
+    margin: 0 0.15rem;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     color: #005c2b;
 }
 
+.action-btn.view {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.action-btn.edit {
+    background: #f5f5f5;
+    color: #616161;
+}
+
+.action-btn.add-doc {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.action-btn.download {
+    background: #e8eaf6;
+    color: #3f51b5;
+}
+
 .action-btn:hover {
-    background-color: #e8f5e9;
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+/* Estilos para las secciones de contenido */
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+}
+
+/* Estilos para los filtros de búsqueda */
+.search-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Glegoo', sans-serif;
+}
+
+.filter-select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Glegoo', sans-serif;
+}
+
+.add-document-btn, 
+.add-agraviado-btn,
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background-color: #005c2b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Michroma', sans-serif;
+}
+
+/* Estilos para el grid de agraviados */
+.agraviados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+/* Estilos para los filtros de fecha */
+.date-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+.date-input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Glegoo', sans-serif;
 }
 
 /* Responsive adjustments */
@@ -286,6 +433,21 @@ th {
     }
 
     .stats-container {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr); /* Mantener 3 columnas */
+        gap: 0.5rem; /* Reducir gap aún más en móviles */
+        padding: 0 0.5rem;
+    }
+
+    .stat-box {
+        padding: 0.75rem;
+        min-width: auto;
+    }
+
+    .stat-box h3 {
+        font-size: 0.7rem;
+    }
+
+    .stat-box .number {
+        font-size: 1.5rem;
     }
 }
