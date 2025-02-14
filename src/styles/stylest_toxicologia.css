@@ -208,6 +208,36 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     text-align: center;
     min-width: 150px; /* Reducir ancho mínimo */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.stat-box.active {
+    border: 2px solid #005c2b;
+    background: rgba(0, 92, 43, 0.1);
+}
+
+.stat-box::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(255,255,255,0.2);
+    transform: translateX(-100%);
+}
+
+.stat-box:active::after {
+    transform: translateX(0);
+    transition: transform 0.2s ease;
 }
 
 .stat-box h3 {
@@ -391,6 +421,29 @@ th {
     font-family: 'Michroma', sans-serif;
 }
 
+/* Estilos para el nuevo contenedor del título y ajustar la posición del botón */
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.title-container h1 {
+    margin: 0;
+}
+
+.title-container .add-document-btn {
+    height: fit-content;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    background-color: rgba(0, 92, 43, 0.9);
+}
+
+.title-container .add-document-btn:hover {
+    background-color: #005c2b;
+    transform: translateY(-2px);
+}
+
 /* Estilos para el grid de agraviados */
 .agraviados-grid {
     display: grid;
@@ -412,6 +465,21 @@ th {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-family: 'Glegoo', sans-serif;
+}
+
+.action-container {
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: flex-end; /* Alinear a la derecha */
+    margin-right: 60rem; /* Agregar margen derecho */
+}
+
+.action-container .add-document-btn {
+    background-color: rgba(0, 92, 43, 0.9);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    padding: 0.75rem 1.5rem; /* Aumentar padding para mejor visibilidad */
 }
 
 /* Responsive adjustments */
@@ -449,5 +517,14 @@ th {
 
     .stat-box .number {
         font-size: 1.5rem;
+    }
+}
+
+/* Actualizar media queries */
+@media (max-width: 1200px) {
+    .title-container {
+        width: 100%;
+        justify-content: space-between;
+        margin-bottom: 1rem;
     }
 }

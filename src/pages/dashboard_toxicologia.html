@@ -58,19 +58,25 @@
                 <div class="section-title">
                     <h1>QUÍMICA Y TOXICOLOGÍA FORENSE</h1>
                     <div class="stats-container">
-                        <div class="stat-box">
+                        <div class="stat-box" data-filter="pending">
                             <h3>Documentos Pendientes</h3>
                             <div class="number">15</div>
                         </div>
-                        <div class="stat-box">
+                        <div class="stat-box" data-filter="processing">
                             <h3>En Proceso</h3>
                             <div class="number">8</div>
                         </div>
-                        <div class="stat-box">
+                        <div class="stat-box" data-filter="completed">
                             <h3>Completados</h3>
                             <div class="number">45</div>
                         </div>
                     </div>
+                </div>
+
+                <div class="action-container">
+                    <button class="add-document-btn">
+                        <i class='bx bx-plus'></i> Nuevo Documento
+                    </button>
                 </div>
 
                 <!-- Tabla de documentos -->
@@ -253,6 +259,73 @@
                     console.log('Filtrar desde:', inicio, 'hasta:', fin);
                 });
             }
+
+            const statBoxes = document.querySelectorAll('.stat-box');
+            const tableRows = document.querySelectorAll('tbody tr');
+            let activeFilter = null;
+
+            function updateTableRows(filter) {
+                tableRows.forEach(row => {
+                    const statusCell = row.querySelector('.status');
+                    if (!filter || statusCell.classList.contains(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            statBoxes.forEach(box => {
+                box.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    
+                    // Toggle active state
+                    if (activeFilter === filter) {
+                        // Si se hace clic en el mismo filtro, mostrar todos
+                        activeFilter = null;
+                        statBoxes.forEach(b => b.classList.remove('active'));
+                        updateTableRows(null);
+                    } else {
+                        // Aplicar nuevo filtro
+                        activeFilter = filter;
+                        statBoxes.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        updateTableRows(filter);
+                    }
+                });
+            });
+
+            // Actualizar contadores
+            function updateCounters() {
+                const counts = {
+                    pending: 0,
+                    processing: 0,
+                    completed: 0
+                };
+
+                tableRows.forEach(row => {
+                    const statusCell = row.querySelector('.status');
+                    if (statusCell) {
+                        for (let status in counts) {
+                            if (statusCell.classList.contains(status)) {
+                                counts[status]++;
+                            }
+                        }
+                    }
+                });
+
+                // Actualizar números en los stat-boxes
+                statBoxes.forEach(box => {
+                    const filter = box.dataset.filter;
+                    const numberElement = box.querySelector('.number');
+                    if (numberElement) {
+                        numberElement.textContent = counts[filter] || 0;
+                    }
+                });
+            }
+
+            // Llamar a updateCounters inicialmente
+            updateCounters();
         });
     </script>
 </body>
