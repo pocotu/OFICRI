@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Química y toxicología forense</title>
+    <title>Química y toxicología forense - OFICRI</title>
     <link rel="stylesheet" href="/src/styles/stylest_toxicologia.css">
     <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Glegoo&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
     <link rel="icon" href="/src/images/logoOficri2x2.png" type="image/x-icon">
 </head>
 <body>
@@ -18,12 +19,83 @@
         </div>
         <img src="/src/images/logoPolicia2x2.png" alt="PNP Logo" class="pnp-logo">
     </div>
-    <div class="background-image"></div>
-        <div class="centered-text">
-             <p class="new-text">Entorno de acceso</p>
-             <p>QUÍMICA Y TOXICOLOGÍA</p>
-             <p>FORENSE</p>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <ul class="nav-links">
+                <li class="active">
+                    <a href="#">
+                        <i class='bx bxs-dashboard'></i>
+                        <span>Panel Principal</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class='bx bxs-file'></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class='bx bxs-user'></i>
+                        <span>Agraviados</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class='bx bx-history'></i>
+                        <span>Historial</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="main-content">
+            <div class="section-title">
+                <h1>QUÍMICA Y TOXICOLOGÍA FORENSE</h1>
+            </div>
+
+            <!-- Cajas de estadísticas -->
+            <div class="stats-container">
+                <div class="stat-box">
+                    <h3>Documentos Pendientes</h3>
+                    <div class="number">15</div>
+                </div>
+                <div class="stat-box">
+                    <h3>En Proceso</h3>
+                    <div class="number">8</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Completados</h3>
+                    <div class="number">45</div>
+                </div>
+            </div>
+
+            <!-- Tabla de documentos -->
+            <div class="documents-section">
+                <h2>Documentos Recientes</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>N° Documento</th>
+                                <th>Fecha</th>
+                                <th>Agraviado</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- ... filas de la tabla ... -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script src="/src/js/dashboard.js"></script>
 </body>
 </html>
