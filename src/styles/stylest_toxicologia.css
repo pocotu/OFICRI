@@ -126,6 +126,23 @@ body {
     margin-top: 20px;
     padding: 0; /* Eliminar padding */
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 40px); /* Ajusta el espacio para el botón */
+}
+
+.nav-links li[data-section="logout"] {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+}
+
+.nav-links li[data-section="logout"] a {
+    color: white;
+}
+
+.nav-links li[data-section="logout"] a:hover {
+    background-color: rgba(255, 107, 107, 0.1);
 }
 
 .nav-links li a {
