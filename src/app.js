@@ -1,4 +1,3 @@
-
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
@@ -86,92 +85,94 @@ app.use((req, res) => {
     }
 });
 
-//// Crear área admin si no existe
-//async function createAdminAreaIfNotExists() {
-//    try {
-//        const [areas] = await db.query('SELECT * FROM AreaEspecializada WHERE CodigoIdentificacion = ?', ['ADMIN']);
-//        
-//        if (areas.length === 0) {
-//            const [result] = await db.query(
-//                'INSERT INTO AreaEspecializada (NombreArea, CodigoIdentificacion, TipoArea, IsActive) VALUES (?, ?, ?, ?)',
-//                ['Administración', 'ADMIN', 'ESPECIALIZADA', 1]
-//            );
-//            console.log('Área admin creada exitosamente');
-//            return result.insertId;
-//        }
-//        return areas[0].IDArea;
-//    } catch (error) {
-//        console.error('Error al crear área admin:', error);
-//        throw error;
-//    }
-//}
-//
-//// Crear rol admin si no existe
-//async function createAdminRolIfNotExists() {
-//    try {
-//        const [roles] = await db.query('SELECT * FROM Rol WHERE NombreRol = ?', ['Administrador']);
-//        
-//        if (roles.length === 0) {
-//            const [result] = await db.query(`
-//                INSERT INTO Rol (
-//                    NombreRol, 
-//                    Descripcion, 
-//                    NivelAcceso, 
-//                    PuedeCrear, 
-//                    PuedeEditar, 
-//                    PuedeDerivar, 
-//                    PuedeAuditar
-//                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-//            `, ['Administrador', 'Rol de administrador del sistema', 1, 1, 1, 1, 1]);
-//            console.log('Rol admin creado exitosamente');
-//            return result.insertId;
-//        }
-//        return roles[0].IDRol;
-//    } catch (error) {
-//        console.error('Error al crear rol admin:', error);
-//        throw error;
-//    }
-//}
+// Crear área admin si no existe
+async function createAdminAreaIfNotExists() {
+    try {
+        const [areas] = await db.query('SELECT * FROM AreaEspecializada WHERE NombreArea = ?', ['Administración']);
+        
+        if (areas.length === 0) {
+            const [result] = await db.query(`
+                INSERT INTO AreaEspecializada (
+                    NombreArea, 
+                    TipoArea, 
+                    CodigoIdentificacion,
+                    IsActive
+                ) VALUES (?, ?, ?, ?)
+            `, ['Administración', 'ADMIN', 'ADMIN-001', 1]);
+            console.log('Área admin creada exitosamente');
+            return result.insertId;
+        }
+        return areas[0].IDArea;
+    } catch (error) {
+        console.error('Error al crear área admin:', error);
+        throw error;
+    }
+}
 
-//// Crear usuario admin si no existe
-//async function createAdminIfNotExists() {
-//    try {
-//        const [users] = await db.query('SELECT * FROM Usuario WHERE Username = ?', ['admin']);
-//        
-//        if (users.length === 0) {
-//            // Obtener o crear área admin
-//            const idArea = await createAdminAreaIfNotExists();
-//            console.log('ID del área admin:', idArea);
-//            
-//            // Obtener o crear rol admin
-//            const idRol = await createAdminRolIfNotExists();
-//            console.log('ID del rol admin:', idRol);
-//            
-//            // Generar salt y hash para la contraseña
-//            const salt = await bcrypt.genSalt(10);
-//            const password = 'admin123'; // Contraseña por defecto
-//            const passwordHash = await bcrypt.hash(password + salt, 10);
-//            
-//            // Crear usuario admin
-//            await db.query(`
-//                INSERT INTO Usuario (
-//                    Username, 
-//                    PasswordHash,
-//                    Salt,
-//                    IDArea,
-//                    IDRol,
-//                    IsActive,
-//                    FechaCreacion
-//                ) VALUES (?, ?, ?, ?, ?, ?, NOW())
-//            `, ['admin', passwordHash, salt, idArea, idRol, 1]);
-//            
-//            console.log('Usuario admin creado exitosamente');
-//        }
-//    } catch (error) {
-//        console.error('Error al crear usuario admin:', error);
-//        throw error;
-//    }
-//}
+// Crear rol admin si no existe
+async function createAdminRolIfNotExists() {
+    try {
+        const [roles] = await db.query('SELECT * FROM Rol WHERE NombreRol = ?', ['Administrador']);
+        
+        if (roles.length === 0) {
+            const [result] = await db.query(`
+                INSERT INTO Rol (
+                    NombreRol, 
+                    Descripcion, 
+                    NivelAcceso, 
+                    PuedeCrear, 
+                    PuedeEditar, 
+                    PuedeDerivar, 
+                    PuedeAuditar
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, ['Administrador', 'Rol de administrador del sistema', 1, 1, 1, 1, 1]);
+            console.log('Rol admin creado exitosamente');
+            return result.insertId;
+        }
+        return roles[0].IDRol;
+    } catch (error) {
+        console.error('Error al crear rol admin:', error);
+        throw error;
+    }
+}
+
+// Crear usuario admin si no existe - VERSIÓN CORREGIDA
+async function createAdminIfNotExists() {
+    try {
+        const [users] = await db.query('SELECT * FROM Usuario WHERE Username = ?', ['admin']);
+        
+        if (users.length === 0) {
+            // Obtener o crear área admin
+            const idArea = await createAdminAreaIfNotExists();
+            console.log('ID del área admin:', idArea);
+            
+            // Obtener o crear rol admin
+            const idRol = await createAdminRolIfNotExists();
+            console.log('ID del rol admin:', idRol);
+            
+            // Generar salt y hash para la contraseña
+            const salt = await bcrypt.genSalt(10);
+            const password = 'admin123'; // Contraseña por defecto
+            const passwordHash = await bcrypt.hash(password + salt, 10);
+            
+            // Crear usuario admin - Sin usar columnas IsActive y FechaCreacion
+            await db.query(`
+                INSERT INTO Usuario (
+                    Username, 
+                    PasswordHash,
+                    Salt,
+                    IDArea,
+                    IDRol
+                ) VALUES (?, ?, ?, ?, ?)
+            `, ['admin', passwordHash, salt, idArea, idRol]);
+            
+            console.log('Usuario admin creado exitosamente');
+        }
+    } catch (error) {
+        console.error('Error al crear usuario admin:', error);
+        throw error;
+    }
+}
 
 // Verificar conexión a la base de datos
 async function testDatabaseConnection() {
@@ -187,7 +188,7 @@ async function testDatabaseConnection() {
 // Inicializar datos
 async function initializeData() {
     try {
-        //await createAdminIfNotExists();
+        await createAdminIfNotExists();
         console.log('Inicialización completada exitosamente');
     } catch (error) {
         console.error('Error durante la inicialización:', error);
@@ -208,4 +209,3 @@ const server = app.listen(PORT, async () => {
 });
 
 module.exports = server;
-
