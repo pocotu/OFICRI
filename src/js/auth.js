@@ -5,6 +5,8 @@ const auth = {
             // Obtener el contador de intentos del almacenamiento local
             let attempts = parseInt(localStorage.getItem(`login_attempts_${username}`)) || 0;
             
+            console.log('Intentando iniciar sesión con usuario:', username);
+
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -14,7 +16,10 @@ const auth = {
                 credentials: 'include'
             });
 
+            console.log('Respuesta del servidor:', response);
+
             const data = await response.json();
+            console.log('Datos recibidos del servidor:', data);
 
             if (response.ok) {
                 // Resetear intentos fallidos al lograr un login exitoso
@@ -41,6 +46,15 @@ const auth = {
                     localStorage.setItem(`login_blocked_until_${username}`, blockUntil.getTime());
                     throw new Error(`Demasiados intentos fallidos. Por favor espere 5 minutos antes de intentar nuevamente. Intentos realizados: ${attempts}`);
                 }
+
+                // Log the failed attempt in the database
+                await fetch('/api/users/log-failed-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username })
+                });
 
                 throw new Error(`${data.message}. Intentos fallidos: ${attempts} de 3 permitidos`);
             }

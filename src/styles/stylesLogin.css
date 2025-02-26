@@ -127,3 +127,19 @@ h1 {
 .forgot-password:hover {
     text-decoration: underline;
 }
+
+.error-message {
+    color: #ff0000;
+    margin: 10px 0;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+}
+
+.attempts-message {
+    color: #666;
+    margin: 5px 0;
+    text-align: center;
+    font-size: 12px;
+    display: none;
+}

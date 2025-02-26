@@ -561,4 +561,34 @@ router.post('/setup-admin', async (req, res) => {
     }
 });
 
+// Log failed login attempts
+router.post('/log-failed-login', async (req, res) => {
+    const { username, ip, deviceInfo } = req.body;
+    console.log('Intento de inicio de sesión fallido para el usuario:', username);
+
+    try {
+        const [user] = await db.query('SELECT * FROM Usuario WHERE Username = ?', [username]);
+        console.log('Resultado de la consulta de usuario:', user);
+
+        if (user.length > 0) {
+            console.log('Usuario encontrado:', user[0]);
+            const userId = user[0].IDUsuario;
+
+            // Incrementar intentos fallidos
+            const [updateResult] = await db.query('UPDATE Usuario SET IntentosFallidos = IntentosFallidos + 1 WHERE IDUsuario = ?', [userId]);
+            console.log('Resultado de la actualización de intentos fallidos:', updateResult);
+
+            await db.query('INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, FechaEvento, Exitoso) VALUES (?, ?, ?, ?, ?, ?)', [userId, 'FALLO', ip, deviceInfo, new Date(), 0]);
+            console.log('Registro de intento fallido guardado en UsuarioLog para el usuario ID:', userId);
+            res.status(200).json({ message: 'Intento fallido registrado' });
+        } else {
+            console.log('Usuario no encontrado para el nombre de usuario:', username);
+            res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error al registrar intento fallido:', error);
+        res.status(500).json({ message: 'Error al registrar intento fallido', error: error.message });
+    }
+});
+
 module.exports = router;
