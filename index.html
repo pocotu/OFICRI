@@ -7,7 +7,23 @@
     <link rel="stylesheet" href="/src/styles/stylesLogin.css">
     <link rel="icon" href="src/images/logoOficri2x2.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
-
+    <style>
+        .error-message {
+            color: #ff0000;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .attempts-message {
+            color: #666;
+            margin: 5px 0;
+            text-align: center;
+            font-size: 12px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -20,14 +36,15 @@
     <div class="login-container">
         <img src="src/images/logoOficri2x2.png" alt="OFICRI Logo" class="login-logo">
         <h1>Bienvenido</h1>
-        <form class="login-form">
-            <input type="text" placeholder="Usuario" class="input-field" required>
-            <input type="password" placeholder="Contraseña" class="input-field" required>
-            <button type="submit" class="login-button">Iniciar Sesion</button>
-            
-            <!--<a href="#" class="forgot-password">Recuperar Contraseña</a> -->
+        <form id="login-form" class="login-form">
+            <input type="text" id="username" placeholder="Usuario" class="input-field" required>
+            <input type="password" id="password" placeholder="Contraseña" class="input-field" required>
+            <div id="error-message" class="error-message"></div>
+            <div id="attempts-message" class="attempts-message"></div>
+            <button type="submit" class="login-button">Iniciar Sesión</button>
         </form>
     </div>
+    <script src="src/js/auth.js"></script>
     <script src="src/js/login.js" type="module"></script>
 </body>
 </html>
