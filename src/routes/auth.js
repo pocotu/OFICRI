@@ -4,7 +4,9 @@ const bcrypt = require('bcryptjs');
 const pool = require('../config/database');
 
 router.post('/login', async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
         console.log('Intento de login:', req.body);
         const { username, password } = req.body;
         
@@ -61,10 +63,17 @@ router.post('/login', async (req, res) => {
             console.log('Contraseña inválida, incrementando intentos fallidos');
             const intentosFallidos = user.IntentosFallidos + 1;
             
+            // Registrar intento fallido en el log
+            await connection.query(
+                `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [user.IDUsuario, 'LOGIN_FALLIDO', req.ip || '127.0.0.1', req.get('User-Agent') || 'Unknown', 0]
+            );
+            
             // Verificar si debemos bloquear al usuario (después de 5 intentos)
             if (intentosFallidos >= 5) {
                 console.log('Bloqueando usuario por exceso de intentos');
-                await pool.query(`
+                await connection.query(`
                     UPDATE Usuario 
                     SET IntentosFallidos = ?, 
                         Bloqueado = 1,
@@ -72,6 +81,14 @@ router.post('/login', async (req, res) => {
                     WHERE IDUsuario = ?
                 `, [intentosFallidos, user.IDUsuario]);
                 
+                // Registrar bloqueo en el log
+                await connection.query(
+                    `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [user.IDUsuario, 'USUARIO_BLOQUEADO', req.ip || '127.0.0.1', req.get('User-Agent') || 'Unknown', 1]
+                );
+                
+                await connection.commit();
                 return res.status(403).json({ 
                     message: 'Demasiados intentos fallidos. Usuario bloqueado por 5 minutos.',
                     intentosFallidos: intentosFallidos
@@ -90,7 +107,7 @@ router.post('/login', async (req, res) => {
 
         // Login exitoso: resetear intentos fallidos y actualizar último acceso
         console.log('Actualizando último acceso y reseteando intentos fallidos');
-        await pool.query(`
+        await connection.query(`
             UPDATE Usuario 
             SET IntentosFallidos = 0, 
                 UltimoAcceso = NOW(),
@@ -98,6 +115,13 @@ router.post('/login', async (req, res) => {
                 UltimoBloqueo = NULL
             WHERE IDUsuario = ?
         `, [user.IDUsuario]);
+
+        // Registrar login exitoso en el log
+        await connection.query(
+            `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+             VALUES (?, ?, ?, ?, ?)`,
+            [user.IDUsuario, 'LOGIN_EXITOSO', req.ip || '127.0.0.1', req.get('User-Agent') || 'Unknown', 1]
+        );
 
         // Obtener información del rol
         const [roles] = await pool.query(`
@@ -150,14 +174,33 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.post('/logout', (req, res) => {
-    if (req.session) {
-        console.log('Cerrando sesión para:', req.session.user);
-        req.session.destroy(() => {
-            res.json({ message: 'Sesión cerrada exitosamente' });
-        });
-    } else {
-        res.json({ message: 'No hay sesión activa' });
+router.post('/logout', async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        if (req.session && req.session.user) {
+            console.log('Cerrando sesión para:', req.session.user);
+            
+            // Registrar logout en el log
+            await connection.query(
+                `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [req.session.user.id, 'LOGOUT', req.ip || '127.0.0.1', req.get('User-Agent') || 'Unknown', 1]
+            );
+            
+            await connection.commit();
+            req.session.destroy(() => {
+                res.json({ message: 'Sesión cerrada exitosamente' });
+            });
+        } else {
+            res.json({ message: 'No hay sesión activa' });
+        }
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al registrar logout:', error);
+        res.status(500).json({ message: 'Error al cerrar sesión' });
+    } finally {
+        connection.release();
     }
 });
 

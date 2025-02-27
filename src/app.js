@@ -136,7 +136,7 @@ async function createAdminRolIfNotExists() {
     }
 }
 
-// Crear usuario admin si no existe - VERSIÓN CORREGIDA
+// Crear usuario admin si no existe
 async function createAdminIfNotExists() {
     try {
         const [users] = await db.query('SELECT * FROM Usuario WHERE Username = ?', ['admin']);
