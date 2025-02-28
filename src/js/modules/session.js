@@ -18,21 +18,28 @@ export async function checkAuth() {
 
 export async function handleLogout() {
     try {
-        const response = await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (response.ok) {
-            window.location.href = '/index.html';
+        // Usar la implementación centralizada en auth.js si está disponible
+        if (window.auth && typeof window.auth.logout === 'function') {
+            await window.auth.logout();
         } else {
-            throw new Error('Error al cerrar sesión');
+            // Fallback en caso de que auth.logout no esté disponible
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include' // Importante para enviar cookies de sesión
+            });
+
+            if (response.ok) {
+                // Limpiar datos de sesión local
+                localStorage.removeItem('user_data');
+                sessionStorage.clear();
+                
+                window.location.href = '/index.html';
+            } else {
+                throw new Error('Error al cerrar sesión');
+            }
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cerrar sesión');
+        console.error('Error al cerrar sesión:', error);
     }
 }
 

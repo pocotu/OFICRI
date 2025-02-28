@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Glegoo&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <script src="/src/js/frontendAuth.js"></script>
+    <script src="/src/js/dashboard-common.js"></script>
 </head>
 <body>
     <div class="header">
@@ -26,6 +28,9 @@
         <div class="sidebar">
             <button class="nav-btn active" data-target="users-section">
                 <i class="fas fa-users"></i> Gestión de Usuarios
+            </button>
+            <button class="nav-btn" data-target="roles-section">
+                <i class="fas fa-user-tag"></i> Gestión de Roles
             </button>
             <button class="nav-btn" data-target="areas-section">
                 <i class="fas fa-building"></i> Áreas Especializadas
@@ -53,6 +58,31 @@
                             </tr>
                         </thead>
                         <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sección de Roles -->
+            <div id="roles-section" class="section">
+                <h2>Gestión de Roles</h2>
+                <button id="addRoleBtn" class="action-btn">
+                    <i class="fas fa-plus"></i> Agregar Nuevo Rol
+                </button>
+                <div class="table-container">
+                    <table id="rolesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Nivel Acceso</th>
+                                <th>Descripción</th>
+                                <th>Permisos</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-table-body">
+                            <!-- Los roles se cargarán dinámicamente -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -136,17 +166,18 @@
                 </div>
                 <div class="form-group">
                     <label for="area">Área:</label>
-                    <select id="area" required>
-                        <!-- Se llenará dinámicamente -->
+                    <select id="area" name="area" class="form-control area-select" required>
+                        <option value="">Seleccione un área</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="nivel-acceso">Nivel de Acceso:</label>
-                    <select id="nivel-acceso" required>
-                        <option value="1">Administrador</option>
-                        <option value="2">Responsable</option>
-                        <option value="3">Mesa de Partes</option>
-                    </select>
+                    <label>Nivel de Acceso:</label>
+                    <div>
+                        <label><input type="checkbox" value="crear"> Crear</label>
+                        <label><input type="checkbox" value="editar"> Editar</label>
+                        <label><input type="checkbox" value="eliminar"> Eliminar</label>
+                        <label><input type="checkbox" value="ver"> Ver</label>
+                    </div>
                 </div>
                 <div id="error-message" class="error-message"></div>
                 <button type="submit" class="submit-btn">Guardar</button>
@@ -166,8 +197,8 @@
                 </div>
                 <div class="form-group">
                     <label for="edit-area">Área:</label>
-                    <select id="edit-area" required>
-                        <!-- Se llenará dinámicamente -->
+                    <select id="edit-area" name="area" class="form-control area-select" required>
+                        <option value="">Seleccione un área</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -214,17 +245,110 @@
         </div>
     </div>
 
+    <!-- Modal para agregar/editar rol -->
+    <div id="roleModal" class="modal">
+        <div class="modal-content">
+            <span class="close close-modal">&times;</span>
+            <h2 id="roleModalTitle">Agregar Nuevo Rol</h2>
+            <form id="roleForm" data-mode="create">
+                <div class="form-group">
+                    <label for="nombreRol">Nombre del Rol:</label>
+                    <input type="text" id="nombreRol" name="nombreRol" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nivelAcceso">Nivel de Acceso:</label>
+                    <select id="nivelAcceso" name="nivelAcceso" required>
+                        <option value="1">1 - Administrador</option>
+                        <option value="2">2 - Operador Mesa de Partes</option>
+                        <option value="3">3 - Técnico Especialista</option>
+                        <option value="4">4 - Jefe de Área</option>
+                        <option value="5">5 - Visualizador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="descripcion">Descripción:</label>
+                    <textarea id="descripcion" name="descripcion" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Permisos:</label>
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="puedeCrear" name="puedeCrear">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="puedeCrear">Puede Crear</label>
+                    </div>
+                    
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="puedeEditar" name="puedeEditar">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="puedeEditar">Puede Editar</label>
+                    </div>
+                    
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="puedeDerivar" name="puedeDerivar">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="puedeDerivar">Puede Derivar</label>
+                    </div>
+                    
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="puedeAuditar" name="puedeAuditar">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="puedeAuditar">Puede Auditar</label>
+                    </div>
+                </div>
+                
+                <div id="role-error-message" class="error-message"></div>
+                
+                <div class="form-group">
+                    <button type="submit" class="submit-btn">Guardar</button>
+                    <button type="button" class="cancel-btn close-modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
     
     <!-- Módulos -->
     <script type="module">
         import { initializeAdmin } from '/src/js/modules/admin/adminDashboard.js';
-
+        import { initializeRoles } from '/src/js/modules/admin/adminRoles.js';
+        
         // Inicializar cuando el documento esté listo
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeAdmin().catch(error => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initializeAdmin();
+                await initializeRoles(); // Inicializar módulo de roles
+            } catch (error) {
                 console.error('Error al inicializar:', error);
+            }
+            
+            // Configurar navegación entre secciones
+            const navBtns = document.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Desactivar todos los botones y ocultar todas las secciones
+                    navBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    
+                    // Activar el botón clickeado
+                    btn.classList.add('active');
+                    
+                    // Mostrar la sección correspondiente
+                    const targetId = btn.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+                });
             });
         });
     </script>

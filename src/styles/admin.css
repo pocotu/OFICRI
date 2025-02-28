@@ -172,13 +172,30 @@ select {
 
 /* Tablas */
 .table-container {
-    overflow-x: auto;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    max-height: 70vh;
+    overflow-y: auto;
+    border: 1px solid #e3e6f0;
+    border-radius: 4px;
     margin-top: 1rem;
+    background-color: white;
 }
 
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.table-container thead {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+.table-container thead th {
+    border-bottom: 2px solid #e3e6f0;
+}
 table {
     width: 100%;
     border-collapse: collapse;
@@ -499,4 +516,107 @@ tr:hover {
 
 #logsTable tr:hover {
     background-color: #e9ecef;
+}
+
+/* Estilos para badges en la tabla de roles */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin: 0 0.25rem;
+}
+
+.badge-success {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Ajustes para la sección de roles */
+#roles-section .table-container {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+#rolesTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#rolesTable th,
+#rolesTable td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e3e6f0;
+    text-align: left;
+}
+
+#rolesTable th {
+    background-color: #f8f9fc;
+    font-weight: bold;
+}
+
+#rolesTable tbody tr:hover {
+    background-color: #f8f9fc;
+}
+
+/* Estilo para switches en el formulario de roles */
+.switch-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    margin-right: 10px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 22px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(18px);
 }

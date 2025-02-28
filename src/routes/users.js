@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
                 a.IDArea,
                 a.NombreArea,
                 a.CodigoIdentificacion as AreaCodigo,
+                a.IsActive as AreaActiva,
                 r.IDRol,
                 r.NombreRol,
                 r.NivelAcceso,
@@ -24,9 +25,8 @@ router.get('/', async (req, res) => {
                 r.PuedeDerivar,
                 r.PuedeAuditar
             FROM Usuario u 
-            INNER JOIN AreaEspecializada a ON u.IDArea = a.IDArea AND a.IsActive = 1
+            INNER JOIN AreaEspecializada a ON u.IDArea = a.IDArea
             INNER JOIN Rol r ON u.IDRol = r.IDRol
-            WHERE u.Bloqueado = 0
             ORDER BY u.Username
         `);
         
@@ -51,6 +51,7 @@ router.get('/:id', async (req, res) => {
                 a.IDArea,
                 a.NombreArea,
                 a.CodigoIdentificacion as AreaCodigo,
+                a.IsActive as AreaActiva,
                 r.IDRol,
                 r.NombreRol,
                 r.NivelAcceso,
@@ -59,7 +60,7 @@ router.get('/:id', async (req, res) => {
                 r.PuedeDerivar,
                 r.PuedeAuditar
             FROM Usuario u 
-            INNER JOIN AreaEspecializada a ON u.IDArea = a.IDArea AND a.IsActive = 1
+            INNER JOIN AreaEspecializada a ON u.IDArea = a.IDArea
             INNER JOIN Rol r ON u.IDRol = r.IDRol
             WHERE u.IDUsuario = ? AND u.Bloqueado = 0
         `, [req.params.id]);
@@ -105,43 +106,38 @@ router.post('/', async (req, res) => {
 
         // Hash de la contraseña
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const passwordWithSalt = password + salt;
+        const hashedPassword = await bcrypt.hash(passwordWithSalt, 10);
+
+        // Definir un IDRol predeterminado (por ejemplo, 1 para Administrador)
+        const defaultRolId = 1; // Cambia esto si necesitas otro rol predeterminado
 
         // Insertar usuario
         const [result] = await connection.query(
             'INSERT INTO Usuario (Username, PasswordHash, Salt, IDArea, IDRol) VALUES (?, ?, ?, ?, ?)',
-            [username, hashedPassword, salt, idArea, nivelAcceso]
+            [username, hashedPassword, salt, idArea, defaultRolId]
         );
+
+        // Obtener el ID del nuevo usuario
+        const newUserId = result.insertId;
+
+        // Insertar niveles de acceso en la tabla UsuarioNivelAcceso
+        const nivelAccesoInsertQuery = 'INSERT INTO UsuarioNivelAcceso (IDUsuario, NivelAcceso) VALUES (?, ?)';
+        for (const nivel of nivelAcceso) {
+            await connection.query(nivelAccesoInsertQuery, [newUserId, nivel]);
+        }
 
         // Obtener información del dispositivo y IP
         const ipAddress = req.ip || '127.0.0.1';
         const userAgent = req.get('User-Agent') || 'Unknown Device';
 
         // Registrar en el log
-        await connection.query(
-            `INSERT INTO UsuarioLog (
-                IDUsuario,
-                TipoEvento,
-                IPOrigen,
-                DispositivoInfo,
-                FechaEvento,
-                Exitoso
-            ) VALUES (?, ?, ?, ?, NOW(), ?)`,
-            [
-                result.insertId,
-                'CREACION_USUARIO',
-                ipAddress,
-                userAgent,
-                1
-            ]
-        );
-
         await connection.commit();
         res.status(201).json({ message: 'Usuario creado exitosamente' });
     } catch (error) {
-        await connection.rollback();
         console.error('Error al crear usuario:', error);
-        res.status(500).json({ message: 'Error al crear usuario' });
+        await connection.rollback();
+        res.status(500).json({ message: 'Error al crear usuario', error: error.message });
     } finally {
         connection.release();
     }
@@ -231,20 +227,21 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Eliminar usuario (soft delete)
+// Eliminar o desactivar usuario (según el parámetro permanentDelete)
 router.delete('/:id', async (req, res) => {
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
         
         const userId = req.params.id;
-        const { adminUsername, adminPassword } = req.body;
+        const { adminUsername, adminPassword, permanentDelete } = req.body;
 
         console.log('=== INICIO DE PROCESO DE ELIMINACIÓN DE USUARIO ===');
         console.log('Datos de la solicitud:', {
             userId,
             adminUsername,
             adminPasswordProvided: !!adminPassword,
+            permanentDelete: !!permanentDelete,
             sessionUser: req.session?.user,
             headers: req.headers
         });
@@ -336,7 +333,7 @@ router.delete('/:id', async (req, res) => {
 
         // Verificar si el usuario a eliminar existe
         const [users] = await connection.query(
-            'SELECT IDUsuario, Username FROM Usuario WHERE IDUsuario = ? AND Bloqueado = 0',
+            'SELECT IDUsuario, Username, Bloqueado FROM Usuario WHERE IDUsuario = ?',
             [userId]
         );
 
@@ -351,40 +348,72 @@ router.delete('/:id', async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Soft delete del usuario
-        await connection.query(
-            'UPDATE Usuario SET Bloqueado = 1 WHERE IDUsuario = ?',
-            [userId]
-        );
-
-        console.log('Usuario marcado como bloqueado exitosamente');
-
-        // Obtener información del dispositivo y IP
+        // Obtener información del dispositivo y IP para el log
         const ipAddress = req.ip || '127.0.0.1';
         const userAgent = req.get('User-Agent') || 'Unknown Device';
+        
+        if (permanentDelete) {
+            // Eliminación permanente del usuario
+            console.log('Realizando eliminación permanente del usuario...');
+            
+            // Primero registrar en el log que se va a eliminar permanentemente
+            await connection.query(
+                `INSERT INTO UsuarioLog (
+                    IDUsuario,
+                    TipoEvento,
+                    IPOrigen,
+                    DispositivoInfo,
+                    FechaEvento,
+                    Exitoso
+                ) VALUES (?, ?, ?, ?, NOW(), ?)`,
+                [
+                    userId,
+                    'ELIMINACION_PERMANENTE_USUARIO',
+                    ipAddress,
+                    userAgent,
+                    1
+                ]
+            );
+            
+            // Eliminar el usuario de la base de datos
+            await connection.query('DELETE FROM Usuario WHERE IDUsuario = ?', [userId]);
+            console.log('Usuario eliminado permanentemente de la base de datos');
+            
+            await connection.commit();
+            console.log('=== PROCESO DE ELIMINACIÓN PERMANENTE COMPLETADO EXITOSAMENTE ===');
+            res.json({ message: 'Usuario eliminado permanentemente' });
+        } else {
+            // Soft delete del usuario (comportamiento anterior)
+            await connection.query(
+                'UPDATE Usuario SET Bloqueado = 1 WHERE IDUsuario = ?',
+                [userId]
+            );
 
-        // Registrar en el log
-        await connection.query(
-            `INSERT INTO UsuarioLog (
-                IDUsuario,
-                TipoEvento,
-                IPOrigen,
-                DispositivoInfo,
-                FechaEvento,
-                Exitoso
-            ) VALUES (?, ?, ?, ?, NOW(), ?)`,
-            [
-                userId,
-                'ELIMINACION_USUARIO',
-                ipAddress,
-                userAgent,
-                1
-            ]
-        );
+            console.log('Usuario marcado como bloqueado exitosamente');
 
-        await connection.commit();
-        console.log('=== PROCESO DE ELIMINACIÓN COMPLETADO EXITOSAMENTE ===');
-        res.json({ message: 'Usuario eliminado exitosamente' });
+            // Registrar en el log
+            await connection.query(
+                `INSERT INTO UsuarioLog (
+                    IDUsuario,
+                    TipoEvento,
+                    IPOrigen,
+                    DispositivoInfo,
+                    FechaEvento,
+                    Exitoso
+                ) VALUES (?, ?, ?, ?, NOW(), ?)`,
+                [
+                    userId,
+                    'DESACTIVACION_USUARIO',
+                    ipAddress,
+                    userAgent,
+                    1
+                ]
+            );
+
+            await connection.commit();
+            console.log('=== PROCESO DE DESACTIVACIÓN COMPLETADO EXITOSAMENTE ===');
+            res.json({ message: 'Usuario desactivado exitosamente' });
+        }
     } catch (error) {
         await connection.rollback();
         console.error('Error detallado al eliminar usuario:', error);

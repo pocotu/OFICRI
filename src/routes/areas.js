@@ -53,12 +53,22 @@ router.get('/:id', async (req, res) => {
 
 // Crear nueva área
 router.post('/', async (req, res) => {
+    const connection = await db.getConnection();
     try {
+        await connection.beginTransaction();
         const { nombreArea, codigoArea, tipoArea } = req.body;
-        const [result] = await db.query(
+        const [result] = await connection.query(
             'INSERT INTO AreaEspecializada (NombreArea, CodigoIdentificacion, TipoArea, IsActive) VALUES (?, ?, ?, true)',
             [nombreArea, codigoArea, tipoArea]
         );
+
+        // Registrar la creación del área en el log
+        await connection.query(
+            'INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, Detalles) VALUES (?, ?, ?, ?)',
+            [result.insertId, req.session.user.id, 'CREACION_AREA', `Área creada: ${nombreArea} (${codigoArea})`]
+        );
+
+        await connection.commit();
         res.status(201).json({ 
             IDArea: result.insertId,
             NombreArea: nombreArea,
@@ -74,9 +84,11 @@ router.post('/', async (req, res) => {
 
 // Actualizar área
 router.put('/:id', async (req, res) => {
+    const connection = await db.getConnection();
     try {
+        await connection.beginTransaction();
         const { nombreArea, codigoArea, tipoArea } = req.body;
-        const [result] = await db.query(
+        const [result] = await connection.query(
             'UPDATE AreaEspecializada SET NombreArea = ?, CodigoIdentificacion = ?, TipoArea = ? WHERE IDArea = ?',
             [nombreArea, codigoArea, tipoArea, req.params.id]
         );
@@ -84,7 +96,14 @@ router.put('/:id', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Área no encontrada' });
         }
-        
+
+        // Registrar la actualización del área en el log
+        await connection.query(
+            'INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, Detalles) VALUES (?, ?, ?, ?)',
+            [req.params.id, req.session.user.id, 'ACTUALIZACION_AREA', `Área actualizada: ${nombreArea} (${codigoArea})`]
+        );
+
+        await connection.commit();
         res.json({ 
             IDArea: parseInt(req.params.id),
             NombreArea: nombreArea,
@@ -99,8 +118,10 @@ router.put('/:id', async (req, res) => {
 
 // Eliminar área
 router.delete('/:id', async (req, res) => {
+    const connection = await db.getConnection();
     try {
-        const [result] = await db.query(
+        await connection.beginTransaction();
+        const [result] = await connection.query(
             'UPDATE AreaEspecializada SET IsActive = false WHERE IDArea = ?',
             [req.params.id]
         );
@@ -108,7 +129,14 @@ router.delete('/:id', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Área no encontrada' });
         }
-        
+
+        // Registrar la eliminación del área en el log
+        await connection.query(
+            'INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, Detalles) VALUES (?, ?, ?, ?)',
+            [req.params.id, req.session.user.id, 'ELIMINACION_AREA', `Área desactivada: ID ${req.params.id}`]
+        );
+
+        await connection.commit();
         res.json({ message: 'Área eliminada correctamente' });
     } catch (error) {
         console.error('Error al eliminar área:', error);

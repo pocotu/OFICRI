@@ -31,9 +31,17 @@ export function renderUsers(users) {
     tbody.innerHTML = '';
     users.forEach(user => {
         const tr = document.createElement('tr');
+        // Añadir clase para resaltar usuarios de áreas inactivas
+        if (user.AreaActiva === 0) {
+            tr.classList.add('area-inactiva');
+        }
+        
         tr.innerHTML = `
             <td>${user.Username || ''}</td>
-            <td>${user.NombreArea || ''}</td>
+            <td>
+                ${user.NombreArea || ''}
+                ${user.AreaActiva === 0 ? '<span class="badge badge-warning">Área Inactiva</span>' : ''}
+            </td>
             <td>${getNivelAccesoText(user.NivelAcceso) || ''}</td>
             <td>
                 <button class="action-btn edit" data-user-id="${user.IDUsuario}">
@@ -46,7 +54,6 @@ export function renderUsers(users) {
         `;
         tbody.appendChild(tr);
     });
-
     // Agregar event listeners
     tbody.querySelectorAll('.action-btn.edit').forEach(btn => {
         btn.removeEventListener('click', handleEditClick); // Remover listener existente si hay
@@ -74,11 +81,34 @@ export async function handleCreateUser(e) {
     console.log('Iniciando handleCreateUser');
     e.preventDefault();
     const form = e.target;
-    
-    const username = form.querySelector('#username').value;
-    const password = form.querySelector('#password').value;
-    const area = form.querySelector('#area').value;
-    const nivelAcceso = form.querySelector('#nivel-acceso').value;
+
+    const usernameElement = form.querySelector('#username');
+    const passwordElement = form.querySelector('#password');
+    const areaElement = form.querySelector('#area');
+    const nivelAccesoElements = form.querySelectorAll('input[type="checkbox"]:checked');
+    const nivelAcceso = Array.from(nivelAccesoElements).map(el => el.value);
+
+    console.log('Elementos del formulario:', {
+        usernameElement,
+        passwordElement,
+        areaElement,
+        nivelAccesoElements,
+        nivelAcceso
+    });
+
+    if (!usernameElement || !passwordElement || !areaElement || !nivelAccesoElements.length) {
+        console.error('Uno o más elementos del formulario no se encontraron');
+        return;
+    }
+
+    const username = usernameElement.value;
+    const password = passwordElement.value;
+    const area = areaElement.value;
+
+    console.log('Username:', username);
+    console.log('Password:', password);
+    console.log('Area:', area);
+    console.log('Nivel de Acceso:', nivelAcceso);
 
     console.log('Datos del formulario:', {
         username,
@@ -197,7 +227,8 @@ export async function deleteUser(userId) {
             },
             body: JSON.stringify({
                 adminUsername: adminCredentials.username,
-                adminPassword: adminCredentials.password
+                adminPassword: adminCredentials.password,
+                permanentDelete: true // Indicar al servidor que debe eliminar permanentemente
             })
         };
         console.log('Datos de la solicitud:', {
@@ -248,7 +279,8 @@ function showAdminPasswordModal() {
                         <span class="close">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <p>Por favor, ingrese las credenciales de administrador para confirmar la eliminación:</p>
+                        <p>Por favor, ingrese las credenciales de administrador para confirmar la eliminación del usuario:</p>
+                        <p><small><i>Nota: El usuario será eliminado permanentemente de la base de datos, pero se guardará un registro de esta acción.</i></small></p>
                         <div class="form-group">
                             <label for="adminUsername">Usuario Administrador:</label>
                             <input type="text" id="adminUsername" class="form-control" placeholder="Usuario administrador" required>

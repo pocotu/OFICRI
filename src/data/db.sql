@@ -11,6 +11,14 @@ SET default_storage_engine=INNODB;
 -- Habilitamos el event scheduler para los monitores
 SET GLOBAL event_scheduler = ON;
 
+-- Configurar parámetros para evitar bloqueos prolongados
+-- Reducir el tiempo de espera para transacciones (esta sí puede modificarse en runtime)
+SET GLOBAL innodb_lock_wait_timeout=5; -- 5 segundos en lugar del default (50)
+
+-- Estas variables son de solo lectura y deben configurarse en my.cnf/my.ini:
+-- innodb_rollback_on_timeout=ON
+-- innodb_deadlock_detect=ON
+
 -- ########################################################
 -- 2. CREACIÓN DE TABLAS PRINCIPALES
 -- ########################################################
@@ -115,7 +123,10 @@ CREATE TABLE UsuarioLog (
         FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
         ON DELETE CASCADE
         ON UPDATE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB ROW_FORMAT=DYNAMIC; -- Formato de fila optimizado
+
+-- Crear un índice para mejorar el rendimiento de búsquedas comunes
+CREATE INDEX idx_usuariolog_tipo_fecha ON UsuarioLog(TipoEvento, FechaEvento);
 
 -- ---------------- ROL LOG ----------------
 CREATE TABLE RolLog (
@@ -420,11 +431,28 @@ CREATE TABLE DerivacionLog (
 -- 4. CREACIÓN DE TABLAS DE ESPECIALIZACIÓN (OPCIONALES)
 -- ########################################################
 
+-- ---------------- TABLA DOSAJE (ACTUALIZADA) ----------------
 CREATE TABLE Dosaje (
     IDDosaje INT AUTO_INCREMENT PRIMARY KEY,
     IDArea INT NOT NULL,
-    Descripcion VARCHAR(255),
     IsActive BOOLEAN DEFAULT TRUE,
+    NumeroRegistro VARCHAR(50),
+    FechaIngreso DATE,
+    OficioDoc VARCHAR(50),
+    NumeroOficio INT,
+    TipoDosaje VARCHAR(100),
+    Nombres VARCHAR(100),
+    Apellidos VARCHAR(100),
+    DocumentoIdentidad VARCHAR(20),
+    Procedencia VARCHAR(255),
+    ResultadoCualitativo VARCHAR(50),
+    ResultadoCuantitativo DECIMAL(10,2),
+    UnidadMedida VARCHAR(20),
+    MetodoAnalisis VARCHAR(100),
+    DocSalidaNroInforme VARCHAR(100),
+    DocSalidaFecha DATE,
+    Responsable VARCHAR(100),
+    Observaciones TEXT,
     CONSTRAINT fk_dosaje_area
         FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
         ON DELETE RESTRICT
@@ -455,11 +483,29 @@ CREATE TABLE QuimicaToxicologiaForense (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- TABLA FORENSE DIGITAL (ACTUALIZADA) ----------------
 CREATE TABLE ForenseDigital (
     IDForenseDigital INT AUTO_INCREMENT PRIMARY KEY,
     IDArea INT NOT NULL,
-    Descripcion VARCHAR(255),
     IsActive BOOLEAN DEFAULT TRUE,
+    NumeroRegistro VARCHAR(50),
+    FechaIngreso DATE,
+    OficioDoc VARCHAR(50),
+    NumeroOficio INT,
+    TipoPericia VARCHAR(100),
+    Nombres VARCHAR(100),
+    Apellidos VARCHAR(100),
+    DelitoInvestigado VARCHAR(255),
+    DispositivoTipo VARCHAR(100),
+    DispositivoMarca VARCHAR(100),
+    DispositivoModelo VARCHAR(100),
+    DispositivoNumeroSerie VARCHAR(100),
+    MetodoExtraccion VARCHAR(100),
+    DocSalidaNroInforme VARCHAR(100),
+    DocSalidaDFG VARCHAR(100),
+    DocSalidaFecha DATE,
+    Responsable VARCHAR(100),
+    Observaciones TEXT,
     CONSTRAINT fk_forensedigital_area
         FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
         ON DELETE RESTRICT
@@ -560,6 +606,44 @@ BEGIN
     END IF;
 END$$
 
+-- ---------------- TRIGGER PARA DOSAJE ----------------
+CREATE TRIGGER trg_dosaje_insert 
+AFTER INSERT ON Dosaje
+FOR EACH ROW
+BEGIN
+    INSERT INTO IntrusionDetectionLog (
+        IDUsuario,
+        TipoEvento,
+        Descripcion,
+        IPOrigen
+    )
+    VALUES (
+        NULL, 
+        'REGISTRO_DOSAJE',
+        CONCAT('Nuevo registro de dosaje creado: ', NEW.NumeroRegistro),
+        'SYSTEM'
+    );
+END$$
+
+-- ---------------- TRIGGER PARA FORENSE DIGITAL ----------------
+CREATE TRIGGER trg_forensedigital_insert 
+AFTER INSERT ON ForenseDigital
+FOR EACH ROW
+BEGIN
+    INSERT INTO IntrusionDetectionLog (
+        IDUsuario,
+        TipoEvento,
+        Descripcion,
+        IPOrigen
+    )
+    VALUES (
+        NULL, 
+        'REGISTRO_FORENSE_DIGITAL',
+        CONCAT('Nuevo registro forense digital creado: ', NEW.NumeroRegistro),
+        'SYSTEM'
+    );
+END$$
+
 DELIMITER ;
 
 -- ########################################################
@@ -623,6 +707,85 @@ DELIMITER ;
 -- ########################################################
 
 DELIMITER $$
+-- Procedimiento para insertar nuevo registro de Dosaje
+CREATE PROCEDURE sp_insertar_dosaje(
+    IN p_IDArea INT,
+    IN p_NumeroRegistro VARCHAR(50),
+    IN p_OficioDoc VARCHAR(50),
+    IN p_NumeroOficio INT,
+    IN p_TipoDosaje VARCHAR(100),
+    IN p_Nombres VARCHAR(100),
+    IN p_Apellidos VARCHAR(100),
+    IN p_Procedencia VARCHAR(255),
+    IN p_Responsable VARCHAR(100)
+)
+BEGIN
+    INSERT INTO Dosaje (
+        IDArea,
+        NumeroRegistro,
+        FechaIngreso,
+        OficioDoc,
+        NumeroOficio,
+        TipoDosaje,
+        Nombres,
+        Apellidos,
+        Procedencia,
+        Responsable
+    ) VALUES (
+        p_IDArea,
+        p_NumeroRegistro,
+        CURDATE(),
+        p_OficioDoc,
+        p_NumeroOficio,
+        p_TipoDosaje,
+        p_Nombres,
+        p_Apellidos,
+        p_Procedencia,
+        p_Responsable
+    );
+END$$
+
+-- Procedimiento para insertar nuevo registro Forense Digital
+CREATE PROCEDURE sp_insertar_forense_digital(
+    IN p_IDArea INT,
+    IN p_NumeroRegistro VARCHAR(50),
+    IN p_OficioDoc VARCHAR(50),
+    IN p_NumeroOficio INT,
+    IN p_TipoPericia VARCHAR(100),
+    IN p_Nombres VARCHAR(100),
+    IN p_Apellidos VARCHAR(100),
+    IN p_DelitoInvestigado VARCHAR(255),
+    IN p_DispositivoTipo VARCHAR(100),
+    IN p_Responsable VARCHAR(100)
+)
+BEGIN
+    INSERT INTO ForenseDigital (
+        IDArea,
+        NumeroRegistro,
+        FechaIngreso,
+        OficioDoc,
+        NumeroOficio,
+        TipoPericia,
+        Nombres,
+        Apellidos,
+        DelitoInvestigado,
+        DispositivoTipo,
+        Responsable
+    ) VALUES (
+        p_IDArea,
+        p_NumeroRegistro,
+        CURDATE(),
+        p_OficioDoc,
+        p_NumeroOficio,
+        p_TipoPericia,
+        p_Nombres,
+        p_Apellidos,
+        p_DelitoInvestigado,
+        p_DispositivoTipo,
+        p_Responsable
+    );
+END$$
+
 CREATE PROCEDURE sp_crear_documento_derivacion(
     IN p_IDMesaPartes INT,
     IN p_IDAreaActual INT,
@@ -683,5 +846,68 @@ END$$
 DELIMITER ;
 
 -- ########################################################
--- FIN DEL SCRIPT
+-- 8. PROCEDIMIENTOS PARA MANEJO DE SESIONES Y LOGGING
 -- ########################################################
+
+DELIMITER $$
+
+-- Procedimiento para registrar eventos de usuario (login, logout) sin bloquear
+CREATE PROCEDURE sp_registrar_evento_usuario(
+    IN p_IDUsuario INT,
+    IN p_TipoEvento VARCHAR(100),
+    IN p_IPOrigen VARCHAR(50),
+    IN p_DispositivoInfo VARCHAR(255),
+    IN p_Exitoso BOOLEAN
+)
+BEGIN
+    -- Desactivar autocommit para esta operación
+    SET autocommit=0;
+    
+    -- Usar un tiempo de espera más corto para esta transacción específica
+    SET SESSION innodb_lock_wait_timeout=2;
+    
+    -- Intentar insertar con una transacción corta
+    START TRANSACTION;
+    
+    INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+    VALUES (p_IDUsuario, p_TipoEvento, p_IPOrigen, p_DispositivoInfo, p_Exitoso);
+    
+    COMMIT;
+    
+    -- Restaurar autocommit
+    SET autocommit=1;
+END$$
+
+-- Procedimiento para actualizar de forma segura el estado de usuario
+CREATE PROCEDURE sp_actualizar_estado_usuario(
+    IN p_IDUsuario INT,
+    IN p_UltimoAcceso DATETIME,
+    IN p_IntentosFallidos INT,
+    IN p_Bloqueado BOOLEAN
+)
+BEGIN
+    -- Usar un tiempo de espera más corto para esta transacción específica
+    SET SESSION innodb_lock_wait_timeout=2;
+    
+    -- Actualizar con FOR UPDATE para obtener un bloqueo exclusivo inmediato
+    -- y NO WAIT para fallar rápido si no puede obtener el bloqueo
+    UPDATE Usuario 
+    SET 
+        UltimoAcceso = COALESCE(p_UltimoAcceso, UltimoAcceso),
+        IntentosFallidos = p_IntentosFallidos,
+        Bloqueado = p_Bloqueado,
+        UltimoBloqueo = CASE WHEN p_Bloqueado = 1 THEN NOW() ELSE UltimoBloqueo END
+    WHERE IDUsuario = p_IDUsuario;
+END$$
+
+DELIMITER $$
+
+-- Purgar sesiones antiguas para evitar bloqueos persistentes
+CREATE EVENT IF NOT EXISTS ev_purgar_sesiones_antiguas
+ON SCHEDULE EVERY 1 HOUR
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    DELETE FROM Session WHERE Expiracion < NOW() OR UltimoAcceso < DATE_SUB(NOW(), INTERVAL 24 HOUR);
+END$$
+DELIMITER ;

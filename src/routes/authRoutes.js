@@ -12,6 +12,7 @@ router.post('/login', async (req, res) => {
         
         if (!username || !password) {
             console.log('Faltan campos requeridos');
+            await connection.rollback();
             return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
         }
 
@@ -23,6 +24,7 @@ router.post('/login', async (req, res) => {
         
         if (users.length === 0) {
             console.log('Usuario no encontrado');
+            await connection.rollback();
             return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
         }
 
@@ -41,13 +43,14 @@ router.post('/login', async (req, res) => {
                 
                 if (tiempoRestante > 0) {
                     const minutosRestantes = Math.ceil(tiempoRestante / (60 * 1000));
+                    await connection.rollback();
                     return res.status(403).json({ 
                         message: `Usuario bloqueado. Por favor espere ${minutosRestantes} minutos.`,
                         intentosFallidos: user.IntentosFallidos
                     });
                 } else {
                     // Si ya pasó el tiempo de bloqueo, desbloquear
-                    await pool.query('UPDATE Usuario SET Bloqueado = 0, IntentosFallidos = 0, UltimoBloqueo = NULL WHERE IDUsuario = ?', [user.IDUsuario]);
+                    await connection.query('UPDATE Usuario SET Bloqueado = 0, IntentosFallidos = 0, UltimoBloqueo = NULL WHERE IDUsuario = ?', [user.IDUsuario]);
                 }
             }
         }
@@ -96,7 +99,8 @@ router.post('/login', async (req, res) => {
             }
             
             // Actualizar contador de intentos
-            await pool.query('UPDATE Usuario SET IntentosFallidos = ? WHERE IDUsuario = ?', [intentosFallidos, user.IDUsuario]);
+            await connection.query('UPDATE Usuario SET IntentosFallidos = ? WHERE IDUsuario = ?', [intentosFallidos, user.IDUsuario]);
+            await connection.commit();
             
             return res.status(401).json({ 
                 message: 'Usuario o contraseña incorrectos',
@@ -124,7 +128,7 @@ router.post('/login', async (req, res) => {
         );
 
         // Obtener información del rol
-        const [roles] = await pool.query(`
+        const [roles] = await connection.query(`
             SELECT r.* 
             FROM Rol r 
             WHERE r.IDRol = ?
@@ -148,6 +152,7 @@ router.post('/login', async (req, res) => {
         };
 
         console.log('Sesión creada:', req.session.user);
+        await connection.commit();
 
         res.json({ 
             message: 'Login exitoso',
@@ -166,11 +171,14 @@ router.post('/login', async (req, res) => {
         });
 
     } catch (error) {
+        await connection.rollback();
         console.error('Error detallado en login:', error);
         res.status(500).json({ 
             message: 'Error en el servidor',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
+    } finally {
+        connection.release();
     }
 });
 
@@ -193,12 +201,13 @@ router.post('/logout', async (req, res) => {
                 res.json({ message: 'Sesión cerrada exitosamente' });
             });
         } else {
+            console.log('No hay sesión activa para cerrar.');
             res.json({ message: 'No hay sesión activa' });
         }
     } catch (error) {
         await connection.rollback();
         console.error('Error al registrar logout:', error);
-        res.status(500).json({ message: 'Error al cerrar sesión' });
+        res.status(500).json({ message: 'Error al cerrar sesión', error: error.message });
     } finally {
         connection.release();
     }

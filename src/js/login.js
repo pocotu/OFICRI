@@ -4,6 +4,13 @@ const usuarios = [
     { username: "Pedro", password: "qwerty"}
 ];
 
+const userPrivileges = [
+    { name: 'Crear', value: 'crear' },
+    { name: 'Editar', value: 'editar' },
+    { name: 'Eliminar', value: 'eliminar' },
+    { name: 'Ver', value: 'ver' }
+];
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
@@ -61,10 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Login exitoso
                 localStorage.setItem('user_data', JSON.stringify(data.user));
                 
-                // Redirigir según el nivel de acceso
-                if (data.user.idRol === 1) { // Rol de administrador
+                // Redirigir según el área del usuario
+                if (data.user.idArea === 1) { // Área de Administración
                     window.location.href = "/admin";
+                } else if (data.user.idArea === 4) { // Área de Química y Toxicología
+                    window.location.href = "/src/pages/dashboard_toxicologia.html";
                 } else {
+                    // Para otras áreas, redirigir a sus respectivos dashboards
                     window.location.href = "/src/pages/dashboard_toxicologia.html";
                 }
             } else {
@@ -79,4 +89,55 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('Error al intentar iniciar sesión. Por favor, intente nuevamente.');
         }
     });
+
+    // Verificar si hay una sesión "fantasma" al cargar la página de login
+    // (esto puede ocurrir si el proceso de logout falló en el servidor)
+    const checkForGhostSession = async () => {
+        try {
+            // Limpiar cualquier dato local primero para prevenir bucles
+            localStorage.clear();
+            sessionStorage.clear();
+            const debugMsg = document.getElementById('debug-message');
+            // Verificar estado del servidor en background
+            fetch('/api/health', { 
+                method: 'GET',
+                signal: AbortSignal.timeout(3000)
+            })
+            .then(response => {
+                if (response.ok) {
+                    debugMsg.textContent = '✓ Servidor API conectado correctamente';
+                    // Si el servidor está activo, intentar un logout "de seguridad"
+                    fetch('/api/auth/logout', { 
+                        method: 'POST', 
+                        credentials: 'include'
+                    }).catch(() => {}); // Ignoramos errores aquí
+                } else {
+                    debugMsg.textContent = '✗ El servidor API respondió con estado: ' + response.status;
+                }
+            })
+            .catch(err => {
+                debugMsg.textContent = '✗ No se puede conectar al servidor API. Error: ' + err.message;
+            });
+        } catch (error) {
+            console.error('Error al verificar sesión:', error);
+        }
+    };
+    // Ejecutar verificación
+    checkForGhostSession();
+    // Toggle para mostrar/ocultar información de debug
+    document.getElementById('debug-toggle').addEventListener('click', function() {
+        const debugMsg = document.getElementById('debug-message');
+        debugMsg.style.display = debugMsg.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // La lógica para manejar los privilegios solo debe ejecutarse en páginas que tengan el elemento
+    const privilegesSelect = document.getElementById('privileges');
+    if (privilegesSelect) {
+        userPrivileges.forEach(privilege => {
+            const option = document.createElement('option');
+            option.value = privilege.value;
+            option.textContent = privilege.name;
+            privilegesSelect.appendChild(option);
+        });
+    }
 });

@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="/src/styles/stylesLogin.css">
     <link rel="icon" href="src/images/logoOficri2x2.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
-    <style>
-    </style>
 </head>
 <body>
     <div class="header">
@@ -28,8 +26,13 @@
             <div id="attempts-message" class="attempts-message"></div>
             <button type="submit" class="login-button">Iniciar Sesión</button>
         </form>
+        <div id="debug-message" class="debug-message"></div>
     </div>
-    <script src="src/js/auth.js"></script>
+    
+    <!-- Debug toggle -->
+    <div class="debug-toggle" id="debug-toggle">Debug</div>
+
+    <script src="src/js/frontendAuth.js"></script>
     <script src="src/js/login.js" type="module"></script>
 </body>
 </html>

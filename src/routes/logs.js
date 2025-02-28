@@ -7,11 +7,14 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/', requireAuth, async (req, res) => {
     try {
         console.log('=== INICIANDO CONSULTA DE LOGS ===');
-        const { startDate, endDate } = req.query;
-        console.log('Parámetros recibidos:', { startDate, endDate, path: req.path });
+        const { startDate, endDate, tipo } = req.query;
+        console.log('Parámetros recibidos:', { startDate, endDate, tipo, path: req.path });
 
-        // Construir la consulta para UsuarioLog
-        let query = `
+        // Construir consultas para diferentes tipos de logs
+        let queries = [];
+        
+        // Consulta para UsuarioLog
+        let userLogQuery = `
             SELECT 
                 'Usuario' as TipoLog,
                 ul.FechaEvento,
@@ -22,30 +25,81 @@ router.get('/', requireAuth, async (req, res) => {
             FROM UsuarioLog ul
             LEFT JOIN Usuario u ON ul.IDUsuario = u.IDUsuario
         `;
-
+        
+        // Consulta para AreaLog
+        let areaLogQuery = `
+            SELECT 
+                'Area' as TipoLog,
+                al.FechaEvento,
+                u.Username,
+                al.TipoEvento,
+                CONCAT('Área: ', a.NombreArea, ', ', COALESCE(al.Detalles, 'N/A')) as Detalles,
+                1 as Estado
+            FROM AreaLog al
+            LEFT JOIN Usuario u ON al.IDUsuario = u.IDUsuario
+            LEFT JOIN AreaEspecializada a ON al.IDArea = a.IDArea
+        `;
+        
+        // Consulta para DocumentoLog
+        let docLogQuery = `
+            SELECT 
+                'Documento' as TipoLog,
+                dl.FechaEvento,
+                u.Username,
+                dl.TipoAccion as TipoEvento,
+                CONCAT('Doc: ', d.NumeroOficioDocumento, ', ', COALESCE(dl.DetallesAccion, 'N/A')) as Detalles,
+                1 as Estado
+            FROM DocumentoLog dl
+            LEFT JOIN Usuario u ON dl.IDUsuario = u.IDUsuario
+            LEFT JOIN Documento d ON dl.IDDocumento = d.IDDocumento
+        `;
+        
         // Agregar filtros de fecha si se proporcionan
         const whereConditions = [];
+        const queryParams = [];
+        
         if (startDate) {
-            whereConditions.push(`ul.FechaEvento >= '${startDate} 00:00:00'`);
+            whereConditions.push(`FechaEvento >= ?`);
+            queryParams.push(`${startDate} 00:00:00`);
         }
         if (endDate) {
-            whereConditions.push(`ul.FechaEvento <= '${endDate} 23:59:59'`);
+            whereConditions.push(`FechaEvento <= ?`);
+            queryParams.push(`${endDate} 23:59:59`);
         }
-
-        if (whereConditions.length > 0) {
-            query += ` WHERE ${whereConditions.join(' AND ')}`;
+        
+        const whereClause = whereConditions.length > 0 ? ` WHERE ${whereConditions.join(' AND ')}` : '';
+        
+        
+        // Agregar filtros según el tipo solicitado
+        if (!tipo || tipo === 'usuario') {
+            queries.push(userLogQuery + whereClause);
         }
-
-        // Agregar ordenamiento
-        query += ' ORDER BY ul.FechaEvento DESC';
-
-        console.log('Ejecutando consulta:', query);
-        const [logs] = await pool.query(query);
+        if (!tipo || tipo === 'area') {
+            queries.push(areaLogQuery + whereClause);
+        }
+        if (!tipo || tipo === 'documento') {
+            queries.push(docLogQuery + whereClause);
+        }
+        
+        // Combinar todas las consultas con UNION
+        const finalQuery = queries.join(' UNION ') + ' ORDER BY FechaEvento DESC';
+        
+        console.log('Ejecutando consulta:', finalQuery);
+        console.log('Parámetros:', queryParams);
+        
+        // Duplicar los parámetros por cada consulta en la unión
+        const allParams = [];
+        for (let i = 0; i < queries.length; i++) {
+            allParams.push(...queryParams);
+        }
+        
+        const [logs] = await pool.query(finalQuery, allParams);
         console.log('Resultados obtenidos:', {
             cantidad: logs.length,
-            primerLog: logs[0],
-            ultimoLog: logs[logs.length - 1]
+            primerLog: logs.length > 0 ? logs[0] : null,
+            ultimoLog: logs.length > 0 ? logs[logs.length - 1] : null
         });
+
 
         res.json(logs);
         console.log('=== CONSULTA DE LOGS COMPLETADA ===');
@@ -53,6 +107,20 @@ router.get('/', requireAuth, async (req, res) => {
         console.error('Error detallado al obtener logs:', error);
         console.error('Stack trace:', error.stack);
         res.status(500).json({ message: 'Error al obtener logs', error: error.message });
+    }
+});
+
+// Obtener logs por tipo específico
+router.get('/tipo/:tipo', requireAuth, async (req, res) => {
+    try {
+        const { tipo } = req.params;
+        const { startDate, endDate } = req.query;
+        
+        req.query.tipo = tipo;
+        return await router.handle(req, res);
+    } catch (error) {
+        console.error(`Error al obtener logs de tipo ${req.params.tipo}:`, error);
+        res.status(500).json({ message: `Error al obtener logs de tipo ${req.params.tipo}`, error: error.message });
     }
 });
 
