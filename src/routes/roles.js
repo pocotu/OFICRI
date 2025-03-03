@@ -76,6 +76,9 @@ router.post('/', requireAdmin, async (req, res) => {
     }
 });
 
+// Lista de roles del sistema que no pueden ser modificados
+const CORE_SYSTEM_ROLES = ['Administrador', 'Operador Mesa de Partes', 'Responsable de Área', 'Visualizador'];
+
 // Actualizar un rol existente (solo admin)
 router.put('/:id', requireAdmin, async (req, res) => {
     try {
@@ -85,6 +88,12 @@ router.put('/:id', requireAdmin, async (req, res) => {
         // Validar datos
         if (!nombreRol || !nivelAcceso) {
             return res.status(400).json({ message: 'Nombre y nivel de acceso son requeridos' });
+        }
+
+        // Verificar si es un rol del sistema
+        const [currentRole] = await pool.query('SELECT NombreRol FROM Rol WHERE IDRol = ?', [rolId]);
+        if (currentRole.length > 0 && CORE_SYSTEM_ROLES.includes(currentRole[0].NombreRol)) {
+            return res.status(403).json({ message: 'No se pueden modificar los roles básicos del sistema' });
         }
         
         await pool.query(`

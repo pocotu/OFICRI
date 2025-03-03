@@ -1,7 +1,6 @@
 // Importar módulos
 import { 
     loadUsers, 
-    renderUsers, 
     handleCreateUser, 
     handleEditUser, 
     deleteUser, 
@@ -9,15 +8,14 @@ import {
 } from './userManagement.js';
 
 import { 
-    loadAreas, 
-    renderAreas, 
-    updateAreaSelects, 
+    loadAreas,
+    updateAreaSelects,
     handleCreateArea 
 } from './areaManagement.js';
 
 import { 
-    setupLogControls, 
-    loadFilteredLogs, 
+    setupLogControls,
+    loadFilteredLogs,
     downloadLogs 
 } from './logManagement.js';
 
@@ -28,104 +26,118 @@ import {
 } from '../../utils/formatters.js';
 
 import { 
-    showError, 
-    setupNavigation, 
+    showError,
+    setupNavigation,
     setupModals 
 } from '../../common/uiHelpers.js';
 
 import { handleLogout } from '../../modules/session.js';
+import { initializeRoles } from './adminRoles.js';
+import { initializeActivityLogs } from './activityLogs.js';
 
-// Variables globales
-let editingUserId = null;
+let isInitialized = false;
 
-// Función para inicializar el dashboard
-export async function initializeAdmin() {
-    console.log('Iniciando inicialización del dashboard admin');
+// Función principal de inicialización
+export async function initializeDashboard() {
+    console.log('=== INICIO DE INICIALIZACIÓN DEL DASHBOARD ===');
     
-    // Esperar a que el DOM esté completamente cargado
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeAdminUI();
+    if (isInitialized) {
+        console.log('Dashboard ya inicializado, saltando inicialización');
+        return;
+    }
+
+    try {
+        // Esperar a que el DOM esté completamente cargado
+        if (document.readyState !== 'complete') {
+            console.log('Esperando a que el DOM se cargue completamente...');
+            await new Promise(resolve => {
+                window.addEventListener('load', resolve);
+            });
+        }
+
+        console.log('Configurando navegación...');
+        setupDashboardNavigation();
+        
+        console.log('Configurando event listeners...');
+        setupEventListeners();
+
+        // Cargar datos iniciales de la sección activa
+        const activeSection = document.querySelector('.section.active');
+        if (activeSection) {
+            console.log('Cargando datos de la sección activa:', activeSection.id);
+            await loadSectionData(activeSection.id);
+        } else {
+            console.log('No hay sección activa, cargando sección de usuarios por defecto');
+            const usersSection = document.getElementById('users-section');
+            if (usersSection) {
+                usersSection.classList.add('active');
+                await loadSectionData('users-section');
+            }
+        }
+
+        isInitialized = true;
+        console.log('=== FIN DE INICIALIZACIÓN DEL DASHBOARD ===');
+    } catch (error) {
+        console.error('Error en la inicialización del dashboard:', error);
+        showError('Error al inicializar el dashboard: ' + error.message);
+    }
+}
+
+// Configurar navegación del dashboard
+function setupDashboardNavigation() {
+    const navButtons = document.querySelectorAll('.nav-btn');
+    console.log('Botones de navegación encontrados:', navButtons.length);
+
+    navButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const targetId = button.dataset.target;
+            console.log('Click en botón de navegación:', targetId);
+
+            // Desactivar todos los botones y secciones
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+
+            // Activar el botón y sección seleccionados
+            button.classList.add('active');
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+                await loadSectionData(targetId);
+            }
         });
-    } else {
-        await initializeAdminUI();
-    }
-}
-
-async function initializeAdminUI() {
-    try {
-        console.log('Inicializando UI del dashboard...');
-        
-        // Configurar UI primero
-        setupUI();
-        
-        // Luego cargar datos
-        await loadInitialData();
-        
-    } catch (error) {
-        console.error('Error en la inicialización:', error);
-        showError('Error al inicializar el dashboard');
-    }
-}
-
-async function loadInitialData() {
-    try {
-        console.log('Cargando datos iniciales...');
-        
-        // Cargar áreas primero
-        const areas = await loadAreas();
-        console.log('Áreas cargadas inicialmente:', areas);
-        
-        // Actualizar los selectores de área después de que el DOM esté listo
-        updateAreaSelects(areas);
-        
-        // Cargar usuarios después
-        await loadUsers();
-        console.log('Datos iniciales cargados completamente');
-        
-    } catch (error) {
-        console.error('Error al cargar datos iniciales:', error);
-    }
-}
-
-// Configurar UI
-function setupUI() {
-    console.log('Configurando UI...');
-    setupNavigation();
-    setupModals();
-    setupForms();
-    setupLogControls();
-    setupEventListeners();
-    setupLogoutButton();
-}
-
-// Configurar formularios
-function setupForms() {
-    console.log('Configurando formularios...');
-    
-    const createUserForm = document.getElementById('createUserForm');
-    const editUserForm = document.getElementById('editUserForm');
-    const createAreaForm = document.getElementById('createAreaForm');
-
-    console.log('Formularios encontrados:', {
-        createUser: !!createUserForm,
-        editUser: !!editUserForm,
-        createArea: !!createAreaForm
     });
+}
 
-    if (createUserForm) {
-        createUserForm.addEventListener('submit', handleCreateUser);
-        console.log('Event listener agregado a createUserForm');
-    }
-
-    if (editUserForm) {
-        editUserForm.addEventListener('submit', handleEditUser);
-        console.log('Event listener agregado a editUserForm');
-    }
-
-    if (createAreaForm) {
-        createAreaForm.addEventListener('submit', handleCreateArea);
-        console.log('Event listener agregado a createAreaForm');
+// Función para cargar datos según la sección
+async function loadSectionData(sectionId) {
+    console.log('=== INICIO DE CARGA DE DATOS PARA SECCIÓN ===', sectionId);
+    
+    try {
+        switch (sectionId) {
+            case 'users-section':
+                console.log('Iniciando carga de usuarios...');
+                await loadUsers();
+                break;
+            case 'roles-section':
+                console.log('Iniciando carga de roles...');
+                await initializeRoles();
+                break;
+            case 'areas-section':
+                console.log('Iniciando carga de áreas...');
+                await loadAreas();
+                break;
+            case 'logs-section':
+                console.log('Iniciando carga de logs...');
+                await initializeActivityLogs();
+                break;
+            default:
+                console.warn('Sección no reconocida:', sectionId);
+        }
+        
+        console.log('=== FIN DE CARGA DE DATOS PARA SECCIÓN ===', sectionId);
+    } catch (error) {
+        console.error('Error al cargar datos de la sección:', error);
+        showError('Error al cargar los datos: ' + error.message);
     }
 }
 
@@ -133,107 +145,62 @@ function setupForms() {
 function setupEventListeners() {
     console.log('Configurando event listeners...');
     
-    // Botones para mostrar modales
+    // Botón de agregar usuario
     const addUserBtn = document.getElementById('addUserButton');
-    const addAreaBtn = document.getElementById('addAreaButton');
-
-    console.log('Botones encontrados:', {
-        addUser: !!addUserBtn,
-        addArea: !!addAreaBtn
-    });
-
     if (addUserBtn) {
-        addUserBtn.addEventListener('click', () => {
-            console.log('Botón agregar usuario clickeado');
+        addUserBtn.addEventListener('click', async () => {
+            console.log('Click en botón agregar usuario');
             const modal = document.getElementById('userModal');
             if (modal) {
-                // Limpiar el formulario
-                const form = document.getElementById('createUserForm');
-                if (form) {
-                    form.reset();
-                    console.log('Formulario de usuario reseteado');
-                }
-                
-                // Actualizar título del modal
-                const title = modal.querySelector('.modal-title');
-                if (title) title.textContent = 'Agregar Nuevo Usuario';
-                
-                // Mostrar el modal
-                modal.style.display = 'block';
-                console.log('Modal de usuario mostrado');
-                
-                // Actualizar los selectores de área
-                loadAreas().then(areas => {
-                    if (areas && areas.length > 0) {
-                        updateAreaSelects(areas);
+                try {
+                    const form = document.getElementById('createUserForm');
+                    if (form) {
+                        form.reset();
+                        console.log('Formulario reseteado');
                     }
-                });
-            } else {
-                console.error('No se encontró el modal de usuario');
+
+                    // Cargar áreas antes de mostrar el modal
+                    const areas = await loadAreas();
+                    if (areas && areas.length > 0) {
+                        await updateAreaSelects(areas);
+                    }
+
+                    const modalInstance = new bootstrap.Modal(modal);
+                    modalInstance.show();
+                } catch (error) {
+                    console.error('Error al preparar el modal:', error);
+                    showError('Error al preparar el formulario: ' + error.message);
+                }
             }
         });
-        console.log('Event listener agregado a addUserBtn');
     }
 
-    if (addAreaBtn) {
-        addAreaBtn.addEventListener('click', () => {
-            console.log('Botón agregar área clickeado');
-            const modal = document.getElementById('areaModal');
-            if (modal) {
-                // Limpiar el formulario
-                const form = document.getElementById('createAreaForm');
-                if (form) form.reset();
-                
-                // Actualizar título del modal
-                const title = modal.querySelector('.modal-title');
-                if (title) title.textContent = 'Agregar Nueva Área';
-                
-                // Mostrar el modal
-                modal.style.display = 'block';
-                console.log('Modal de área mostrado');
-            } else {
-                console.error('No se encontró el modal de área');
-            }
-        });
-        console.log('Event listener agregado a addAreaBtn');
+    // Formularios
+    const createUserForm = document.getElementById('createUserForm');
+    const editUserForm = document.getElementById('editUserForm');
+
+    if (createUserForm) {
+        createUserForm.addEventListener('submit', handleCreateUser);
     }
 
-    // Botones para cerrar modales
-    document.querySelectorAll('.close-modal').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = button.closest('.modal');
-            if (modal) {
-                modal.style.display = 'none';
-                // Limpiar el formulario
-                const form = modal.querySelector('form');
-                if (form) form.reset();
-            }
-        });
-    });
-    console.log('Event listeners agregados a botones de cierre');
-}
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', handleEditUser);
+    }
 
-// Configurar botón de cierre de sesión
-function setupLogoutButton() {
+    // Botón de cerrar sesión
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', handleLogout);
-        console.log('Event listener agregado al botón de cierre de sesión');
-    } else {
-        console.error('No se encontró el botón de cierre de sesión');
     }
 }
 
-// Exportar funciones necesarias para el HTML
+// Inicializar el dashboard cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', initializeDashboard);
+
+// Exportar funciones necesarias
 window.prepareUserEdit = prepareUserEdit;
 window.deleteUser = deleteUser;
 window.downloadLogs = downloadLogs;
 window.handleCreateUser = handleCreateUser;
 window.handleEditUser = handleEditUser;
 window.handleCreateArea = handleCreateArea;
-
-// Exportar variables necesarias
-window.editingUserId = editingUserId;
-
-// Exportar la función de inicialización
-export default initializeAdmin;

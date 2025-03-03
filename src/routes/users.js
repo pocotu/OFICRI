@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
+const geoip = require('geoip-lite');
 
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
@@ -80,66 +81,152 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     const connection = await db.getConnection();
     try {
+        console.log('=== INICIO DE CREACIÓN DE USUARIO ===');
         await connection.beginTransaction();
+        console.log('Transacción iniciada');
 
         const { username, password, idArea, nivelAcceso } = req.body;
 
-        console.log('Datos recibidos para crear usuario:', req.body);
+        console.log('Datos recibidos para crear usuario:', {
+            username,
+            passwordLength: password?.length,
+            idArea,
+            nivelAcceso,
+            tipoNivelAcceso: typeof nivelAcceso
+        });
 
         // Validar datos requeridos
-        if (!username || !password || !idArea || !nivelAcceso) {
+        if (!username || !password || !idArea || nivelAcceso === undefined) {
             console.log('Error: Todos los campos son requeridos');
             await connection.rollback();
             return res.status(400).json({ message: 'Todos los campos son requeridos' });
         }
 
+        console.log('Validación de campos requeridos completada');
+
         // Verificar si el usuario ya existe
+        console.log('Verificando si el usuario existe...');
         const [existingUsers] = await connection.query(
             'SELECT IDUsuario FROM Usuario WHERE Username = ?',
             [username]
         );
+        console.log('Resultado de búsqueda de usuario existente:', existingUsers);
 
         if (existingUsers.length > 0) {
+            console.log('Error: Usuario ya existe');
             await connection.rollback();
             return res.status(400).json({ message: 'El nombre de usuario ya existe' });
         }
 
+        console.log('Verificación de usuario existente completada');
+
         // Hash de la contraseña
+        console.log('Iniciando hash de contraseña...');
         const salt = await bcrypt.genSalt(10);
         const passwordWithSalt = password + salt;
         const hashedPassword = await bcrypt.hash(passwordWithSalt, 10);
+        console.log('Hash de contraseña completado');
 
-        // Definir un IDRol predeterminado (por ejemplo, 1 para Administrador)
-        const defaultRolId = 1; // Cambia esto si necesitas otro rol predeterminado
+        // Crear un rol basado en los permisos
+        console.log('Creando rol con los siguientes permisos:', {
+            nivelAcceso: 3,
+            puedeCrear: Boolean(nivelAcceso & 1),
+            puedeEditar: Boolean(nivelAcceso & 2),
+            puedeDerivar: Boolean(nivelAcceso & 4),
+            puedeAuditar: Boolean(nivelAcceso & 8)
+        });
+
+        const rolQuery = `
+            INSERT INTO Rol (
+                NombreRol,
+                Descripcion,
+                NivelAcceso,
+                PuedeCrear,
+                PuedeEditar,
+                PuedeDerivar,
+                PuedeAuditar
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const rolParams = [
+            `Rol_${username}`,
+            `Rol generado para ${username}`,
+            3, // Nivel de acceso estándar para usuarios normales
+            Number(Boolean(nivelAcceso & 1)), // Crear
+            Number(Boolean(nivelAcceso & 2)), // Editar
+            Number(Boolean(nivelAcceso & 4)), // Derivar
+            Number(Boolean(nivelAcceso & 8))  // Auditar
+        ];
+
+        console.log('Ejecutando query de creación de rol:', {
+            query: rolQuery,
+            params: rolParams,
+            valoresBooleanos: {
+                puedeCrear: Number(Boolean(nivelAcceso & 1)),
+                puedeEditar: Number(Boolean(nivelAcceso & 2)),
+                puedeDerivar: Number(Boolean(nivelAcceso & 4)),
+                puedeAuditar: Number(Boolean(nivelAcceso & 8))
+            }
+        });
+
+        const [rolResult] = await connection.query(rolQuery, rolParams);
+        console.log('Resultado de creación de rol:', rolResult);
+
+        const rolId = rolResult.insertId;
+        console.log('ID del rol creado:', rolId);
 
         // Insertar usuario
+        console.log('Insertando usuario con los siguientes datos:', {
+            username,
+            hashedPasswordLength: hashedPassword.length,
+            saltLength: salt.length,
+            idArea,
+            rolId
+        });
+
         const [result] = await connection.query(
             'INSERT INTO Usuario (Username, PasswordHash, Salt, IDArea, IDRol) VALUES (?, ?, ?, ?, ?)',
-            [username, hashedPassword, salt, idArea, defaultRolId]
+            [username, hashedPassword, salt, idArea, rolId]
         );
 
-        // Obtener el ID del nuevo usuario
-        const newUserId = result.insertId;
-
-        // Insertar niveles de acceso en la tabla UsuarioNivelAcceso
-        const nivelAccesoInsertQuery = 'INSERT INTO UsuarioNivelAcceso (IDUsuario, NivelAcceso) VALUES (?, ?)';
-        for (const nivel of nivelAcceso) {
-            await connection.query(nivelAccesoInsertQuery, [newUserId, nivel]);
-        }
+        console.log('Usuario insertado:', result);
 
         // Obtener información del dispositivo y IP
         const ipAddress = req.ip || '127.0.0.1';
         const userAgent = req.get('User-Agent') || 'Unknown Device';
 
         // Registrar en el log
+        console.log('Registrando en el log...');
+        await connection.query(
+            `INSERT INTO UsuarioLog (
+                IDUsuario,
+                TipoEvento,
+                IPOrigen,
+                DispositivoInfo,
+                FechaEvento,
+                Exitoso
+            ) VALUES (?, ?, ?, ?, NOW(), ?)`,
+            [result.insertId, 'CREACION_USUARIO', ipAddress, userAgent, 1]
+        );
+        console.log('Log registrado');
+
         await connection.commit();
+        console.log('=== CREACIÓN DE USUARIO COMPLETADA EXITOSAMENTE ===');
         res.status(201).json({ message: 'Usuario creado exitosamente' });
     } catch (error) {
-        console.error('Error al crear usuario:', error);
+        console.error('=== ERROR DETALLADO AL CREAR USUARIO ===');
+        console.error('Error completo:', error);
+        console.error('Mensaje de error:', error.message);
+        console.error('Stack trace:', error.stack);
+        if (error.sql) {
+            console.error('Query SQL que falló:', error.sql);
+        }
         await connection.rollback();
+        console.log('Transacción revertida debido al error');
         res.status(500).json({ message: 'Error al crear usuario', error: error.message });
     } finally {
         connection.release();
+        console.log('Conexión liberada');
     }
 });
 
@@ -152,15 +239,29 @@ router.put('/:id', async (req, res) => {
         const userId = req.params.id;
         const { username, idArea, nivelAcceso } = req.body;
 
+        console.log('=== INICIO DE ACTUALIZACIÓN DE USUARIO ===');
+        console.log('Datos recibidos:', { userId, username, idArea, nivelAcceso });
+
+        // Verificar si es el usuario admin
+        const [adminCheck] = await connection.query(
+            'SELECT Username FROM Usuario WHERE IDUsuario = ?',
+            [userId]
+        );
+
+        if (adminCheck.length > 0 && adminCheck[0].Username === 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ message: 'No se puede modificar el usuario administrador principal' });
+        }
+
         // Validar datos requeridos
-        if (!username || !idArea || !nivelAcceso) {
+        if (!username || !idArea || nivelAcceso === undefined) {
             await connection.rollback();
             return res.status(400).json({ message: 'Todos los campos son requeridos' });
         }
 
-        // Verificar si el usuario existe
+        // Verificar si el usuario existe y obtener su rol actual
         const [users] = await connection.query(
-            'SELECT IDUsuario FROM Usuario WHERE IDUsuario = ? AND Bloqueado = 0',
+            'SELECT u.IDUsuario, u.IDRol, r.NombreRol FROM Usuario u LEFT JOIN Rol r ON u.IDRol = r.IDRol WHERE u.IDUsuario = ? AND u.Bloqueado = 0',
             [userId]
         );
 
@@ -168,6 +269,8 @@ router.put('/:id', async (req, res) => {
             await connection.rollback();
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
+
+        const currentRolId = users[0].IDRol;
 
         // Verificar si el nuevo username ya existe (si se está cambiando)
         const [existingUsers] = await connection.query(
@@ -180,14 +283,37 @@ router.put('/:id', async (req, res) => {
             return res.status(400).json({ message: 'El nombre de usuario ya existe' });
         }
 
+        // Actualizar el rol existente en lugar de crear uno nuevo
+        console.log('Actualizando rol existente con ID:', currentRolId);
+        await connection.query(`
+            UPDATE Rol 
+            SET NombreRol = ?,
+                Descripcion = ?,
+                NivelAcceso = ?,
+                PuedeCrear = ?,
+                PuedeEditar = ?,
+                PuedeDerivar = ?,
+                PuedeAuditar = ?
+            WHERE IDRol = ?
+        `, [
+            `Rol_${username}_${Date.now()}`,
+            `Rol actualizado para ${username}`,
+            3, // Nivel de acceso estándar
+            Number(Boolean(nivelAcceso & 1)), // Crear
+            Number(Boolean(nivelAcceso & 2)), // Editar
+            Number(Boolean(nivelAcceso & 4)), // Derivar
+            Number(Boolean(nivelAcceso & 8)), // Auditar
+            currentRolId
+        ]);
+
         // Actualizar usuario
+        console.log('Actualizando usuario...');
         await connection.query(
             `UPDATE Usuario 
              SET Username = ?,
-                 IDArea = ?,
-                 IDRol = ?
+                 IDArea = ?
              WHERE IDUsuario = ?`,
-            [username, idArea, nivelAcceso, userId]
+            [username, idArea, userId]
         );
 
         // Obtener información del dispositivo y IP
@@ -204,20 +330,16 @@ router.put('/:id', async (req, res) => {
                 FechaEvento,
                 Exitoso
             ) VALUES (?, ?, ?, ?, NOW(), ?)`,
-            [
-                userId,
-                'ACTUALIZACION_USUARIO',
-                ipAddress,
-                userAgent,
-                1
-            ]
+            [userId, 'ACTUALIZACION_USUARIO', ipAddress, userAgent, 1]
         );
 
         await connection.commit();
+        console.log('=== FIN DE ACTUALIZACIÓN DE USUARIO ===');
         res.json({ message: 'Usuario actualizado exitosamente' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error al actualizar usuario:', error);
+        console.error('Error detallado al actualizar usuario:', error);
+        console.error('Stack trace:', error.stack);
         res.status(500).json({ 
             message: 'Error al actualizar usuario',
             error: error.message 
@@ -235,6 +357,17 @@ router.delete('/:id', async (req, res) => {
         
         const userId = req.params.id;
         const { adminUsername, adminPassword, permanentDelete } = req.body;
+
+        // Verificar si es el usuario admin
+        const [userCheck] = await connection.query(
+            'SELECT Username FROM Usuario WHERE IDUsuario = ?',
+            [userId]
+        );
+
+        if (userCheck.length > 0 && userCheck[0].Username === 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ message: 'No se puede eliminar el usuario administrador principal' });
+        }
 
         console.log('=== INICIO DE PROCESO DE ELIMINACIÓN DE USUARIO ===');
         console.log('Datos de la solicitud:', {
@@ -472,14 +605,45 @@ router.get('/logs/all', async (req, res) => {
             ORDER BY l.FechaEvento DESC
         `);
 
-        // Formatear los logs para la interfaz
-        const formattedLogs = logs.map(log => ({
-            Fecha: log.FechaEvento,
-            UsuarioAfectado: log.UsuarioAfectado,
-            Accion: log.TipoEvento,
-            Detalles: `IP: ${log.IPOrigen || 'N/A'}, Dispositivo: ${log.DispositivoInfo || 'N/A'}`,
-            Estado: log.Exitoso ? 'Exitoso' : 'Fallido'
-        }));
+        // Formatear los logs para la interfaz y agregar información geográfica
+        const formattedLogs = logs.map(log => {
+            const ip = log.IPOrigen;
+            let geoData = { error: 'No disponible' };
+            
+            // Solo procesar IPs válidas y no locales
+            if (ip && !ip.startsWith('::1') && !ip.startsWith('127.0.0.1') && ip !== 'localhost') {
+                // Limpiar la IP si viene en formato IPv6
+                const cleanIp = ip.startsWith('::ffff:') ? ip.substring(7) : ip;
+                const geo = geoip.lookup(cleanIp);
+                if (geo) {
+                    geoData = {
+                        city: geo.city || 'No disponible',
+                        country: geo.country || 'No disponible',
+                        region: geo.region || 'No disponible',
+                        timezone: geo.timezone || 'No disponible',
+                        ll: geo.ll || [0, 0], // [latitude, longitude]
+                    };
+                }
+            } else {
+                geoData = {
+                    city: 'Red Local',
+                    country: 'Local',
+                    region: 'Local',
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    ll: [0, 0]
+                };
+            }
+
+            return {
+                Fecha: log.FechaEvento,
+                UsuarioAfectado: log.UsuarioAfectado || 'Sistema',
+                Accion: log.TipoEvento,
+                IP: log.IPOrigen || 'N/A',
+                Dispositivo: log.DispositivoInfo || 'N/A',
+                Estado: log.Exitoso ? 'Exitoso' : 'Fallido',
+                GeoData: geoData
+            };
+        });
 
         res.json(formattedLogs);
     } catch (error) {

@@ -65,10 +65,14 @@ body {
 
 /* Sidebar */
 .sidebar {
+    position: relative;
     width: 250px;
-    background-color: white;
-    padding: 1rem;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    height: calc(100vh - 60px);
+    background-color: #fff;
+    padding: 20px 0;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .nav-btn {
@@ -401,17 +405,66 @@ tr:hover {
     display: flex;
     align-items: center;
     gap: 1rem;
+    padding: 0.5rem 1rem;
 }
 
-/* Logout Button */
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: right;
+}
+
+.user-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.user-main #username {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.user-role {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
+.user-secondary {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+.user-area {
+    color: #555;
+}
+
+.last-login {
+    font-size: 0.75rem;
+    color: #888;
+}
+
 #logout-btn {
-    padding: 0.5rem 1rem;
-    background-color: transparent;
-    border: 1px solid white;
+    background-color: #dc3545;
     color: white;
-    cursor: pointer;
+    border: none;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
-    font-family: 'Glegoo', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s;
+}
+
+#logout-btn:hover {
+    background-color: #c82333;
 }
 
 /* Action Cell */
@@ -619,4 +672,216 @@ input:checked + .slider {
 
 input:checked + .slider:before {
     transform: translateX(18px);
+}
+
+/* Sidebar User Info */
+.sidebar-user-info {
+    padding: 15px;
+    text-align: center;
+    margin-bottom: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-avatar {
+    margin-bottom: 1rem;
+}
+
+.user-avatar i {
+    font-size: 3rem;
+    color: var(--primary-color);
+}
+
+.sidebar .user-details {
+    margin-bottom: 1rem;
+}
+
+.sidebar .user-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar #username {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.sidebar .user-role {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    font-style: italic;
+}
+
+.sidebar .user-secondary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: 1rem;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 1rem 0;
+    width: 100%;
+}
+
+/* Estilos para los botones de navegación dentro del contenedor */
+.sidebar-user-info .nav-btn {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-user-info .nav-btn:hover {
+    background-color: rgba(0, 116, 53, 0.1);
+    color: var(--primary-color);
+}
+
+.sidebar-user-info .nav-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.sidebar-user-info .nav-btn i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* Estilos para el botón de cerrar sesión */
+.sidebar-footer {
+    margin-top: auto;
+    padding: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+#logout-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+#logout-btn:hover {
+    background-color: #c82333;
+}
+
+#logout-btn i {
+    font-size: 18px;
+}
+
+/* Estilos para los privilegios */
+.privileges-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+.privilege-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.privilege-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.privilege-label i {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+/* Switch personalizado para privilegios */
+.privilege-item .switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    margin: 0;
+}
+
+.privilege-item .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.privilege-item .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 22px;
+}
+
+.privilege-item .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.privilege-item input:checked + .slider {
+    background-color: var(--success-color);
+}
+
+.privilege-item input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+/* Responsive para privilegios */
+@media (max-width: 576px) {
+    .privileges-container {
+        grid-template-columns: 1fr;
+    }
 }

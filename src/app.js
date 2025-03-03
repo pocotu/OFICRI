@@ -34,7 +34,7 @@ app.use('/index.html', express.static(path.join(__dirname, '..', 'index.html')))
 app.use('/src/styles', express.static(path.join(__dirname, 'styles')));
 app.use('/src/images', express.static(path.join(__dirname, 'images')));
 app.use('/src/js/frontendAuth.js', express.static(path.join(__dirname, 'js', 'clientAuth.js')));
-app.use('/src/js/auth.js', express.static(path.join(__dirname, 'js', 'clientAuth.js'))); // Mantener compatibilidad con código existente
+app.use('/src/js/auth.js', express.static(path.join(__dirname, 'js', 'clientAuth.js'))); 
 app.use('/src/js/clientAuth.js', express.static(path.join(__dirname, 'js', 'clientAuth.js')));
 app.use('/src/js/login.js', express.static(path.join(__dirname, 'js', 'login.js')));
 
@@ -100,11 +100,11 @@ async function createBasicAreasAndRoles() {
             console.log('Verificando y creando áreas básicas...');
             
             const areas = [
-                { nombre: 'Administración', codigo: 'ADMIN-001', tipo: 'ADMINISTRACION' },
-                { nombre: 'Mesa de Partes', codigo: 'MDP-001', tipo: 'RECEPCION' },
-                { nombre: 'Forense Digital', codigo: 'FD-001', tipo: 'ESPECIALIZADA' },
-                { nombre: 'Dosaje Etílico', codigo: 'DE-001', tipo: 'ESPECIALIZADA' },
-                { nombre: 'Química y Toxicología Forense', codigo: 'QTF-001', tipo: 'ESPECIALIZADA' }
+                { nombre: 'Administración', codigo: 'AD', tipo: 'ADMINISTRACION' },
+                { nombre: 'Mesa de Partes', codigo: 'MP', tipo: 'RECEPCION' },
+                { nombre: 'Forense Digital', codigo: 'FD', tipo: 'ESPECIALIZADA' },
+                { nombre: 'Dosaje Etílico', codigo: 'DE', tipo: 'ESPECIALIZADA' },
+                { nombre: 'Química y Toxicología Forense', codigo: 'QT', tipo: 'ESPECIALIZADA' }
             ];
             
             for (const area of areas) {

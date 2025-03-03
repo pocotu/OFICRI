@@ -8,68 +8,89 @@ let editingUserId = null;
 // Gestión de usuarios
 export async function loadUsers() {
     try {
-        const response = await fetch('/api/users');
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Error al cargar usuarios: ${response.status} - ${errorText}`);
+        console.log('=== INICIO DE CARGA DE USUARIOS ===');
+        
+        // Buscar la tabla existente
+        const table = document.querySelector('#gestionUsuariosTable');
+        if (!table) {
+            console.error('No se encontró la tabla de usuarios');
+            throw new Error('No se encontró la tabla de usuarios (#gestionUsuariosTable)');
         }
+
+        let tableBody = table.querySelector('tbody');
+        if (!tableBody) {
+            console.log('Creando tbody para la tabla de usuarios');
+            tableBody = document.createElement('tbody');
+            table.appendChild(tableBody);
+        }
+
+        console.log('Realizando petición a /api/users...');
+        const response = await fetch('/api/users');
+        
+        if (!response.ok) {
+            throw new Error(`Error al cargar usuarios: ${response.status} ${response.statusText}`);
+        }
+
         const users = await response.json();
-        renderUsers(users);
+        console.log(`Se obtuvieron ${users.length} usuarios`);
+
+        // Limpiar tabla existente
+        tableBody.innerHTML = '';
+        
+        // Procesar usuarios
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.Username || ''}</td>
+                <td>${user.NombreArea || 'No asignada'}</td>
+                <td>${getNivelAccesoText(user.NivelAcceso)}</td>
+                <td class="text-center">
+                    ${user.Username !== 'admin' ? `
+                        <button class="btn btn-success btn-sm edit-user" data-userid="${user.IDUsuario}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm delete-user ms-2" data-userid="${user.IDUsuario}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : '<span class="text-muted">No editable</span>'}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Configurar event listeners para los botones
+        configureUserButtons();
+        
+        console.log('=== FIN DE CARGA DE USUARIOS ===');
     } catch (error) {
-        console.error('Error al cargar usuarios:', error);
-        showError('Error al cargar la lista de usuarios');
+        console.error('Error en loadUsers:', error);
+        showError('Error al cargar la lista de usuarios: ' + error.message);
     }
 }
 
-export function renderUsers(users) {
-    const tbody = document.querySelector('#gestionUsuariosTable tbody');
-    if (!tbody) {
-        console.error('No se encontró la tabla de usuarios');
-        return;
-    }
-
-    tbody.innerHTML = '';
-    users.forEach(user => {
-        const tr = document.createElement('tr');
-        // Añadir clase para resaltar usuarios de áreas inactivas
-        if (user.AreaActiva === 0) {
-            tr.classList.add('area-inactiva');
-        }
-        
-        tr.innerHTML = `
-            <td>${user.Username || ''}</td>
-            <td>
-                ${user.NombreArea || ''}
-                ${user.AreaActiva === 0 ? '<span class="badge badge-warning">Área Inactiva</span>' : ''}
-            </td>
-            <td>${getNivelAccesoText(user.NivelAcceso) || ''}</td>
-            <td>
-                <button class="action-btn edit" data-user-id="${user.IDUsuario}">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn delete" data-user-id="${user.IDUsuario}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-    // Agregar event listeners
-    tbody.querySelectorAll('.action-btn.edit').forEach(btn => {
-        btn.removeEventListener('click', handleEditClick); // Remover listener existente si hay
-        btn.addEventListener('click', handleEditClick);
+// Función para configurar los event listeners de los botones
+function configureUserButtons() {
+    document.querySelectorAll('.edit-user').forEach(button => {
+        button.addEventListener('click', handleEditClick);
     });
 
-    tbody.querySelectorAll('.action-btn.delete').forEach(btn => {
-        btn.removeEventListener('click', handleDeleteClick); // Remover listener existente si hay
-        btn.addEventListener('click', handleDeleteClick);
+    document.querySelectorAll('.delete-user').forEach(button => {
+        button.addEventListener('click', handleDeleteClick);
     });
 }
 
 // Manejadores de eventos separados
 function handleEditClick(e) {
-    const userId = e.currentTarget.dataset.userId;
-    if (userId) prepareUserEdit(userId);
+    console.log('=== INICIO DE EDICIÓN DE USUARIO ===');
+    const userId = e.currentTarget.dataset.userid;
+    console.log('Click en editar usuario con ID:', userId);
+    console.log('Dataset completo del botón:', e.currentTarget.dataset);
+    if (userId) {
+        console.log('Procediendo a preparar edición para usuario ID:', userId);
+        prepareUserEdit(userId);
+    } else {
+        console.error('Error: No se encontró el ID del usuario en el botón');
+    }
 }
 
 function handleDeleteClick(e) {
@@ -82,91 +103,147 @@ export async function handleCreateUser(e) {
     e.preventDefault();
     const form = e.target;
 
-    const usernameElement = form.querySelector('#username');
-    const passwordElement = form.querySelector('#password');
-    const areaElement = form.querySelector('#area');
-    const nivelAccesoElements = form.querySelectorAll('input[type="checkbox"]:checked');
-    const nivelAcceso = Array.from(nivelAccesoElements).map(el => el.value);
-
-    console.log('Elementos del formulario:', {
-        usernameElement,
-        passwordElement,
-        areaElement,
-        nivelAccesoElements,
-        nivelAcceso
-    });
-
-    if (!usernameElement || !passwordElement || !areaElement || !nivelAccesoElements.length) {
-        console.error('Uno o más elementos del formulario no se encontraron');
-        return;
-    }
-
-    const username = usernameElement.value;
-    const password = passwordElement.value;
-    const area = areaElement.value;
-
-    console.log('Username:', username);
-    console.log('Password:', password);
-    console.log('Area:', area);
-    console.log('Nivel de Acceso:', nivelAcceso);
-
-    console.log('Datos del formulario:', {
-        username,
-        passwordLength: password?.length,
-        area,
-        nivelAcceso
-    });
-
+    // Cargar áreas antes de procesar el formulario
     try {
-        const response = await fetch('/api/users', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username,
-                password,
-                idArea: area,
-                nivelAcceso
-            })
+        console.log('Cargando áreas para el formulario...');
+        const areas = await loadAreas();
+        console.log('Áreas cargadas:', areas);
+        
+        // Actualizar el selector de áreas
+        const areaSelect = form.querySelector('#area');
+        if (areaSelect) {
+            console.log('Actualizando selector de áreas...');
+            await updateAreaSelects(areas);
+        }
+
+        const username = form.querySelector('#username').value;
+        const password = form.querySelector('#password').value;
+        const area = form.querySelector('#area').value;
+        
+        // Obtener los privilegios seleccionados
+        const privilegios = {
+            crear: form.querySelector('#priv-crear').checked,
+            editar: form.querySelector('#priv-editar').checked,
+            derivar: form.querySelector('#priv-eliminar').checked,
+            auditar: form.querySelector('#priv-ver').checked
+        };
+
+        // Calcular el nivel de acceso basado en los privilegios
+        let nivelAccesoNumerico = 0;
+        if (privilegios.crear) nivelAccesoNumerico |= 1;  // Crear
+        if (privilegios.editar) nivelAccesoNumerico |= 2; // Editar
+        if (privilegios.derivar) nivelAccesoNumerico |= 4; // Derivar
+        if (privilegios.auditar) nivelAccesoNumerico |= 8; // Auditar
+
+        console.log('Datos del formulario:', {
+            username,
+            area,
+            nivelAcceso: nivelAccesoNumerico,
+            privilegios
         });
 
-        console.log('Respuesta del servidor:', response.status);
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al crear usuario');
+        if (!username || !password || !area || !nivelAccesoNumerico) {
+            showError('Por favor complete todos los campos requeridos');
+            return;
         }
 
-        // Recargar la lista de usuarios
-        await loadUsers();
-        
-        // Cerrar el modal
-        const modal = document.querySelector('#userModal');
-        if (modal) {
-            modal.style.display = 'none';
-            console.log('Modal cerrado');
+        // Validación de contraseña
+        if (password.length < 6) {
+            showError('La contraseña debe tener al menos 6 caracteres');
+            return;
         }
-        
-        // Limpiar el formulario
-        form.reset();
-        console.log('Formulario reseteado');
+
+        console.log('Username:', username);
+        console.log('Password length:', password.length);
+        console.log('Area:', area);
+        console.log('Nivel de Acceso Numérico:', nivelAccesoNumerico);
+
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    idArea: parseInt(area),
+                    nivelAcceso: nivelAccesoNumerico
+                })
+            });
+
+            console.log('Respuesta del servidor:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al crear usuario');
+            }
+
+            // Recargar la lista de usuarios
+            await loadUsers();
+            
+            // Cerrar el modal
+            const modal = document.querySelector('#userModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('Modal cerrado');
+            }
+            
+            // Limpiar el formulario
+            form.reset();
+            console.log('Formulario reseteado');
+        } catch (error) {
+            console.error('Error en handleCreateUser:', error);
+            showError(error.message || 'Error al crear el usuario');
+        }
     } catch (error) {
         console.error('Error en handleCreateUser:', error);
-        showError(error.message || 'Error al crear el usuario');
+        showError('Error al crear el usuario: ' + error.message);
     }
 }
 
 export async function handleEditUser(e) {
+    console.log('=== INICIO DE ACTUALIZACIÓN DE USUARIO ===');
     e.preventDefault();
-    if (!editingUserId) return;
+    
+    console.log('ID del usuario en edición:', editingUserId);
+    if (!editingUserId) {
+        console.error('Error: No hay ID de usuario para editar');
+        return;
+    }
 
     const form = e.target;
+    console.log('Formulario encontrado:', form);
+
     const username = form.querySelector('#edit-username').value;
     const area = form.querySelector('#edit-area').value;
-    const nivelAcceso = form.querySelector('#edit-nivel-acceso').value;
+    const nivelAccesoElements = form.querySelectorAll('input[name="edit-privileges"]:checked');
+    
+    console.log('Datos del formulario:', {
+        username,
+        area,
+        privilegiosSeleccionados: Array.from(nivelAccesoElements).map(el => el.value)
+    });
+
+    // Convertir los privilegios en un nivel de acceso numérico
+    let nivelAccesoNumerico = 0;
+    nivelAccesoElements.forEach(el => {
+        if (el.value === 'crear') nivelAccesoNumerico |= 1;
+        if (el.value === 'editar') nivelAccesoNumerico |= 2;
+        if (el.value === 'eliminar') nivelAccesoNumerico |= 4;
+        if (el.value === 'ver') nivelAccesoNumerico |= 8;
+    });
+
+    console.log('Nivel de acceso numérico calculado:', nivelAccesoNumerico);
 
     try {
+        console.log('Enviando solicitud PUT a:', `/api/users/${editingUserId}`);
+        console.log('Datos a enviar:', {
+            username,
+            idArea: parseInt(area),
+            nivelAcceso: nivelAccesoNumerico
+        });
+
         const response = await fetch(`/api/users/${editingUserId}`, {
             method: 'PUT',
             headers: {
@@ -174,27 +251,42 @@ export async function handleEditUser(e) {
             },
             body: JSON.stringify({
                 username,
-                idArea: area,
-                nivelAcceso
+                idArea: parseInt(area),
+                nivelAcceso: nivelAccesoNumerico
             })
         });
 
-        if (!response.ok) {
+        console.log('Respuesta del servidor:', {
+            status: response.status,
+            statusText: response.statusText
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Respuesta exitosa:', result);
+
+            // Cerrar el modal
+            const modal = document.querySelector('#editUserModal');
+            if (modal) {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                modalInstance.hide();
+                console.log('Modal cerrado exitosamente');
+            }
+
+            // Recargar la tabla de usuarios
+            await loadUsers();
+            console.log('Tabla de usuarios recargada');
+
+            // Limpiar el ID del usuario en edición
+            editingUserId = null;
+        } else {
             const errorData = await response.json();
+            console.error('Error del servidor:', errorData);
             throw new Error(errorData.message || 'Error al actualizar usuario');
         }
-
-        // Recargar la lista de usuarios
-        await loadUsers();
-        
-        // Cerrar el modal
-        const modal = document.querySelector('#editUserModal');
-        if (modal) modal.style.display = 'none';
-        
-        // Resetear el ID de edición
-        editingUserId = null;
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error detallado en handleEditUser:', error);
+        console.error('Stack trace:', error.stack);
         showError(error.message || 'Error al actualizar el usuario');
     }
 }
@@ -358,26 +450,34 @@ function showAdminPasswordModal() {
 }
 
 export async function prepareUserEdit(userId) {
-    console.log('Iniciando prepareUserEdit para usuario:', userId);
+    console.log('=== INICIO DE PREPARACIÓN DE EDICIÓN ===');
+    console.log('Preparando edición para usuario ID:', userId);
     try {
         // Primero cargar las áreas
         console.log('Cargando áreas...');
         const areasResponse = await fetch('/api/areas');
         console.log('Respuesta de áreas:', areasResponse.status);
         
-        if (!areasResponse.ok) throw new Error('Error al cargar áreas');
+        if (!areasResponse.ok) {
+            console.error('Error al cargar áreas:', await areasResponse.text());
+            throw new Error('Error al cargar áreas');
+        }
         
         const areas = await areasResponse.json();
         console.log('Áreas obtenidas:', areas);
 
         // Luego cargar los datos del usuario
+        console.log('Cargando datos del usuario...');
         const userResponse = await fetch(`/api/users/${userId}`);
-        console.log('Respuesta de /api/users:', userResponse.status);
+        console.log('Respuesta de usuario:', userResponse.status);
         
-        if (!userResponse.ok) throw new Error('Error al obtener datos del usuario');
+        if (!userResponse.ok) {
+            console.error('Error al obtener usuario:', await userResponse.text());
+            throw new Error('Error al obtener datos del usuario');
+        }
         
         const user = await userResponse.json();
-        console.log('Datos del usuario:', user);
+        console.log('Datos del usuario obtenidos:', user);
         editingUserId = userId;
 
         const modal = document.querySelector('#editUserModal');
@@ -389,38 +489,204 @@ export async function prepareUserEdit(userId) {
         // Llenar el formulario
         const usernameInput = modal.querySelector('#edit-username');
         const areaSelect = modal.querySelector('#edit-area');
-        const nivelAccesoSelect = modal.querySelector('#edit-nivel-acceso');
+        
+        // Marcar los checkboxes según los privilegios actuales
+        const crearCheck = modal.querySelector('input[name="edit-privileges"][value="crear"]');
+        const editarCheck = modal.querySelector('input[name="edit-privileges"][value="editar"]');
+        const eliminarCheck = modal.querySelector('input[name="edit-privileges"][value="eliminar"]');
+        const verCheck = modal.querySelector('input[name="edit-privileges"][value="ver"]');
 
-        console.log('Elementos del formulario encontrados:', {
-            username: !!usernameInput,
-            area: !!areaSelect,
-            nivelAcceso: !!nivelAccesoSelect
+        console.log('Estado actual de privilegios:', {
+            nivelAcceso: user.NivelAcceso,
+            crear: Boolean(user.PuedeCrear),
+            editar: Boolean(user.PuedeEditar),
+            derivar: Boolean(user.PuedeDerivar),
+            auditar: Boolean(user.PuedeAuditar)
         });
 
-        // Verificar que todos los elementos necesarios existen
-        if (!usernameInput || !areaSelect || !nivelAccesoSelect) {
-            throw new Error('No se encontraron todos los elementos del formulario');
-        }
+        if (crearCheck) crearCheck.checked = Boolean(user.PuedeCrear);
+        if (editarCheck) editarCheck.checked = Boolean(user.PuedeEditar);
+        if (eliminarCheck) eliminarCheck.checked = Boolean(user.PuedeDerivar);
+        if (verCheck) verCheck.checked = Boolean(user.PuedeAuditar);
 
         // Actualizar las áreas antes de establecer los valores
-        updateAreaSelects(areas);
+        await updateAreaSelects(areas);
 
-        // Establecer los valores después de actualizar las áreas
-        usernameInput.value = user.Username || '';
-        areaSelect.value = user.IDArea || '';
-        nivelAccesoSelect.value = user.NivelAcceso || '';
+        // Establecer los valores
+        if (usernameInput) usernameInput.value = user.Username || '';
+        if (areaSelect) areaSelect.value = user.IDArea || '';
 
-        console.log('Valores establecidos:', {
-            username: usernameInput.value,
-            area: areaSelect.value,
-            nivelAcceso: nivelAccesoSelect.value
+        console.log('Valores establecidos en el formulario:', {
+            username: usernameInput?.value,
+            area: areaSelect?.value,
+            checkboxesEncontrados: {
+                crear: !!crearCheck,
+                editar: !!editarCheck,
+                eliminar: !!eliminarCheck,
+                ver: !!verCheck
+            }
         });
 
-        // Mostrar el modal
-        modal.style.display = 'block';
-        console.log('Modal mostrado');
+        // Mostrar el modal usando jQuery para evitar problemas con Bootstrap
+        $(modal).modal('show');
+        console.log('Modal mostrado usando jQuery');
+        console.log('=== FIN DE PREPARACIÓN DE EDICIÓN ===');
     } catch (error) {
-        console.error('Error en prepareUserEdit:', error);
+        console.error('Error detallado en prepareUserEdit:', error);
+        console.error('Stack trace:', error.stack);
         showError('Error al cargar los datos del usuario: ' + error.message);
     }
 }
+
+// Inicializar event listeners y cargar datos
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('=== INICIALIZANDO MÓDULO DE GESTIÓN DE USUARIOS ===');
+    console.log('Estado del documento:', document.readyState);
+    
+    try {
+        // Esperar a que el DOM esté completamente cargado
+        if (document.readyState !== 'complete') {
+            console.log('Esperando a que el DOM se cargue completamente...');
+            await new Promise(resolve => {
+                window.addEventListener('load', resolve);
+            });
+            console.log('DOM completamente cargado');
+        }
+        
+        console.log('DOM completamente cargado, procediendo con la inicialización');
+        
+        // Configurar botones de navegación
+        const navBtns = document.querySelectorAll('.nav-btn');
+        console.log('Botones de navegación encontrados:', navBtns.length);
+        
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                console.log('Click en botón de navegación:', targetId);
+                
+                if (targetId) {
+                    // Desactivar todos los botones y secciones
+                    navBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    
+                    // Activar el botón y sección seleccionados
+                    btn.classList.add('active');
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        if (targetId === 'users-section') {
+                            loadUsers();
+                        }
+                    }
+                }
+            });
+        });
+
+        // Configurar botón de agregar usuario
+        const addUserBtn = document.querySelector('#addUserButton');
+        console.log('Botón agregar usuario encontrado:', !!addUserBtn);
+        
+        if (addUserBtn) {
+            addUserBtn.addEventListener('click', async () => {
+                console.log('=== INICIO DE APERTURA DE MODAL DE USUARIO ===');
+                const modal = document.querySelector('#userModal');
+                console.log('Modal encontrado:', !!modal);
+                
+                if (modal) {
+                    try {
+                        // Limpiar el formulario
+                        const form = document.querySelector('#createUserForm');
+                        console.log('Formulario encontrado:', !!form);
+                        
+                        if (form) {
+                            form.reset();
+                            console.log('Formulario reseteado');
+                        }
+
+                        // Cargar áreas antes de mostrar el modal
+                        console.log('Cargando áreas para el modal...');
+                        const areas = await loadAreas();
+                        console.log('Áreas cargadas:', areas);
+
+                        // Verificar el selector de áreas
+                        const areaSelect = form?.querySelector('#area');
+                        console.log('Selector de áreas encontrado:', {
+                            existe: !!areaSelect,
+                            id: areaSelect?.id,
+                            optionsAntes: areaSelect?.options.length
+                        });
+
+                        if (areas && areas.length > 0) {
+                            console.log('Actualizando selector con las áreas...');
+                            await updateAreaSelects(areas);
+                            console.log('Selector actualizado');
+                        } else {
+                            console.warn('No se encontraron áreas para cargar');
+                        }
+
+                        // Mostrar el modal
+                        console.log('Mostrando modal...');
+                        const modalInstance = new bootstrap.Modal(modal);
+                        modalInstance.show();
+                        console.log('Modal mostrado');
+                        
+                        // Verificar estado final del selector
+                        console.log('Estado final del selector de áreas:', {
+                            optionsDespues: areaSelect?.options.length,
+                            valores: Array.from(areaSelect?.options || []).map(opt => ({
+                                value: opt.value,
+                                text: opt.text
+                            }))
+                        });
+                        
+                        console.log('=== FIN DE APERTURA DE MODAL DE USUARIO ===');
+                    } catch (error) {
+                        console.error('Error detallado al abrir el modal:', error);
+                        console.error('Stack trace:', error.stack);
+                        showError('Error al cargar las áreas: ' + error.message);
+                    }
+                } else {
+                    console.error('No se encontró el modal de usuario');
+                }
+            });
+            console.log('Event listener agregado a addUserBtn');
+        }
+
+        // Configurar formularios
+        const createUserForm = document.querySelector('#createUserForm');
+        const editUserForm = document.querySelector('#editUserForm');
+        
+        console.log('Formularios encontrados:', {
+            createUser: !!createUserForm,
+            editUser: !!editUserForm
+        });
+
+        if (createUserForm) {
+            createUserForm.addEventListener('submit', handleCreateUser);
+            console.log('Event listener agregado a createUserForm');
+        }
+
+        if (editUserForm) {
+            editUserForm.addEventListener('submit', handleEditUser);
+            console.log('Event listener agregado a editUserForm');
+        }
+
+        // Configurar botones de cerrar modales
+        document.querySelectorAll('.modal .close, .modal .close-modal').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                if (modal) {
+                    $(modal).modal('hide');
+                }
+            });
+        });
+
+        // Cargar usuarios iniciales
+        await loadUsers();
+        console.log('=== INICIALIZACIÓN COMPLETADA ===');
+    } catch (error) {
+        console.error('Error detallado durante la inicialización:', error);
+        console.error('Stack trace:', error.stack);
+        showError('Error al inicializar la gestión de usuarios');
+    }
+});

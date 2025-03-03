@@ -1,109 +1,117 @@
+import { showError } from '../../common/uiHelpers.js';
+
 // Módulo de gestión de roles para el panel de administración
 
-// Función para inicializar el módulo de roles
-export async function initializeRoles() {
-    console.log('Inicializando módulo de roles...');
-    
-    // Cargar roles al inicio
-    await loadRoles();
-    
-    // Configurar botón para abrir modal de nuevo rol
-    const addRoleBtn = document.getElementById('addRoleBtn');
-    if (addRoleBtn) {
-        addRoleBtn.addEventListener('click', () => {
-            showRoleModal('create');
-        });
-    }
-    
-    // Configurar formulario para envío
-    const roleForm = document.getElementById('roleForm');
-    if (roleForm) {
-        roleForm.addEventListener('submit', handleRoleFormSubmit);
-    }
-    
-    // Configurar cerrado de modales
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.getElementById('roleModal').style.display = 'none';
-        });
-    });
-    
-    // Delegación de eventos para botones de acción en la tabla
-    document.getElementById('roles-table-body').addEventListener('click', async (e) => {
-        const target = e.target.closest('button');
-        if (!target) return;
-        
-        const roleId = target.dataset.roleId;
-        
-        if (target.classList.contains('edit-role-btn')) {
-            await loadRoleDetails(roleId);
-        } else if (target.classList.contains('delete-role-btn')) {
-            await deleteRole(roleId);
-        }
-    });
-}
-
-// Cargar todos los roles
+// Función para cargar los roles
 export async function loadRoles() {
     try {
+        console.log('=== INICIO DE CARGA DE ROLES ===');
+        console.log('Realizando petición a /api/roles...');
+        
         const response = await fetch('/api/roles');
+        console.log('Respuesta recibida:', {
+            ok: response.ok,
+            status: response.status,
+            statusText: response.statusText
+        });
+
         if (!response.ok) {
-            throw new Error(`Error al cargar roles: ${response.status}`);
+            throw new Error(`Error al cargar roles: ${response.status} - ${response.statusText}`);
         }
         
         const roles = await response.json();
-        renderRolesTable(roles);
+        console.log('Roles obtenidos:', {
+            cantidad: roles.length,
+            roles: roles
+        });
+        
+        const tbody = document.querySelector('#roles-table-body');
+        if (!tbody) {
+            console.error('No se encontró la tabla de roles (#roles-table-body)');
+            console.log('Estado del DOM:', {
+                tabla: document.getElementById('rolesTable')?.outerHTML,
+                seccion: document.getElementById('roles-section')?.outerHTML
+            });
+            throw new Error('No se encontró la tabla de roles');
+        }
+        
+        console.log('Limpiando tabla existente...');
+        tbody.innerHTML = '';
+        
+        console.log('Procesando roles para mostrar en tabla...');
+        roles.forEach(rol => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${rol.IDRol}</td>
+                <td>${rol.NombreRol}</td>
+                <td>${rol.NivelAcceso}</td>
+                <td>${rol.Descripcion || ''}</td>
+                <td>
+                    <span class="badge ${rol.PuedeCrear ? 'bg-success' : 'bg-secondary'} me-1">Crear</span>
+                    <span class="badge ${rol.PuedeEditar ? 'bg-success' : 'bg-secondary'} me-1">Editar</span>
+                    <span class="badge ${rol.PuedeDerivar ? 'bg-success' : 'bg-secondary'} me-1">Derivar</span>
+                    <span class="badge ${rol.PuedeAuditar ? 'bg-success' : 'bg-secondary'}">Auditar</span>
+                </td>
+                <td>
+                    <button class="btn btn-success btn-sm edit-role-btn" data-role-id="${rol.IDRol}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm delete-role-btn ms-2" data-role-id="${rol.IDRol}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        console.log('Se agregaron', roles.length, 'roles a la tabla');
+        console.log('=== FIN DE CARGA DE ROLES ===');
     } catch (error) {
-        console.error('Error al cargar roles:', error);
-        showNotification('Error al cargar roles', 'error');
+        console.error('Error detallado al cargar roles:', error);
+        console.error('Stack trace:', error.stack);
+        console.error('Estado del DOM al momento del error:', {
+            tabla: document.getElementById('rolesTable')?.outerHTML,
+            seccion: document.getElementById('roles-section')?.outerHTML
+        });
+        showError('Error al cargar la lista de roles');
     }
 }
 
-// Renderizar tabla de roles
-export function renderRolesTable(roles) {
-    const tableBody = document.getElementById('roles-table-body');
-    if (!tableBody) return;
+// Función para inicializar el módulo de roles
+export function initializeRoles() {
+    console.log('=== INICIO DE INICIALIZACIÓN DE ROLES ===');
     
-    tableBody.innerHTML = '';
+    // Cargar roles iniciales
+    loadRoles();
     
-    if (roles.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No hay roles definidos</td></tr>';
-        return;
+    // Configurar botón de agregar rol si existe
+    const addRoleBtn = document.querySelector('#addRoleBtn');
+    if (addRoleBtn) {
+        console.log('Configurando botón de agregar rol...');
+        addRoleBtn.addEventListener('click', () => {
+            const modal = document.querySelector('#roleModal');
+            if (modal) {
+                modal.style.display = 'block';
+            } else {
+                console.error('No se encontró el modal de roles (#roleModal)');
+            }
+        });
+        console.log('Botón de agregar rol configurado');
+    } else {
+        console.warn('No se encontró el botón de agregar rol (#addRoleBtn)');
     }
     
-    roles.forEach(role => {
-        // Crear fila para cada rol
-        const row = document.createElement('tr');
-        
-        // Crear celdas con los datos
-        row.innerHTML = `
-            <td>${role.IDRol}</td>
-            <td>${role.NombreRol}</td>
-            <td>${role.NivelAcceso}</td>
-            <td>${role.Descripcion || '-'}</td>
-            <td>
-                <span class="badge ${role.PuedeCrear ? 'badge-success' : 'badge-danger'}" 
-                      title="Puede Crear">C</span>
-                <span class="badge ${role.PuedeEditar ? 'badge-success' : 'badge-danger'}" 
-                      title="Puede Editar">E</span>
-                <span class="badge ${role.PuedeDerivar ? 'badge-success' : 'badge-danger'}" 
-                      title="Puede Derivar">D</span>
-                <span class="badge ${role.PuedeAuditar ? 'badge-success' : 'badge-danger'}" 
-                      title="Puede Auditar">A</span>
-            </td>
-            <td>
-                <button class="action-btn edit-role-btn" data-role-id="${role.IDRol}" title="Editar">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn delete-role-btn" data-role-id="${role.IDRol}" title="Eliminar">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        
-        // Añadir la fila a la tabla
-        tableBody.appendChild(row);
-    });
+    // Configurar formulario de roles
+    const roleForm = document.querySelector('#roleForm');
+    if (roleForm) {
+        console.log('Configurando formulario de roles...');
+        roleForm.addEventListener('submit', handleRoleFormSubmit);
+        console.log('Formulario de roles configurado');
+    } else {
+        console.warn('No se encontró el formulario de roles (#roleForm)');
+    }
+    
+    console.log('=== FIN DE INICIALIZACIÓN DE ROLES ===');
 }
 
 // Mostrar modal para crear/editar rol

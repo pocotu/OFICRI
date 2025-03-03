@@ -1,16 +1,3 @@
-const usuarios = [
-    { username: "Juan", password: "1234"},
-    { username: "Maria", password: "abcd"},
-    { username: "Pedro", password: "qwerty"}
-];
-
-const userPrivileges = [
-    { name: 'Crear', value: 'crear' },
-    { name: 'Editar', value: 'editar' },
-    { name: 'Eliminar', value: 'eliminar' },
-    { name: 'Ver', value: 'ver' }
-];
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
@@ -66,7 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 // Login exitoso
-                localStorage.setItem('user_data', JSON.stringify(data.user));
+                const userData = {
+                    ...data.user,
+                    lastLogin: new Date().toISOString(),
+                    sessionStarted: new Date().toLocaleString()
+                };
+                localStorage.setItem('user_data', JSON.stringify(userData));
                 
                 // Redirigir según el área del usuario
                 if (data.user.idArea === 1) { // Área de Administración
@@ -129,15 +121,4 @@ document.addEventListener('DOMContentLoaded', () => {
         const debugMsg = document.getElementById('debug-message');
         debugMsg.style.display = debugMsg.style.display === 'block' ? 'none' : 'block';
     });
-
-    // La lógica para manejar los privilegios solo debe ejecutarse en páginas que tengan el elemento
-    const privilegesSelect = document.getElementById('privileges');
-    if (privilegesSelect) {
-        userPrivileges.forEach(privilege => {
-            const option = document.createElement('option');
-            option.value = privilege.value;
-            option.textContent = privilege.name;
-            privilegesSelect.appendChild(option);
-        });
-    }
 });
