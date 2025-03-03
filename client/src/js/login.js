@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessage = document.getElementById('error-message');
     const attemptsMessage = document.getElementById('attempts-message');
     const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+
+    // Toggle password visibility
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        togglePassword.querySelector('i').classList.toggle('bi-eye');
+        togglePassword.querySelector('i').classList.toggle('bi-eye-slash');
+    });
 
     // Mostrar mensaje de error
     function showError(message) {
@@ -36,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const username = usernameInput.value;
-        const password = document.getElementById('password').value;
+        const password = passwordInput.value;
 
         try {
             clearMessages();
@@ -82,43 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Verificar si hay una sesión "fantasma" al cargar la página de login
-    // (esto puede ocurrir si el proceso de logout falló en el servidor)
-    const checkForGhostSession = async () => {
-        try {
-            // Limpiar cualquier dato local primero para prevenir bucles
-            localStorage.clear();
-            sessionStorage.clear();
-            const debugMsg = document.getElementById('debug-message');
-            // Verificar estado del servidor en background
-            fetch('/api/health', { 
-                method: 'GET',
-                signal: AbortSignal.timeout(3000)
-            })
-            .then(response => {
-                if (response.ok) {
-                    debugMsg.textContent = '✓ Servidor API conectado correctamente';
-                    // Si el servidor está activo, intentar un logout "de seguridad"
-                    fetch('/api/auth/logout', { 
-                        method: 'POST', 
-                        credentials: 'include'
-                    }).catch(() => {}); // Ignoramos errores aquí
-                } else {
-                    debugMsg.textContent = '✗ El servidor API respondió con estado: ' + response.status;
-                }
-            })
-            .catch(err => {
-                debugMsg.textContent = '✗ No se puede conectar al servidor API. Error: ' + err.message;
-            });
-        } catch (error) {
-            console.error('Error al verificar sesión:', error);
-        }
-    };
-    // Ejecutar verificación
-    checkForGhostSession();
-    // Toggle para mostrar/ocultar información de debug
-    document.getElementById('debug-toggle').addEventListener('click', function() {
-        const debugMsg = document.getElementById('debug-message');
-        debugMsg.style.display = debugMsg.style.display === 'block' ? 'none' : 'block';
-    });
+    // Limpiar datos locales al cargar la página
+    localStorage.clear();
+    sessionStorage.clear();
 });
