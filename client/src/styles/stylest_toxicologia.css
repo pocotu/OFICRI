@@ -2,6 +2,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
+    min-height: 100vh;
     background-color: #f4f4f4;
     display: flex;
     flex-direction: column;
@@ -41,7 +42,7 @@ body {
     color: white;
     font-size: 1.5em;
     text-align: left;
-    font-family: 'Michroma', sans-serif; 
+    font-family: 'Orbitron', sans-serif; 
     font-weight: bold;
 }
 
@@ -74,7 +75,7 @@ body {
 .logo-text {
     font-size: 1.5em;
     font-weight: bold;
-    font-family: 'Michroma', sans-serif;
+    font-family: 'Orbitron', sans-serif;
 }
 
 .pnp-logo {
@@ -155,7 +156,7 @@ body {
     margin: 0.5rem 0;
     border-radius: 8px;
     transition: background-color 0.3s;
-    font-family: 'Michroma', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     width: 100%;
     box-sizing: border-box;
 }
@@ -203,7 +204,7 @@ body {
 
 .section-title h1 {
     color: #ffffff;
-    font-family: 'Michroma', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     margin: 0; /* Eliminar margen */
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* Añadir sombra al texto */
     background: rgba(255, 255, 255, 0.0);
@@ -212,9 +213,32 @@ body {
 }
 
 .stats-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
-    margin: 0; /* Eliminar margen */
+    margin-bottom: 2rem;
+}
+
+.stat-box {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s;
+    cursor: pointer;
+    text-align: center;
+}
+
+.stat-box h3 {
+    color: #005c2b;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.stat-box .number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
 }
 
 .stat-box {
@@ -256,88 +280,132 @@ body {
     transform: translateX(0);
     transition: transform 0.2s ease;
 }
-
-.stat-box h3 {
-    font-size: 0.7rem; /* Reducir más el tamaño de fuente */
-    margin-bottom: 0.25rem;
+.sidebar {
+    background-color: #005c2b;
+    width: 250px;
+    position: fixed;
+    height: calc(100vh - 76px);
+    overflow-y: auto;
+    transition: transform 0.3s ease;
 }
 
-.stat-box .number {
-    font-size: 1.5rem; /* Reducir más el tamaño del número */
-    margin: 0.25rem 0;
-}
+@media (max-width: 991.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 1040;
+        width: 100%;
+        max-width: 300px;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
 
-/* Actualizar responsive */
-@media (max-width: 1200px) {
-    .section-title {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 1rem;
+    }
+
+    .section-title h1 {
+        font-size: 1.75rem;
     }
 
     .stats-container {
-        width: 100%;
-        justify-content: space-between;
+        margin-top: 1rem;
+    }
+
+    .table-responsive {
+        margin-top: 1rem;
+        font-size: 0.875rem;
     }
 }
 
+.nav-link {
+    color: white;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: background-color 0.2s;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.nav-link:hover,
+.nav-item.active .nav-link {
+    background-color: #0a8741;
+    color: white;
+    text-decoration: none;
+}
+
+/* Main content styles */
+.main-content {
+    margin-left: 250px;
+    padding: 1.5rem;
+    background: linear-gradient(
+        rgba(244, 244, 244, 0.0),
+        rgba(244, 244, 244, 0.0)
+    ), url('/assets/images/fondo_toxicologia.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: calc(100vh - 76px);
+}
+
+/* Section styles */
+.section-title h1 {
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stat-box {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 1rem;
+    height: 100%;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.stat-box:hover {
+    transform: translateY(-3px);
+}
+
+.stat-box.active {
+    border: 2px solid #005c2b;
+    background: rgba(0, 92, 43, 0.1);
+}
+
 .documents-section {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(5px); /* Añadir efecto de desenfoque */
-    padding: 2rem;
+    background: rgba(255, 255, 255, 0.9);
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 1.5rem;
 }
 
-.documents-section h2 {
-    color: #005c2b;
-    margin-bottom: 1.5rem;
-    font-family: 'Michroma', sans-serif;
-}
-
-.table-container {
-    overflow-x: auto;
-    margin-top: 1rem;
+/* Table styles */
+.table-responsive {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem; /* Reducir tamaño de fuente para mejor ajuste */
-}
-
-th, td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #e0e0e0;
-    font-family: 'Glegoo', sans-serif;
+    margin-bottom: 0;
 }
 
 th {
     background-color: #005c2b;
     color: white;
-    font-weight: bold;
     white-space: nowrap;
 }
 
-/* Estilos para la información del agraviado */
-.agraviado-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.agraviado-info .nombre {
-    font-weight: bold;
-}
-
-.agraviado-info .apellido {
-    color: #666;
-}
-
+/* Status badges */
 .status {
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 20px;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     display: inline-block;
 }
 
@@ -356,34 +424,31 @@ th {
     color: #388e3c;
 }
 
+/* Button styles */
+.add-document-btn,
+.add-agraviado-btn,
+.filter-btn {
+    background-color: #005c2b;
+    color: white;
+    transition: all 0.2s;
+}
+
+.add-document-btn:hover,
+.add-agraviado-btn:hover,
+.filter-btn:hover {
+    background-color: #0a8741;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Action buttons */
 .action-btn {
     padding: 0.4rem;
     border: none;
     border-radius: 4px;
     margin: 0 0.15rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    color: #005c2b;
-}
-
-.action-btn.view {
-    background: #e3f2fd;
-    color: #1976d2;
-}
-
-.action-btn.edit {
-    background: #f5f5f5;
-    color: #616161;
-}
-
-.action-btn.add-doc {
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-
-.action-btn.download {
-    background: #e8eaf6;
-    color: #3f51b5;
+    transition: all 0.2s;
 }
 
 .action-btn:hover {
@@ -391,149 +456,26 @@ th {
     transform: translateY(-1px);
 }
 
-/* Estilos para las secciones de contenido */
-.content-section {
-    display: none;
-}
-
-.content-section.active {
-    display: block;
-}
-
-/* Estilos para los filtros de búsqueda */
-.search-filters {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    align-items: center;
-}
-
-.search-input {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: 'Glegoo', sans-serif;
-}
-
-.filter-select {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: 'Glegoo', sans-serif;
-}
-
-.add-document-btn, 
-.add-agraviado-btn,
-.filter-btn {
-    padding: 0.5rem 1rem;
-    background-color: #005c2b;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-family: 'Michroma', sans-serif;
-}
-
-/* Estilos para el nuevo contenedor del título y ajustar la posición del botón */
-.title-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.title-container h1 {
-    margin: 0;
-}
-
-.title-container .add-document-btn {
-    height: fit-content;
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-    background-color: rgba(0, 92, 43, 0.9);
-}
-
-.title-container .add-document-btn:hover {
-    background-color: #005c2b;
-    transform: translateY(-2px);
-}
-
-/* Estilos para el grid de agraviados */
-.agraviados-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-}
-
-/* Estilos para los filtros de fecha */
-.date-filters {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    align-items: center;
-}
-
-.date-input {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: 'Glegoo', sans-serif;
-}
-
-.action-container {
-    margin-bottom: 2rem;
-    padding: 0 1rem;
-    display: flex;
-    justify-content: flex-end; /* Alinear a la derecha */
-    margin-right: 60rem; /* Agregar margen derecho */
-}
-
-.action-container .add-document-btn {
-    background-color: rgba(0, 92, 43, 0.9);
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    padding: 0.75rem 1.5rem; /* Aumentar padding para mejor visibilidad */
-}
-
 /* Responsive adjustments */
-@media (max-width: 768px) {
-    .dashboard-container {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        width: 100%;
-        position: relative;
-        height: auto;
-        top: 0;
-    }
-
-    .main-content {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    .stats-container {
-        grid-template-columns: repeat(3, 1fr); /* Mantener 3 columnas */
-        gap: 0.5rem; /* Reducir gap aún más en móviles */
-        padding: 0 0.5rem;
-    }
-
-    .stat-box {
+@media (max-width: 767.98px) {
+    .header {
         padding: 0.75rem;
-        min-width: auto;
+    }
+
+    .logo-text {
+        font-size: 1rem;
+    }
+
+    .section-title h1 {
+        font-size: 1.5rem;
     }
 
     .stat-box h3 {
-        font-size: 0.7rem;
+        font-size: 0.875rem;
     }
 
     .stat-box .number {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
 }
 

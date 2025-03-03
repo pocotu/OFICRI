@@ -8,15 +8,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts - Orbitron -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/stylesLogin.css">
     <link rel="icon" href="/assets/images/logoOficri2x2.png" type="image/x-icon">
 </head>
-<body class="bg-light">
+<body class="d-flex flex-column">
     <header class="container-fluid py-3">
         <div class="row align-items-center">
             <div class="col-md-4 d-flex align-items-center">
                 <img src="/assets/images/logoOficri2x2.png" alt="Logo Image" class="logo-image me-2" style="max-height: 60px;">
-                <span class="logo-text fs-4">OFICRI Cusco</span>
+                <span class="logo-text fs-4">OFICRI</span>
             </div>
             <div class="col-md-4 text-center">
                 <h2 class="header-center-text fs-5 mb-0">OFICINA DE CRIMINALÍSTICA CUSCO</h2>
@@ -27,8 +29,8 @@
         </div>
     </header>
 
-    <main class="container mt-5">
-        <div class="row justify-content-center">
+    <main class="container flex-grow-1 d-flex align-items-center py-5">
+        <div class="row justify-content-center w-100">
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow-lg">
                     <div class="card-body p-4">
@@ -37,24 +39,40 @@
                             <h1 class="h3">Bienvenido</h1>
                         </div>
                         <form id="login-form" class="login-form">
-                            <div class="mb-3">
-                                <input type="text" id="username" placeholder="Usuario" class="form-control" required>
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-transparent border-end-0">
+                                        <i class="bi bi-person-fill text-white"></i>
+                                    </span>
+                                    <input type="text" id="username" placeholder="Usuario" class="form-control border-start-0" required>
+                                </div>
                             </div>
-                            <div class="mb-3 position-relative">
-                                <input type="password" id="password" placeholder="Contraseña" class="form-control" required>
-                                <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-dark" id="togglePassword" style="padding: 0 12px;" title="Mostrar/ocultar contraseña">
-                                    <i class="bi bi-eye-slash"></i>
-                                </button>
+                            <div class="mb-4 position-relative">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-transparent border-end-0">
+                                        <i class="bi bi-lock-fill text-white"></i>
+                                    </span>
+                                    <input type="password" id="password" placeholder="Contraseña" class="form-control border-start-0" required>
+                                    <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y" id="togglePassword" style="padding: 0 12px; z-index: 10;" title="Mostrar/ocultar contraseña">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div id="error-message" class="alert alert-danger d-none"></div>
                             <div id="attempts-message" class="alert alert-warning d-none"></div>
-                            <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
+                            <button type="submit" class="btn btn-primary w-100 mt-4">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                            </button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <footer class="container-fluid py-2 text-center text-white" style="background: var(--card-gradient);">
+        <small>&copy; 2025 OFICRI Cusco - Todos los derechos reservados</small>
+    </footer>
 
     <!-- Bootstrap 5 Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
