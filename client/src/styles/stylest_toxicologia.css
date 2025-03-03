@@ -1,0 +1,547 @@
+/*comentario*/
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.header {
+    background-color: #005c2b;
+    color: white;
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    padding-left: 50px;
+}
+.background-image {
+    width: 100%;
+    height: 669px;
+    background-image: url('/assets/images/fondo_toxicologia.jpg');
+    background-size: cover;
+    background-position: center;
+    margin-top: 80px; /* Ajusta este valor según sea necesario para que la imagen esté debajo del header */
+}
+.centered-text {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    transform: translateY(-50%);
+    color: white;
+    font-size: 1.5em;
+    text-align: left;
+    font-family: 'Michroma', sans-serif; 
+    font-weight: bold;
+}
+
+.new-text {
+    font-family: 'Glegoo', sans-serif; /* Aplica la nueva fuente */
+    font-size: 1.0em;
+    margin-bottom: 10px;
+    font-weight: bold;
+    border-left: 4px solid white; /* Agrega una línea blanca al lado izquierdo */
+    padding-left: 10px; /* Espacio entre la línea y el texto */
+}       
+
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    margin-left: 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo-image {
+    margin-right: 5px; /* Ajusta este valor según sea necesario */
+    height: 35px; /* Ajusta este valor según sea necesario */
+}
+
+.logo-text {
+    font-size: 1.5em;
+    font-weight: bold;
+    font-family: 'Michroma', sans-serif;
+}
+
+.pnp-logo {
+    height: 40px; /* Ajusta este valor según sea necesario */
+    margin-left: auto; /* Ajusta este valor según sea necesario */
+    margin-right: 105px; /* Ajusta este valor según sea necesario */
+}
+
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-left: 20px;
+    }
+
+    .logo-container {
+        margin-bottom: 10px;
+    }
+
+    .pnp-logo {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}
+
+/* Estilos del Dashboard */
+.dashboard-container {
+    display: flex;
+    margin-top: 80px;
+    height: calc(100vh - 80px);
+    position: relative;
+}
+
+/* Sidebar styles */
+.sidebar {
+    width: 250px;
+    background-color: #005c2b;
+    padding: 1rem 0; /* Reducir padding horizontal */
+    height: calc(100vh - 80px);
+    position: fixed;
+    left: 0;
+    top: 80px;
+    z-index: 100;
+}
+
+.nav-links {
+    list-style: none;
+    margin-top: 20px;
+    padding: 0; /* Eliminar padding */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 40px); /* Ajusta el espacio para el botón */
+}
+
+.nav-links li[data-section="logout"] {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+}
+
+.nav-links li[data-section="logout"] a {
+    color: white;
+}
+
+.nav-links li[data-section="logout"] a:hover {
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+.nav-links li a {
+    color: white;
+    text-decoration: none;
+    padding: 1rem 1.5rem; /* Ajustar padding horizontal del enlace */
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+    font-family: 'Michroma', sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.nav-links li.active a,
+.nav-links li a:hover {
+    background-color: #0a8741;
+}
+
+/* Main content styles */
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 2rem;
+    background: linear-gradient(
+        rgba(244, 244, 244, 0.0), /* Reducir opacidad significativamente */
+        rgba(244, 244, 244, 0.0)
+    ), url('/assets/images/fondo_toxicologia.jpg'); /* Actualizar ruta relativa */
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: calc(100vh - 80px);
+    width: calc(100% - 250px);
+    position: relative;
+}
+
+/* Ajustar el contraste para mejorar legibilidad */
+.documents-section, 
+.stat-box,
+.search-filters input,
+.search-filters select,
+.date-filters input {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Actualizar section-title y stats container */
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.section-title h1 {
+    color: #ffffff;
+    font-family: 'Michroma', sans-serif;
+    margin: 0; /* Eliminar margen */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* Añadir sombra al texto */
+    background: rgba(255, 255, 255, 0.0);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+.stats-container {
+    display: flex;
+    gap: 1rem;
+    margin: 0; /* Eliminar margen */
+}
+
+.stat-box {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    padding: 0.75rem; /* Reducir padding */
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    min-width: 150px; /* Reducir ancho mínimo */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.stat-box.active {
+    border: 2px solid #005c2b;
+    background: rgba(0, 92, 43, 0.1);
+}
+
+.stat-box::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(255,255,255,0.2);
+    transform: translateX(-100%);
+}
+
+.stat-box:active::after {
+    transform: translateX(0);
+    transition: transform 0.2s ease;
+}
+
+.stat-box h3 {
+    font-size: 0.7rem; /* Reducir más el tamaño de fuente */
+    margin-bottom: 0.25rem;
+}
+
+.stat-box .number {
+    font-size: 1.5rem; /* Reducir más el tamaño del número */
+    margin: 0.25rem 0;
+}
+
+/* Actualizar responsive */
+@media (max-width: 1200px) {
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .stats-container {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+.documents-section {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px); /* Añadir efecto de desenfoque */
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.documents-section h2 {
+    color: #005c2b;
+    margin-bottom: 1.5rem;
+    font-family: 'Michroma', sans-serif;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem; /* Reducir tamaño de fuente para mejor ajuste */
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    font-family: 'Glegoo', sans-serif;
+}
+
+th {
+    background-color: #005c2b;
+    color: white;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* Estilos para la información del agraviado */
+.agraviado-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.agraviado-info .nombre {
+    font-weight: bold;
+}
+
+.agraviado-info .apellido {
+    color: #666;
+}
+
+.status {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.status.pending {
+    background: #ffe0b2;
+    color: #f57c00;
+}
+
+.status.processing {
+    background: #b3e5fc;
+    color: #0288d1;
+}
+
+.status.completed {
+    background: #c8e6c9;
+    color: #388e3c;
+}
+
+.action-btn {
+    padding: 0.4rem;
+    border: none;
+    border-radius: 4px;
+    margin: 0 0.15rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #005c2b;
+}
+
+.action-btn.view {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.action-btn.edit {
+    background: #f5f5f5;
+    color: #616161;
+}
+
+.action-btn.add-doc {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.action-btn.download {
+    background: #e8eaf6;
+    color: #3f51b5;
+}
+
+.action-btn:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+/* Estilos para las secciones de contenido */
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+}
+
+/* Estilos para los filtros de búsqueda */
+.search-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Glegoo', sans-serif;
+}
+
+.filter-select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Glegoo', sans-serif;
+}
+
+.add-document-btn, 
+.add-agraviado-btn,
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background-color: #005c2b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Michroma', sans-serif;
+}
+
+/* Estilos para el nuevo contenedor del título y ajustar la posición del botón */
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.title-container h1 {
+    margin: 0;
+}
+
+.title-container .add-document-btn {
+    height: fit-content;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    background-color: rgba(0, 92, 43, 0.9);
+}
+
+.title-container .add-document-btn:hover {
+    background-color: #005c2b;
+    transform: translateY(-2px);
+}
+
+/* Estilos para el grid de agraviados */
+.agraviados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+/* Estilos para los filtros de fecha */
+.date-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+.date-input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Glegoo', sans-serif;
+}
+
+.action-container {
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: flex-end; /* Alinear a la derecha */
+    margin-right: 60rem; /* Agregar margen derecho */
+}
+
+.action-container .add-document-btn {
+    background-color: rgba(0, 92, 43, 0.9);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    padding: 0.75rem 1.5rem; /* Aumentar padding para mejor visibilidad */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        position: relative;
+        height: auto;
+        top: 0;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .stats-container {
+        grid-template-columns: repeat(3, 1fr); /* Mantener 3 columnas */
+        gap: 0.5rem; /* Reducir gap aún más en móviles */
+        padding: 0 0.5rem;
+    }
+
+    .stat-box {
+        padding: 0.75rem;
+        min-width: auto;
+    }
+
+    .stat-box h3 {
+        font-size: 0.7rem;
+    }
+
+    .stat-box .number {
+        font-size: 1.5rem;
+    }
+}
+
+/* Actualizar media queries */
+@media (max-width: 1200px) {
+    .title-container {
+        width: 100%;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+}

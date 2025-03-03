@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Química y toxicología forense - OFICRI</title>
+    <link rel="stylesheet" href="/styles/stylest_toxicologia.css">
+    <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Glegoo&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
+    <link rel="icon" href="/assets/images/logoOficri2x2.png" type="image/x-icon">
+    <!-- Cargar primero los scripts de autenticación y utilidades -->
+    <script src="/js/clientAuth.js"></script>
+    <script src="/js/frontendAuth.js"></script>
+    <script src="/js/uiHelpers.js"></script>
+    <!-- Cargar módulos específicos de toxicología -->
+    <script src="/js/modules/toxicologia/toxicologiaDashboard.js"></script>
+    <script src="/js/modules/toxicologia/caseManagement.js"></script>
+    <script src="/js/modules/toxicologia/resultManagement.js"></script>
+    <script src="/js/modules/toxicologia/sampleManagement.js"></script>
+    <!-- Cargar scripts principales -->
+    <script src="/js/dashboard-common.js"></script>
+    <script src="/js/toxicologia.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <div class="logo">
+                <img src="/assets/images/logoOficri2x2.png" alt="Logo Image" class="logo-image">
+                <span class="logo-text">OFICRI Cusco</span>
+            </div>
+        </div>
+        <img src="/assets/images/logoPolicia2x2.png" alt="PNP Logo" class="pnp-logo">
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Sidebar with updated data-section attributes -->
+        <div class="sidebar">
+            <ul class="nav-links">
+                <li class="active" data-section="dashboard">
+                    <a href="#dashboard">
+                        <i class='bx bxs-dashboard'></i>
+                        <span>Panel Principal</span>
+                    </a>
+                </li>
+                <li data-section="documentos">
+                    <a href="#documentos">
+                        <i class='bx bxs-file'></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
+                <li data-section="agraviados">
+                    <a href="#agraviados">
+                        <i class='bx bxs-user'></i>
+                        <span>Agraviados</span>
+                    </a>
+                </li>
+                <li data-section="historial">
+                    <a href="#historial">
+                        <i class='bx bx-history'></i>
+                        <span>Historial</span>
+                    </a>
+                </li>
+                <li data-section="logout" style="margin-top: auto;">
+                    <a href="#" id="logout-btn">
+                        <i class='bx bx-log-out'></i>
+                        <span>Cerrar Sesión</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Contenido principal con todas las secciones -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="section-title">
+                    <h1>QUÍMICA Y TOXICOLOGÍA FORENSE</h1>
+                    <div class="stats-container">
+                        <div class="stat-box" data-filter="pending">
+                            <h3>Documentos Pendientes</h3>
+                            <div class="number">15</div>
+                        </div>
+                        <div class="stat-box" data-filter="processing">
+                            <h3>En Proceso</h3>
+                            <div class="number">8</div>
+                        </div>
+                        <div class="stat-box" data-filter="completed">
+                            <h3>Completados</h3>
+                            <div class="number">45</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-container">
+                    <button class="add-document-btn">
+                        <i class='bx bx-plus'></i> Nuevo Documento
+                    </button>
+                </div>
+
+                <!-- Tabla de documentos -->
+                <div class="documents-section">
+                    <h2>Documentos Recientes</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nº RG</th>
+                                    <th>Fecha Ingreso</th>
+                                    <th>Documento</th>
+                                    <th>Procedencia</th>
+                                    <th>Agraviado</th>
+                                    <th>Tipo Examen</th>
+                                    <th>Delito/Infracción</th>
+                                    <th>Estado</th>
+                                    <th>Doc. Salida</th>
+                                    <th>Responsable</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>02/01/2025</td>
+                                    <td>OF-002</td>
+                                    <td>C. OCONGATE</td>
+                                    <td>
+                                        <div class="agraviado-info">
+                                            <span class="nombre">Armando</span>
+                                            <span class="apellido">Llanos Luna</span>
+                                        </div>
+                                    </td>
+                                    <td>TOXICOLÓGICO</td>
+                                    <td>DCLLS.</td>
+                                    <td><span class="status pending">Pendiente</span></td>
+                                    <td>---</td>
+                                    <td>PUMA</td>
+                                    <td>
+                                        <button class="action-btn view" title="Ver detalles"><i class='bx bx-show'></i></button>
+                                        <button class="action-btn edit" title="Editar"><i class='bx bx-edit'></i></button>
+                                        <button class="action-btn add-doc" title="Agregar documento"><i class='bx bx-file-plus'></i></button>
+                                    </td>
+                                </tr>
+                                <!-- Ejemplo de registro completado -->
+                                <tr>
+                                    <td>3</td>
+                                    <td>02/01/2025</td>
+                                    <td>OF-006</td>
+                                    <td>C. WANCHÁQ</td>
+                                    <td>
+                                        <div class="agraviado-info">
+                                            <span class="nombre">Julio Cesar</span>
+                                            <span class="apellido">Huillca Mejía</span>
+                                        </div>
+                                    </td>
+                                    <td>TOXICOLÓGICO</td>
+                                    <td>SUSTANCIA TOXICA</td>
+                                    <td><span class="status completed">Completado</span></td>
+                                    <td>INF-001-2025</td>
+                                    <td>MENDOZA</td>
+                                    <td>
+                                        <button class="action-btn view" title="Ver detalles"><i class='bx bx-show'></i></button>
+                                        <button class="action-btn download" title="Descargar informe"><i class='bx bx-download'></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Documentos Section -->
+            <section id="documentos" class="content-section">
+                <div class="section-title">
+                    <h1>GESTIÓN DE DOCUMENTOS</h1>
+                </div>
+                <div class="search-filters">
+                    <input type="text" placeholder="Buscar documento..." class="search-input">
+                    <select class="filter-select">
+                        <option value="">Todos los estados</option>
+                        <option value="pending">Pendiente</option>
+                        <option value="processing">En Proceso</option>
+                        <option value="completed">Completado</option>
+                    </select>
+                    <button class="add-document-btn">
+                        <i class='bx bx-plus'></i> Nuevo Documento
+                    </button>
+                </div>
+                <div class="documents-section">
+                    <!-- ...existing table structure... -->
+                </div>
+            </section>
+
+            <!-- Agraviados Section -->
+            <section id="agraviados" class="content-section">
+                <div class="section-title">
+                    <h1>REGISTRO DE AGRAVIADOS</h1>
+                </div>
+                <div class="search-filters">
+                    <input type="text" placeholder="Buscar agraviado..." class="search-input">
+                    <button class="add-agraviado-btn">
+                        <i class='bx bx-user-plus'></i> Nuevo Agraviado
+                    </button>
+                </div>
+                <div class="agraviados-grid">
+                    <!-- Grid de tarjetas de agraviados -->
+                </div>
+            </section>
+
+            <!-- Historial Section -->
+            <section id="historial" class="content-section">
+                <div class="section-title">
+                    <h1>HISTORIAL DE ACTIVIDADES</h1>
+                </div>
+                <div class="date-filters">
+                    <input type="date" class="date-input" id="fecha-inicio">
+                    <input type="date" class="date-input" id="fecha-fin">
+                    <button class="filter-btn">Filtrar</button>
+                </div>
+                <div class="activity-timeline">
+                    <!-- Timeline de actividades -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Manejar navegación
+            const navLinks = document.querySelectorAll('.nav-links li');
+            const sections = document.querySelectorAll('.content-section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetSection = this.getAttribute('data-section');
+
+                    // Actualizar navegación activa
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Mostrar sección correspondiente
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                        if (section.id === targetSection) {
+                            section.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            // Funcionalidad de búsqueda
+            const searchInputs = document.querySelectorAll('.search-input');
+            searchInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    // Implementar lógica de búsqueda
+                    console.log('Buscando:', this.value);
+                });
+            });
+
+            // Funcionalidad de filtros
+            const filterSelect = document.querySelector('.filter-select');
+            if (filterSelect) {
+                filterSelect.addEventListener('change', function() {
+                    // Implementar lógica de filtrado
+                    console.log('Filtrado por:', this.value);
+                });
+            }
+
+            // Funcionalidad de fechas en historial
+            const dateInputs = document.querySelectorAll('.date-input');
+            const filterBtn = document.querySelector('.filter-btn');
+            if (filterBtn) {
+                filterBtn.addEventListener('click', function() {
+                    // Implementar filtrado por fechas
+                    const inicio = document.getElementById('fecha-inicio').value;
+                    const fin = document.getElementById('fecha-fin').value;
+                    console.log('Filtrar desde:', inicio, 'hasta:', fin);
+                });
+            }
+
+            const statBoxes = document.querySelectorAll('.stat-box');
+            const tableRows = document.querySelectorAll('tbody tr');
+            let activeFilter = null;
+
+            function updateTableRows(filter) {
+                tableRows.forEach(row => {
+                    const statusCell = row.querySelector('.status');
+                    if (!filter || statusCell.classList.contains(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            statBoxes.forEach(box => {
+                box.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    
+                    // Toggle active state
+                    if (activeFilter === filter) {
+                        // Si se hace clic en el mismo filtro, mostrar todos
+                        activeFilter = null;
+                        statBoxes.forEach(b => b.classList.remove('active'));
+                        updateTableRows(null);
+                    } else {
+                        // Aplicar nuevo filtro
+                        activeFilter = filter;
+                        statBoxes.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        updateTableRows(filter);
+                    }
+                });
+            });
+
+            // Actualizar contadores
+            function updateCounters() {
+                const counts = {
+                    pending: 0,
+                    processing: 0,
+                    completed: 0
+                };
+
+                tableRows.forEach(row => {
+                    const statusCell = row.querySelector('.status');
+                    if (statusCell) {
+                        for (let status in counts) {
+                            if (statusCell.classList.contains(status)) {
+                                counts[status]++;
+                            }
+                        }
+                    }
+                });
+
+                // Actualizar números en los stat-boxes
+                statBoxes.forEach(box => {
+                    const filter = box.dataset.filter;
+                    const numberElement = box.querySelector('.number');
+                    if (numberElement) {
+                        numberElement.textContent = counts[filter] || 0;
+                    }
+                });
+            }
+
+            // Llamar a updateCounters inicialmente
+            updateCounters();
+        });
+    </script>
+</body>
+</html>
