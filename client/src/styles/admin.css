@@ -56,6 +56,20 @@ body {
     font-size: 1.2rem;
 }
 
+.admin-panel-text {
+    margin-left: auto;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .admin-panel-text {
+        margin: 0 auto;
+        text-align: center;
+        width: 100%;
+    }
+}
+
 /* Dashboard Container */
 .dashboard-container {
     display: flex;
