@@ -10,7 +10,7 @@ const userRoutes = require('./routes/users');
 const areaRoutes = require('./routes/areas');
 const logRoutes = require('./routes/logs');
 const rolesRoutes = require('./routes/roles');
-const { requireAuth, requireAdmin } = require('./middlewares/auth');
+const { requireAuth, requireAdmin, requireArea } = require('./middlewares/auth');
 const tiposRoutes = require('./routes/tipos');
 
 const app = express();
@@ -28,26 +28,40 @@ app.use(session({
     }
 }));
 
-// Servir archivos estáticos públicos (accesibles sin autenticación)
-app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
+// Archivos públicos (sin autenticación)
+app.use('/', express.static(path.join(__dirname, '..', 'client', 'public')));
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'src', 'assets')));
-app.use('/styles', express.static(path.join(__dirname, '..', 'client', 'src', 'styles')));
-
-// Servir archivos JavaScript específicos sin autenticación
+app.use('/styles/stylesLogin.css', express.static(path.join(__dirname, '..', 'client', 'src', 'styles', 'stylesLogin.css')));
 app.use('/js/clientAuth.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'clientAuth.js')));
 app.use('/js/frontendAuth.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'frontendAuth.js')));
 app.use('/js/login.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'login.js')));
 app.use('/js/uiHelpers.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'uiHelpers.js')));
-app.use('/js/common/uiHelpers.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'common', 'uiHelpers.js')));
-app.use('/js/dashboard-common.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'dashboard-common.js')));
 app.use('/js/utils/formatters.js', express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'utils', 'formatters.js')));
 
-// Servir módulos de administración con autenticación
-app.use('/js/modules/admin', requireAuth, express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'modules', 'admin')));
+// Rutas protegidas para las páginas (ANTES de servir archivos estáticos)
+app.get('/admin', requireAuth, requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'src', 'pages', 'admin_dashboard.html'));
+});
 
-// Middleware para proteger archivos estáticos que requieren autenticación
-app.use('/pages', requireAuth, express.static(path.join(__dirname, '..', 'client', 'src', 'pages')));
-app.use('/js', requireAuth, express.static(path.join(__dirname, '..', 'client', 'src', 'js')));
+app.get('/pages/dashboard_mesapartes.html', requireAuth, requireArea(2), (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'src', 'pages', 'dashboard_mesapartes.html'));
+});
+
+app.get('/pages/dashboard_toxicologia.html', requireAuth, requireArea(5), (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'src', 'pages', 'dashboard_toxicologia.html'));
+});
+
+// Archivos estáticos protegidos (después de las rutas específicas)
+app.use('/styles', requireAuth, (req, res, next) => {
+    if (req.path.includes('stylesLogin.css')) {
+        next('route');
+    } else {
+        express.static(path.join(__dirname, '..', 'client', 'src', 'styles'))(req, res, next);
+    }
+});
+
+app.use('/js/modules', requireAuth, express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'modules')));
+app.use('/js/dashboard-common.js', requireAuth, express.static(path.join(__dirname, '..', 'client', 'src', 'js', 'dashboard-common.js')));
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
@@ -55,30 +69,23 @@ app.use('/api/users', requireAuth, userRoutes);
 app.use('/api/areas', requireAuth, areaRoutes);
 app.use('/api/logs', requireAuth, logRoutes);
 app.use('/api/roles', requireAuth, rolesRoutes);
-app.use('/api/tipos', tiposRoutes);
+app.use('/api/tipos', requireAuth, tiposRoutes);
 
-// Ruta principal
-app.get('/', (req, res) => {
+// Ruta principal y login
+app.get(['/', '/index.html', '/login'], (req, res) => {
     if (req.session && req.session.user) {
-        // Si el usuario está autenticado, redirigir según su rol
-        if (req.session.user.nivelAcceso === 1) {
-            res.redirect('/admin');
-        } else {
-            res.redirect('/dashboard');
+        switch (req.session.user.idArea) {
+            case 1:
+                return res.redirect('/admin');
+            case 2:
+                return res.redirect('/pages/dashboard_mesapartes.html');
+            case 5:
+                return res.redirect('/pages/dashboard_toxicologia.html');
+            default:
+                return res.redirect('/dashboard');
         }
-    } else {
-        // Si no está autenticado, mostrar la página de inicio
-        res.sendFile(path.join(__dirname, '..', 'client', 'public', 'index.html'));
     }
-});
-
-// Rutas protegidas para las páginas
-app.get('/admin', requireAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'client', 'src', 'pages', 'admin_dashboard.html'));
-});
-
-app.get('/dashboard', requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'client', 'src', 'pages', 'dashboard_toxicologia.html'));
+    res.sendFile(path.join(__dirname, '..', 'client', 'public', 'index.html'));
 });
 
 // Ruta para verificar el estado de autenticación
@@ -101,11 +108,7 @@ app.get('/api/auth/check', (req, res) => {
 
 // Middleware para manejar rutas no encontradas
 app.use((req, res) => {
-    if (!req.session || !req.session.user) {
-        res.redirect('/');
-    } else {
-        res.status(404).send('Página no encontrada');
-    }
+    res.redirect('/');
 });
 
 // Ruta para iniciar sesión

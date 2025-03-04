@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesa de Partes - OFICRI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/styles_mesapartes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Glegoo&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="icon" href="/assets/images/logoOficri2x2.png" type="image/x-icon">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <div class="logo">
+                        <img src="/assets/images/logoOficri2x2.png" alt="Logo OFICRI" class="logo-image">
+                        <span class="logo-text">OFICRI Cusco - Mesa de Partes</span>
+                    </div>
+                </div>
+                <div class="col text-end">
+                    <img src="/assets/images/logoPolicia2x2.png" alt="Logo PNP" class="pnp-logo">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar shadow-sm">
+            <!-- Información del Usuario -->
+            <div class="user-info mb-4">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle" aria-hidden="true"></i>
+                </div>
+                <div class="user-details">
+                    <span id="username" class="username"></span>
+                    <span id="user-role" class="user-role"></span>
+                </div>
+            </div>
+
+            <!-- Navegación Principal -->
+            <nav class="nav flex-column nav-links" aria-label="Navegación principal">
+                <button class="nav-item active" data-section="recepcion" aria-current="page">
+                    <i class="fas fa-inbox" aria-hidden="true"></i>
+                    <span>Recepción de Documentos</span>
+                </button>
+                <button class="nav-item" data-section="derivacion">
+                    <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+                    <span>Derivación</span>
+                </button>
+                <button class="nav-item" data-section="seguimiento">
+                    <i class="fas fa-search-location" aria-hidden="true"></i>
+                    <span>Seguimiento</span>
+                </button>
+                <button class="nav-item" data-section="reportes">
+                    <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                    <span>Reportes</span>
+                </button>
+            </nav>
+
+            <!-- Footer del Sidebar -->
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn btn-outline-danger w-100">
+                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <!-- Sección de Recepción de Documentos -->
+            <section id="recepcion-section" class="content-section active" aria-labelledby="recepcion-title">
+                <div class="section-header">
+                    <h1 id="recepcion-title" class="h2">
+                        <i class="fas fa-inbox" aria-hidden="true"></i> Recepción de Documentos
+                    </h1>
+                    <button class="btn btn-primary" id="nuevo-documento-btn">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nuevo Documento
+                    </button>
+                </div>
+                
+                <!-- Barra de Búsqueda -->
+                <div class="search-bar mb-4">
+                    <div class="input-group">
+                        <input type="search" 
+                               class="form-control" 
+                               placeholder="Buscar documento..." 
+                               aria-label="Buscar documento">
+                        <button class="btn btn-outline-secondary" 
+                                type="button"
+                                aria-label="Buscar">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Documentos -->
+                <div class="table-responsive">
+                    <table class="table table-hover" aria-label="Lista de documentos">
+                        <thead>
+                            <tr>
+                                <th scope="col">N° Registro</th>
+                                <th scope="col">Fecha</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Remitente</th>
+                                <th scope="col">Asunto</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documentos-table-body">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sección de Derivación -->
+            <section id="derivacion-section" class="content-section" aria-labelledby="derivacion-title">
+                <div class="section-header">
+                    <h2 id="derivacion-title">
+                        <i class="fas fa-exchange-alt" aria-hidden="true"></i> Derivación de Documentos
+                    </h2>
+                </div>
+                <div class="derivacion-container">
+                    <div class="pendientes-derivacion">
+                        <h3>Pendientes de Derivación</h3>
+                        <div class="table-responsive">
+                            <table class="table" aria-label="Documentos pendientes de derivación">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">N° Documento</th>
+                                        <th scope="col">Fecha Recepción</th>
+                                        <th scope="col">Tipo</th>
+                                        <th scope="col">Área Destino</th>
+                                        <th scope="col">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendientes-derivacion-body">
+                                    <!-- Se llenará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección de Seguimiento -->
+            <section id="seguimiento-section" class="content-section" aria-labelledby="seguimiento-title">
+                <div class="section-header">
+                    <h2 id="seguimiento-title">
+                        <i class="fas fa-search-location" aria-hidden="true"></i> Seguimiento de Documentos
+                    </h2>
+                </div>
+                <div class="search-tracking mb-4">
+                    <div class="input-group">
+                        <input type="search" 
+                               class="form-control" 
+                               placeholder="Ingrese número de documento..." 
+                               aria-label="Número de documento para seguimiento">
+                        <button class="btn btn-primary" type="button">
+                            <i class="fas fa-search" aria-hidden="true"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+                <div id="tracking-results" aria-live="polite">
+                    <!-- Resultados del seguimiento -->
+                </div>
+            </section>
+
+            <!-- Sección de Reportes -->
+            <section id="reportes-section" class="content-section" aria-labelledby="reportes-title">
+                <div class="section-header">
+                    <h2 id="reportes-title">
+                        <i class="fas fa-chart-bar" aria-hidden="true"></i> Reportes
+                    </h2>
+                </div>
+                <div class="reports-container">
+                    <div class="row g-4">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="report-card">
+                                <h3 class="h4">Documentos del Día</h3>
+                                <div class="report-value" id="documentos-dia" aria-label="Cantidad de documentos del día">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="report-card">
+                                <h3 class="h4">Pendientes</h3>
+                                <div class="report-value" id="documentos-pendientes" aria-label="Cantidad de documentos pendientes">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="report-card">
+                                <h3 class="h4">Derivados</h3>
+                                <div class="report-value" id="documentos-derivados" aria-label="Cantidad de documentos derivados">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="report-card">
+                                <h3 class="h4">Total del Mes</h3>
+                                <div class="report-value" id="documentos-mes" aria-label="Total de documentos del mes">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal para Nuevo Documento -->
+    <div class="modal fade" id="nuevoDocumentoModal" tabindex="-1" aria-labelledby="modalNuevoDocumento" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modalNuevoDocumento">Registrar Nuevo Documento</h2>
+                    <button type="button" 
+                            class="btn-close" 
+                            data-bs-dismiss="modal" 
+                            aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="nuevoDocumentoForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="tipoDocumento" class="form-label">Tipo de Documento</label>
+                                <select class="form-select" 
+                                        id="tipoDocumento"
+                                        name="tipoDocumento" 
+                                        required
+                                        aria-describedby="tipoDocumentoHelp">
+                                    <option value="">Seleccione...</option>
+                                    <option value="OFICIO">Oficio</option>
+                                    <option value="INFORME">Informe</option>
+                                    <option value="SOLICITUD">Solicitud</option>
+                                    <option value="OTROS">Otros</option>
+                                </select>
+                                <div id="tipoDocumentoHelp" class="form-text">
+                                    Seleccione el tipo de documento a registrar
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="numeroDocumento" class="form-label">Número de Documento</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="numeroDocumento"
+                                       name="numeroDocumento" 
+                                       required
+                                       aria-describedby="numeroDocumentoHelp">
+                                <div id="numeroDocumentoHelp" class="form-text">
+                                    Ingrese el número único del documento
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="remitente" class="form-label">Remitente</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="remitente"
+                                       name="remitente" 
+                                       required
+                                       aria-describedby="remitenteHelp">
+                                <div id="remitenteHelp" class="form-text">
+                                    Ingrese el nombre del remitente
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="areaDestino" class="form-label">Área Destino</label>
+                                <select class="form-select" 
+                                        id="areaDestino"
+                                        name="areaDestino" 
+                                        required
+                                        aria-describedby="areaDestinoHelp">
+                                    <option value="">Seleccione...</option>
+                                    <!-- Se llenará dinámicamente -->
+                                </select>
+                                <div id="areaDestinoHelp" class="form-text">
+                                    Seleccione el área de destino del documento
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="asunto" class="form-label">Asunto</label>
+                            <textarea class="form-control" 
+                                      id="asunto"
+                                      name="asunto" 
+                                      rows="3" 
+                                      required
+                                      aria-describedby="asuntoHelp"></textarea>
+                            <div id="asuntoHelp" class="form-text">
+                                Describa brevemente el asunto del documento
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" 
+                                      id="observaciones"
+                                      name="observaciones" 
+                                      rows="2"
+                                      aria-describedby="observacionesHelp"></textarea>
+                            <div id="observacionesHelp" class="form-text">
+                                Agregue observaciones adicionales si es necesario
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="documento" class="form-label">Adjuntar Documento</label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="documento"
+                                   name="documento"
+                                   aria-describedby="documentoHelp">
+                            <div id="documentoHelp" class="form-text">
+                                Formatos permitidos: PDF, DOC, DOCX (Máx. 10MB)
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" form="nuevoDocumentoForm">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts de la aplicación -->
+    <script src="/js/clientAuth.js"></script>
+    <script src="/js/frontendAuth.js"></script>
+    <script src="/js/uiHelpers.js"></script>
+    <script src="/js/common/uiHelpers.js"></script>
+    <script src="/js/dashboard-common.js"></script>
+    
+    <!-- Módulos específicos de Mesa de Partes -->
+    <script src="/js/modules/mesapartes/documentManagement.js"></script>
+    <script src="/js/modules/mesapartes/derivacionManagement.js"></script>
+    <script src="/js/modules/mesapartes/seguimientoManagement.js"></script>
+    <script src="/js/modules/mesapartes/reportesManagement.js"></script>
+    <script src="/js/modules/mesapartes/mesapartesDashboard.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.mesapartesModules && window.mesapartesModules.initDashboard) {
+                window.mesapartesModules.initDashboard();
+            } else {
+                console.error('No se pudo inicializar el dashboard de mesa de partes');
+            }
+        });
+    </script>
+</body>
+</html> 

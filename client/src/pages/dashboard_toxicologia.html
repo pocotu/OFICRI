@@ -27,6 +27,7 @@
     <script src="/js/toxicologia.js"></script>
 </head>
 <body>
+    <div class="body-overlay"></div>
     <div class="header">
         <div class="container-fluid">
             <div class="row align-items-center">
@@ -85,112 +86,141 @@
             <div class="container-fluid p-4">
                 <!-- Dashboard Section -->
                 <section id="dashboard" class="content-section active">
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="section-title text-center">
-                                <h1 class="mb-4 display-4">QUÍMICA Y TOXICOLOGÍA FORENSE</h1>
-                                <div class="stats-container row g-3">
-                                    <div class="col-12 col-md-4">
-                                        <div class="stat-box" data-filter="pending">
-                                            <h3>Documentos Pendientes</h3>
-                                            <div class="number">15</div>
-                                        </div>
+                    <div class="container-fluid py-4">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="section-title text-center">
+                                    <h1 class="h2 mb-4">QUÍMICA Y TOXICOLOGÍA FORENSE</h1>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="card stat-box h-100 shadow-sm" data-filter="pending">
+                                    <div class="card-body">
+                                        <h3 class="card-title h5 mb-3">Documentos Pendientes</h3>
+                                        <div class="number display-4 text-center">15</div>
                                     </div>
-                                    <div class="col-12 col-md-4">
-                                        <div class="stat-box" data-filter="processing">
-                                            <h3>En Proceso</h3>
-                                            <div class="number">8</div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="card stat-box h-100 shadow-sm" data-filter="processing">
+                                    <div class="card-body">
+                                        <h3 class="card-title h5 mb-3">En Proceso</h3>
+                                        <div class="number display-4 text-center">8</div>
                                     </div>
-                                    <div class="col-12 col-md-4">
-                                        <div class="stat-box" data-filter="completed">
-                                            <h3>Completados</h3>
-                                            <div class="number">45</div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="card stat-box h-100 shadow-sm" data-filter="completed">
+                                    <div class="card-body">
+                                        <h3 class="card-title h5 mb-3">Completados</h3>
+                                        <div class="number display-4 text-center">45</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="action-container text-end">
-                                <button class="btn add-document-btn">
-                                    <i class='bx bx-plus'></i> Nuevo Documento
-                                </button>
+                        <!-- Action Buttons -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-primary add-document-btn">
+                                        <i class='bx bx-plus me-2'></i>Nuevo Documento
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="documents-section">
-                                <h2 class="mb-4">Documentos Recientes</h2>
-                                <div class="table-responsive">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Nº RG</th>
-                                                <th>Fecha Ingreso</th>
-                                                <th>Documento</th>
-                                                <th>Procedencia</th>
-                                                <th>Agraviado</th>
-                                                <th>Tipo Examen</th>
-                                                <th>Delito/Infracción</th>
-                                                <th>Estado</th>
-                                                <th>Doc. Salida</th>
-                                                <th>Responsable</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>1</td>
-                                                <td>02/01/2025</td>
-                                                <td>OF-002</td>
-                                                <td>C. OCONGATE</td>
-                                                <td>
-                                                    <div class="agraviado-info">
-                                                        <span class="nombre">Armando</span>
-                                                        <span class="apellido">Llanos Luna</span>
-                                                    </div>
-                                                </td>
-                                                <td>TOXICOLÓGICO</td>
-                                                <td>DCLLS.</td>
-                                                <td><span class="status pending">Pendiente</span></td>
-                                                <td>---</td>
-                                                <td>PUMA</td>
-                                                <td>
-                                                    <button class="action-btn view" title="Ver detalles"><i class='bx bx-show'></i></button>
-                                                    <button class="action-btn edit" title="Editar"><i class='bx bx-edit'></i></button>
-                                                    <button class="action-btn add-doc" title="Agregar documento"><i class='bx bx-file-plus'></i></button>
-                                                </td>
-                                            </tr>
-                                            <!-- Ejemplo de registro completado -->
-                                            <tr>
-                                                <td>3</td>
-                                                <td>02/01/2025</td>
-                                                <td>OF-006</td>
-                                                <td>C. WANCHÁQ</td>
-                                                <td>
-                                                    <div class="agraviado-info">
-                                                        <span class="nombre">Julio Cesar</span>
-                                                        <span class="apellido">Huillca Mejía</span>
-                                                    </div>
-                                                </td>
-                                                <td>TOXICOLÓGICO</td>
-                                                <td>SUSTANCIA TOXICA</td>
-                                                <td><span class="status completed">Completado</span></td>
-                                                <td>INF-001-2025</td>
-                                                <td>MENDOZA</td>
-                                                <td>
-                                                    <button class="action-btn view" title="Ver detalles"><i class='bx bx-show'></i></button>
-                                                    <button class="action-btn download" title="Descargar informe"><i class='bx bx-download'></i></button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                        <!-- Documents Table -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-light">
+                                        <h2 class="h5 mb-0">Documentos Recientes</h2>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Nº RG</th>
+                                                        <th>Fecha Ingreso</th>
+                                                        <th>Documento</th>
+                                                        <th>Procedencia</th>
+                                                        <th>Agraviado</th>
+                                                        <th>Tipo Examen</th>
+                                                        <th>Delito/Infracción</th>
+                                                        <th>Estado</th>
+                                                        <th>Doc. Salida</th>
+                                                        <th>Responsable</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>1</td>
+                                                        <td>02/01/2025</td>
+                                                        <td>OF-002</td>
+                                                        <td>C. OCONGATE</td>
+                                                        <td>
+                                                            <div class="d-flex flex-column">
+                                                                <span class="fw-bold">Armando</span>
+                                                                <span class="text-muted">Llanos Luna</span>
+                                                            </div>
+                                                        </td>
+                                                        <td>TOXICOLÓGICO</td>
+                                                        <td>DCLLS.</td>
+                                                        <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                                                        <td>---</td>
+                                                        <td>PUMA</td>
+                                                        <td>
+                                                            <div class="btn-group">
+                                                                <button class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                                                    <i class='bx bx-show'></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-secondary" title="Editar">
+                                                                    <i class='bx bx-edit'></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-success" title="Agregar documento">
+                                                                    <i class='bx bx-file-plus'></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>3</td>
+                                                        <td>02/01/2025</td>
+                                                        <td>OF-006</td>
+                                                        <td>C. WANCHÁQ</td>
+                                                        <td>
+                                                            <div class="d-flex flex-column">
+                                                                <span class="fw-bold">Julio Cesar</span>
+                                                                <span class="text-muted">Huillca Mejía</span>
+                                                            </div>
+                                                        </td>
+                                                        <td>TOXICOLÓGICO</td>
+                                                        <td>SUSTANCIA TOXICA</td>
+                                                        <td><span class="badge bg-success">Completado</span></td>
+                                                        <td>INF-001-2025</td>
+                                                        <td>MENDOZA</td>
+                                                        <td>
+                                                            <div class="btn-group">
+                                                                <button class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                                                    <i class='bx bx-show'></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-info" title="Descargar informe">
+                                                                    <i class='bx bx-download'></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -199,27 +229,45 @@
 
                 <!-- Other sections with Bootstrap grid -->
                 <section id="documentos" class="content-section">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="section-title">
-                                <h1>GESTIÓN DE DOCUMENTOS</h1>
+                    <div class="container-fluid py-4">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="section-title">
+                                    <h1 class="h2 mb-4">GESTIÓN DE DOCUMENTOS</h1>
+                                </div>
                             </div>
-                            <div class="search-filters row g-3 mb-4">
-                                <div class="col-12 col-md-6">
-                                    <input type="text" class="form-control" placeholder="Buscar documento...">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <select class="form-select">
-                                        <option value="">Todos los estados</option>
-                                        <option value="pending">Pendiente</option>
-                                        <option value="processing">En Proceso</option>
-                                        <option value="completed">Completado</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <button class="btn add-document-btn w-100">
-                                        <i class='bx bx-plus'></i> Nuevo Documento
-                                    </button>
+                        </div>
+
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6">
+                                        <div class="input-group">
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   placeholder="Buscar documento..." 
+                                                   aria-label="Buscar documento">
+                                            <button class="btn btn-outline-secondary" 
+                                                    type="button"
+                                                    title="Buscar documento">
+                                                <i class='bx bx-search'></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <select class="form-select" 
+                                                aria-label="Filtrar por estado">
+                                            <option value="">Todos los estados</option>
+                                            <option value="pending">Pendiente</option>
+                                            <option value="processing">En Proceso</option>
+                                            <option value="completed">Completado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <button class="btn btn-primary w-100">
+                                            <i class='bx bx-plus me-2'></i>Nuevo Documento
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -228,23 +276,41 @@
 
                 <!-- Agraviados Section -->
                 <section id="agraviados" class="content-section">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="section-title">
-                                <h1>REGISTRO DE AGRAVIADOS</h1>
-                            </div>
-                            <div class="search-filters row g-3 mb-4">
-                                <div class="col-12 col-md-8">
-                                    <input type="text" class="form-control" placeholder="Buscar agraviado...">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <button class="btn add-agraviado-btn w-100">
-                                        <i class='bx bx-user-plus'></i> Nuevo Agraviado
-                                    </button>
+                    <div class="container-fluid py-4">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="section-title">
+                                    <h1 class="h2 mb-4">REGISTRO DE AGRAVIADOS</h1>
                                 </div>
                             </div>
-                            <div class="agraviados-grid row g-4">
-                                <!-- Grid content will be dynamically added -->
+                        </div>
+
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-8">
+                                        <div class="input-group">
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   placeholder="Buscar agraviado..." 
+                                                   aria-label="Buscar agraviado">
+                                            <button class="btn btn-outline-secondary" 
+                                                    type="button"
+                                                    title="Buscar agraviado">
+                                                <i class='bx bx-search'></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <button class="btn btn-primary w-100">
+                                            <i class='bx bx-user-plus me-2'></i>Nuevo Agraviado
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="row g-4" id="agraviados-grid">
+                                    <!-- Grid content will be dynamically added -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -252,24 +318,40 @@
 
                 <!-- Historial Section -->
                 <section id="historial" class="content-section">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="section-title">
-                                <h1>HISTORIAL DE ACTIVIDADES</h1>
-                            </div>
-                            <div class="date-filters row g-3 mb-4">
-                                <div class="col-12 col-md-4">
-                                    <input type="date" class="form-control" id="fecha-inicio">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <input type="date" class="form-control" id="fecha-fin">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <button class="btn filter-btn w-100">Filtrar</button>
+                    <div class="container-fluid py-4">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="section-title">
+                                    <h1 class="h2 mb-4">HISTORIAL DE ACTIVIDADES</h1>
                                 </div>
                             </div>
-                            <div class="activity-timeline">
-                                <!-- Timeline content will be dynamically added -->
+                        </div>
+
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-4">
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="fecha-inicio"
+                                               aria-label="Fecha de inicio">
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="fecha-fin"
+                                               aria-label="Fecha de fin">
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <button class="btn btn-primary w-100">
+                                            <i class='bx bx-filter me-2'></i>Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="activity-timeline">
+                                    <!-- Timeline content will be dynamically added -->
+                                </div>
                             </div>
                         </div>
                     </div>

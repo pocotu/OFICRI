@@ -73,11 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Redirigir según el área del usuario
                 if (data.user.idArea === 1) { // Área de Administración
                     window.location.href = "/admin";
-                } else if (data.user.idArea === 4) { // Área de Química y Toxicología
+                } else if (data.user.idArea === 2) { // Área de Mesa de Partes
+                    window.location.href = "/pages/dashboard_mesapartes.html";
+                } else if (data.user.idArea === 5) { // Área de Química y Toxicología
                     window.location.href = "/pages/dashboard_toxicologia.html";
                 } else {
                     // Para otras áreas, redirigir a sus respectivos dashboards
-                    window.location.href = "/pages/dashboard_toxicologia.html";
+                    window.location.href = "/dashboard";
                 }
             } else {
                 // Mostrar error y actualizar intentos
