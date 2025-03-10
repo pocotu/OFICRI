@@ -1,0 +1,125 @@
+/* Estilos para la página de gestión de usuarios */
+
+.users-container {
+    padding: var(--spacing-lg);
+}
+
+.users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.users-actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.users-filters {
+    background: white;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: var(--spacing-lg);
+}
+
+.users-table-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+
+/* Estilos para la tabla de usuarios */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--light-color);
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Estilos para los botones de acción */
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.btn-group .btn i {
+    font-size: 0.75rem;
+}
+
+/* Estilos para los badges de estado */
+.badge {
+    padding: 0.5em 0.75em;
+    font-weight: 500;
+}
+
+/* Estilos para el formulario de usuario */
+.user-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.user-form .form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.user-form .form-label {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.user-form .required::after {
+    content: '*';
+    color: var(--danger-color);
+    margin-left: 4px;
+}
+
+/* Estilos para el modal de detalles */
+.user-details {
+    padding: var(--spacing-md);
+}
+
+.user-details .detail-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.user-details .detail-label {
+    font-weight: 500;
+    color: var(--gray-color);
+    margin-bottom: 0.25rem;
+}
+
+.user-details .detail-value {
+    color: var(--primary-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .users-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        text-align: center;
+    }
+    
+    .users-actions {
+        justify-content: center;
+    }
+    
+    .users-filters .row > div {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .table-responsive {
+        margin: 0 calc(-1 * var(--spacing-md));
+    }
+} 
