@@ -1,1 +1,1 @@
-# Sistema OFICRI Cusco
+# sistema oficri

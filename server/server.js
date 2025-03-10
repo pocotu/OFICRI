@@ -34,56 +34,26 @@ const { errorMiddleware } = require('./src/middleware/middlewareExport');
 // Crear aplicación Express
 const app = express();
 
-// Configuración de Helmet con CSP personalizado
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https:"],
-            fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
-            connectSrc: ["'self'", "http://localhost:*"]
-        }
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false
-}));
-
-// Configuración de CORS
-app.use(cors(corsConfig));
-
-// Parsers para el cuerpo de las solicitudes
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configuración de sesiones
-app.use(session(sessionConfig));
-
-// Rate limiter específico para API
-const apiLimiter = rateLimit({
-    ...rateLimitConfig,
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100 // límite de 100 peticiones por ventana por IP
+// Configuración de tipos MIME
+express.static.mime.define({
+    'application/javascript': ['js', 'mjs'],
+    'text/css': ['css'],
+    'image/png': ['png'],
+    'image/jpeg': ['jpg', 'jpeg'],
+    'image/gif': ['gif'],
+    'image/svg+xml': ['svg'],
+    'font/woff2': ['woff2'],
+    'font/woff': ['woff'],
+    'font/ttf': ['ttf'],
+    'font/eot': ['eot']
 });
 
-// Rate limiter más permisivo para archivos estáticos
-const staticLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minuto
-    max: 500, // 500 peticiones por minuto
-    message: 'Demasiadas peticiones a archivos estáticos'
-});
-
-// Aplicar rate limiting
-app.use('/api/', apiLimiter); // Rate limiting estricto para la API
-app.use('/src/', staticLimiter); // Rate limiting más permisivo para archivos estáticos
-
-// Configurar tipos MIME
+// Middleware para manejar tipos MIME
 app.use((req, res, next) => {
     const ext = path.extname(req.path).toLowerCase();
     switch (ext) {
         case '.js':
+        case '.mjs':
             res.type('application/javascript');
             break;
         case '.css':
@@ -96,62 +66,80 @@ app.use((req, res, next) => {
         case '.jpeg':
             res.type('image/jpeg');
             break;
-        case '.ico':
-            res.type('image/x-icon');
+        case '.gif':
+            res.type('image/gif');
+            break;
+        case '.svg':
+            res.type('image/svg+xml');
+            break;
+        case '.woff2':
+            res.type('font/woff2');
+            break;
+        case '.woff':
+            res.type('font/woff');
+            break;
+        case '.ttf':
+            res.type('font/ttf');
+            break;
+        case '.eot':
+            res.type('font/eot');
             break;
     }
     next();
 });
 
-// Middleware personalizado para servir archivos estáticos con control de caché
-app.use((req, res, next) => {
-    // Rutas para archivos estáticos
-    const publicPath = path.join(__dirname, '../client/public');
-    const srcPath = path.join(__dirname, '../client/src');
-    
-    let filePath = null;
-    
-    // Comprobar si la solicitud es para un archivo en public
-    if (req.path.startsWith('/assets/') || req.path === '/favicon.ico' || req.path === '/index.html') {
-        filePath = path.join(publicPath, req.path);
-    } 
-    // Comprobar si la solicitud es para un archivo en src
-    else if (req.path.startsWith('/src/')) {
-        filePath = path.join(__dirname, '..', req.path);
-    }
-    
-    // Si es un archivo estático
-    if (filePath && require('fs').existsSync(filePath)) {
-        // Establecer cabeceras de caché
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        
-        // Enviar el archivo
-        res.sendFile(filePath);
-    } else {
-        // No es un archivo estático, continuar con el siguiente middleware
-        next();
-    }
-});
-
-// Mantener express.static como fallback, pero con opciones de caché estrictas
+// Servir archivos estáticos con opciones específicas
 const staticOptions = {
-    etag: false,
-    lastModified: false,
-    maxAge: 0,
-    setHeaders: (res) => {
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        });
+    setHeaders: (res, path) => {
+        // Configurar cabeceras para archivos estáticos
+        res.set('X-Content-Type-Options', 'nosniff');
+        
+        // Configurar Cache-Control según el tipo de archivo
+        if (path.endsWith('.html')) {
+            res.set('Cache-Control', 'no-cache');
+        } else {
+            res.set('Cache-Control', 'public, max-age=31536000'); // 1 año para recursos estáticos
+        }
     }
 };
 
 // Servir archivos estáticos
-app.use(express.static(path.join(__dirname, '../client/public'), staticOptions));
 app.use('/src', express.static(path.join(__dirname, '../client/src'), staticOptions));
+app.use(express.static(path.join(__dirname, '../client/public'), staticOptions));
+
+// Configuración de Helmet con CSP personalizado
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "http:"],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
+            imgSrc: ["'self'", "data:", "https:", "http:"],
+            fontSrc: ["'self'", "https:", "http:", "data:"],
+            connectSrc: ["'self'", process.env.CORS_ORIGIN || "http://localhost:3000"]
+        }
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false
+}));
+
+// Configuración de CORS
+app.use(cors(corsConfig));
+
+// Límite de tasa de solicitudes
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100 // límite de 100 solicitudes por ventana por IP
+});
+app.use('/api/', limiter);
+
+// Parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configuración de sesiones
+app.use(session(sessionConfig));
 
 // Rutas API
 app.use('/api/auth', authRoutes);
@@ -160,26 +148,18 @@ app.use('/api/areas', areaRoutes);
 app.use('/api/mesa-partes', mesaPartesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-// Manejo de errores 404 para archivos estáticos
-app.use((req, res, next) => {
-    if (req.path.match(/\.(js|css|png|jpg|jpeg|ico)$/i)) {
-        logger.warn(`Archivo no encontrado: ${req.path}`);
-        return res.status(404).send('Archivo no encontrado');
+// Manejar rutas del cliente (SPA)
+app.get('*', (req, res, next) => {
+    // Si es una solicitud de API o un archivo estático, continuar al siguiente middleware
+    if (req.path.startsWith('/api/') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+        return next();
     }
-    next();
+    // Para todas las demás rutas, servir el index.html
+    res.sendFile(path.join(__dirname, '../client/public/index.html'));
 });
 
-// Middleware de manejo de errores global
+// Manejo de errores
 app.use(errorMiddleware);
-
-// Ruta para el SPA - debe estar al final
-app.get('*', (req, res) => {
-    if (!req.path.includes('.')) {  // Solo para rutas que no son archivos
-        res.sendFile(path.join(__dirname, '../client/public/index.html'));
-    } else {
-        res.status(404).send('Archivo no encontrado');
-    }
-});
 
 const PORT = process.env.PORT || 3000;
 
@@ -194,10 +174,12 @@ async function startServer() {
         
         app.listen(PORT, () => {
             logger.info(`Servidor corriendo en puerto ${PORT}`);
-            logger.info('\nCredenciales de administrador:');
-            logger.info('CIP: 12345678');
-            logger.info('Contraseña: admin123');
-            logger.info(`\nAcceda a http://localhost:${PORT} para comenzar`);
+            if (process.env.NODE_ENV !== 'production') {
+                logger.info('\nCredenciales de administrador:');
+                logger.info('CIP: 12345678');
+                logger.info('Contraseña: admin123');
+                logger.info(`\nAcceda a http://localhost:${PORT} para comenzar`);
+            }
         });
     } catch (error) {
         logger.logError('Error al iniciar el servidor', error);
@@ -205,5 +187,5 @@ async function startServer() {
     }
 }
 
-// Iniciar el servidor
+// Iniciar servidor
 startServer();
