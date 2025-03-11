@@ -2,6 +2,10 @@
  * Componente AuthFooter
  * Pie de página para las páginas de autenticación
  * Muestra información de copyright de OFICRI
+ * 
+ * Utiliza las variables globales de color definidas en main.css
+ * - Fondo: var(--primary-color)
+ * - Texto: blanco
  */
 
 export class AuthFooter {

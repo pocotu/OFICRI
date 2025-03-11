@@ -2,6 +2,10 @@
  * Componente AuthHeader
  * Barra de encabezado para las páginas de autenticación
  * Muestra los logos de OFICRI y la Policía Nacional del Perú
+ * 
+ * Utiliza las variables globales de color definidas en main.css
+ * - Fondo: var(--primary-color)
+ * - Texto: blanco
  */
 
 export class AuthHeader {
