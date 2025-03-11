@@ -3,17 +3,147 @@
  * Proporciona funciones específicas para manejo de sesiones (login, logout, verificación)
  */
 
+// Importar el servicio de autenticación (es una instancia ya creada, no una clase)
+import authService from './auth.service.js';
+
+console.log('[SESSION-MANAGER-DEBUG] Inicializando módulo sessionManager');
+console.log('[SESSION-MANAGER-DEBUG] AuthService importado:', authService ? 'OK' : 'NO');
+
+// Verificar métodos disponibles en authService
+if (authService) {
+    console.log('[SESSION-MANAGER-DEBUG] Métodos disponibles en authService:', 
+        Object.keys(authService).filter(key => typeof authService[key] === 'function'));
+}
+
 /**
- * Cierra la sesión del usuario actual
- * Elimina el token y la información del usuario del localStorage y redirige al login
+ * Constantes para las claves de almacenamiento
  */
-export const cerrarSesion = () => {
-    // Eliminar datos de sesión del localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+const STORAGE_KEYS = {
+    TOKEN: 'token',
+    USER: 'user',
+    LAST_PATH: 'lastPath'
+};
+
+/**
+ * Cierra la sesión del usuario actual y redirige al login
+ * Implementación robusta que garantiza la limpieza de todas las formas de almacenamiento
+ * @param {boolean} redirect - Si debe redirigir al login (por defecto true)
+ * @param {string} redirectUrl - URL a la que redirigir (por defecto '/index.html')
+ * @returns {boolean} - true si se completó con éxito, false en caso contrario
+ */
+export const cerrarSesion = (redirect = true, redirectUrl = '/index.html') => {
+    console.log('[SESSION-DEBUG] Iniciando cierre de sesión desde sessionManager');
     
-    // Redirigir al usuario a la página de login
-    window.location.href = '/';
+    try {
+        // Guardar la última ruta antes de cerrar sesión (si no vamos al login)
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/' && currentPath !== '/index.html') {
+            localStorage.setItem(STORAGE_KEYS.LAST_PATH, currentPath);
+        }
+
+        // PASO 1: Intentar usar el servicio de autenticación si está disponible
+        let authServiceSuccess = false;
+        try {
+            if (authService && typeof authService.logout === 'function') {
+                console.log('[SESSION-DEBUG] Intentando cerrar sesión con authService');
+                // Llamar al método sin redirección, gestionaremos eso nosotros
+                authService.logout(false);
+                authServiceSuccess = true;
+                console.log('[SESSION-DEBUG] Cierre de sesión con authService exitoso');
+            }
+        } catch (authError) {
+            console.warn('[SESSION-DEBUG] Error al usar authService:', authError);
+        }
+
+        // PASO 2: Limpieza manual exhaustiva (siempre se ejecuta como refuerzo)
+        
+        // Limpiar localStorage
+        console.log('[SESSION-DEBUG] Limpiando localStorage');
+        try {
+            localStorage.removeItem(STORAGE_KEYS.TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.USER);
+            localStorage.removeItem(STORAGE_KEYS.LAST_PATH);
+            localStorage.removeItem('redirectionOccurred');
+        } catch (localStorageError) {
+            console.warn('[SESSION-DEBUG] Error al limpiar localStorage:', localStorageError);
+        }
+        
+        // Limpiar sessionStorage
+        console.log('[SESSION-DEBUG] Limpiando sessionStorage');
+        try {
+            sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
+            sessionStorage.removeItem(STORAGE_KEYS.USER);
+            sessionStorage.removeItem('redirectionOccurred');
+        } catch (sessionStorageError) {
+            console.warn('[SESSION-DEBUG] Error al limpiar sessionStorage:', sessionStorageError);
+        }
+        
+        // Limpiar todas las cookies (método exhaustivo)
+        console.log('[SESSION-DEBUG] Limpiando cookies');
+        try {
+            // Método 1: Limpiar cookies específicas con diferentes rutas
+            const cookieNames = [STORAGE_KEYS.TOKEN, STORAGE_KEYS.USER, 'redirectionOccurred'];
+            const paths = ['/', '/admin.html', '/dashboard.html', '/index.html', ''];
+            
+            cookieNames.forEach(name => {
+                paths.forEach(path => {
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+                });
+            });
+            
+            // Método 2: Limpiar todas las cookies (más agresivo)
+            document.cookie.split(';').forEach(function(c) {
+                document.cookie = c.trim().split('=')[0] + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            });
+            
+        } catch (cookieError) {
+            console.warn('[SESSION-DEBUG] Error al limpiar cookies:', cookieError);
+        }
+        
+        // PASO 3: Redirigir si es necesario
+        if (redirect) {
+            console.log(`[SESSION-DEBUG] Redirigiendo a ${redirectUrl}`);
+            
+            try {
+                // Usar setTimeout para asegurar que la limpieza se complete antes de redirigir
+                setTimeout(() => {
+                    try {
+                        window.location.href = redirectUrl;
+                    } catch (redirectError) {
+                        console.error('[SESSION-DEBUG] Error en redirección con location.href:', redirectError);
+                        
+                        // Alternativa si falla location.href
+                        try {
+                            window.location.replace(redirectUrl);
+                        } catch (replaceError) {
+                            console.error('[SESSION-DEBUG] Error en redirección con location.replace:', replaceError);
+                            window.location = redirectUrl; // Último intento
+                        }
+                    }
+                }, 100);
+            } catch (error) {
+                console.error('[SESSION-DEBUG] Error al programar redirección:', error);
+                alert('Error al cerrar sesión. Por favor, recarga la página.');
+                return false;
+            }
+        }
+        
+        console.log('[SESSION-DEBUG] Cierre de sesión completado con éxito');
+        return true;
+    } catch (error) {
+        console.error('[SESSION-DEBUG] Error general en cerrarSesion:', error);
+        
+        // Último intento en caso de error grave
+        if (redirect) {
+            try {
+                window.location.href = redirectUrl;
+            } catch (finalError) {
+                console.error('[SESSION-DEBUG] Error final en redirección:', finalError);
+                alert('Error al cerrar sesión. Por favor, recarga la página manualmente.');
+            }
+        }
+        return false;
+    }
 };
 
 /**
@@ -21,7 +151,33 @@ export const cerrarSesion = () => {
  * @returns {boolean} - true si el usuario está autenticado, false en caso contrario
  */
 export const haySesionActiva = () => {
-    return !!localStorage.getItem('token');
+    console.log('[SESSION-DEBUG] Verificando sesión activa');
+    
+    try {
+        // Verificar que authService exista y tenga el método requerido
+        console.log('[SESSION-DEBUG] authService disponible:', authService ? 'SÍ' : 'NO');
+        
+        if (authService && typeof authService.isAuthenticated === 'function') {
+            console.log('[SESSION-DEBUG] Usando authService.isAuthenticated()');
+            return authService.isAuthenticated();
+        } else {
+            console.warn('[SESSION-DEBUG] authService.isAuthenticated no disponible, usando verificación básica');
+            
+            // Verificación básica
+            const token = localStorage.getItem(STORAGE_KEYS.TOKEN) || sessionStorage.getItem(STORAGE_KEYS.TOKEN);
+            const userStr = localStorage.getItem(STORAGE_KEYS.USER) || sessionStorage.getItem(STORAGE_KEYS.USER);
+            
+            if (!token || !userStr) {
+                console.log('[SESSION-DEBUG] No hay token o datos de usuario');
+                return false;
+            }
+            
+            return true;
+        }
+    } catch (error) {
+        console.error('[SESSION-DEBUG] Error al verificar sesión:', error);
+        return false;
+    }
 };
 
 /**
@@ -29,30 +185,36 @@ export const haySesionActiva = () => {
  * @returns {Object|null} - Objeto con datos del usuario si está autenticado, null en caso contrario
  */
 export const obtenerUsuarioActual = () => {
+    console.log('[SESSION-DEBUG] Obteniendo usuario actual');
+    
     try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) return null;
-        
-        const user = JSON.parse(userStr);
-        console.log('Obteniendo usuario de sesión:', user);
-        
-        // Verifica si tiene la estructura esperada
-        if (!user.IDUsuario && (user.id || user.ID)) {
-            // Normalizar la estructura si usa nombres de propiedades diferentes
-            return {
-                ...user,
-                IDUsuario: user.IDUsuario || user.id || user.ID,
-                IDRol: user.IDRol || user.idRol || user.rolId,
-                IDArea: user.IDArea || user.idArea || user.areaId,
-                Nombres: user.Nombres || user.nombres || user.name || user.firstName,
-                Apellidos: user.Apellidos || user.apellidos || user.lastName,
-                CodigoCIP: user.CodigoCIP || user.codigoCIP || user.cip
-            };
+        // Verificar que authService exista y tenga el método requerido
+        if (authService && typeof authService.getCurrentUser === 'function') {
+            console.log('[SESSION-DEBUG] Usando authService.getCurrentUser()');
+            return authService.getCurrentUser();
+        } else {
+            console.warn('[SESSION-DEBUG] authService.getCurrentUser no disponible, usando método básico');
+            
+            // Obtención básica
+            let userStr = localStorage.getItem(STORAGE_KEYS.USER);
+            if (!userStr) {
+                userStr = sessionStorage.getItem(STORAGE_KEYS.USER);
+            }
+            
+            if (!userStr) {
+                console.log('[SESSION-DEBUG] No se encontraron datos de usuario');
+                return null;
+            }
+            
+            try {
+                return JSON.parse(userStr);
+            } catch (parseError) {
+                console.error('[SESSION-DEBUG] Error al parsear datos de usuario:', parseError);
+                return null;
+            }
         }
-        
-        return user;
     } catch (error) {
-        console.error('Error al obtener usuario de sesión:', error);
+        console.error('[SESSION-DEBUG] Error al obtener usuario de sesión:', error);
         return null;
     }
 };
@@ -62,7 +224,26 @@ export const obtenerUsuarioActual = () => {
  * @returns {string|null} - Token de autenticación si existe, null en caso contrario
  */
 export const obtenerToken = () => {
-    return localStorage.getItem('token');
+    console.log('[SESSION-DEBUG] Obteniendo token');
+    
+    try {
+        // Verificar que authService exista y tenga el método requerido
+        if (authService && typeof authService.getToken === 'function') {
+            console.log('[SESSION-DEBUG] Usando authService.getToken()');
+            return authService.getToken();
+        } else {
+            console.warn('[SESSION-DEBUG] authService.getToken no disponible, usando método básico');
+            
+            // Obtención básica
+            const token = localStorage.getItem(STORAGE_KEYS.TOKEN) || 
+                            sessionStorage.getItem(STORAGE_KEYS.TOKEN);
+            
+            return token;
+        }
+    } catch (error) {
+        console.error('[SESSION-DEBUG] Error al obtener token:', error);
+        return null;
+    }
 };
 
 /**
@@ -75,14 +256,55 @@ export const actualizarUsuarioSesion = (userData) => {
     try {
         // Obtener usuario actual
         const currentUser = obtenerUsuarioActual();
+        if (!currentUser) {
+            console.warn('No hay usuario en sesión para actualizar');
+            return;
+        }
         
         // Fusionar datos actuales con los nuevos
         const updatedUser = { ...currentUser, ...userData };
         
-        // Guardar usuario actualizado
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Validar datos actualizados
+        if (!updatedUser.IDUsuario || !updatedUser.IDRol) {
+            console.error('Datos de usuario inválidos después de la actualización');
+            return;
+        }
+        
+        // Guardar usuario actualizado en ambos storages
+        const userStr = JSON.stringify(updatedUser);
+        localStorage.setItem(STORAGE_KEYS.USER, userStr);
+        sessionStorage.setItem(STORAGE_KEYS.USER, userStr);
     } catch (error) {
         console.error('Error al actualizar usuario en sesión:', error);
+    }
+};
+
+/**
+ * Limpia todos los datos de la sesión
+ */
+export const limpiarSesion = () => {
+    console.log('[SESSION-DEBUG] Limpiando sesión sin redirección');
+    
+    try {
+        // Verificar que authService exista y tenga el método requerido
+        if (authService && typeof authService._clearStorage === 'function') {
+            console.log('[SESSION-DEBUG] Usando authService._clearStorage()');
+            authService._clearStorage();
+        } else {
+            console.warn('[SESSION-DEBUG] authService._clearStorage no disponible, usando método básico');
+            
+            // Limpieza básica
+            localStorage.removeItem(STORAGE_KEYS.TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.USER);
+            sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
+            sessionStorage.removeItem(STORAGE_KEYS.USER);
+            
+            // Intentar limpiar cookies básicas
+            document.cookie = `${STORAGE_KEYS.TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${STORAGE_KEYS.USER}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        }
+    } catch (error) {
+        console.error('[SESSION-DEBUG] Error al limpiar sesión:', error);
     }
 };
 
@@ -92,5 +314,6 @@ export default {
     haySesionActiva,
     obtenerUsuarioActual,
     obtenerToken,
-    actualizarUsuarioSesion
+    actualizarUsuarioSesion,
+    limpiarSesion
 }; 

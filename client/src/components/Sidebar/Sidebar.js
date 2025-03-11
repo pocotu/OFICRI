@@ -4,12 +4,13 @@
  */
 
 // Importar módulos
-import AuthService from '../../services/auth.service.js';
+import authService from '../../services/auth.service.js';
 import * as sessionManager from '../../services/sessionManager.js';
 import * as permissionUtils from '../../utils/permissions.js';
 
 export class Sidebar {
     constructor() {
+        console.log('[SIDEBAR-DEBUG] Inicializando componente Sidebar');
         this.user = sessionManager.obtenerUsuarioActual();
         this.permissions = this.user ? permissionUtils.getRolePermissions(this.user.IDRol) : 0;
         
@@ -97,8 +98,34 @@ export class Sidebar {
             if (logoutLink) {
                 logoutLink.addEventListener('click', (e) => {
                     e.preventDefault();
-                    sessionManager.cerrarSesion();
+                    console.log('[SIDEBAR-DEBUG] Botón de cerrar sesión clickeado');
+                    
+                    // Usar try-catch para manejar posibles errores
+                    try {
+                        console.log('[SIDEBAR-DEBUG] Intentando cerrar sesión con authService');
+                        console.log('[SIDEBAR-DEBUG] authService disponible:', authService ? 'SÍ' : 'NO');
+                        
+                        if (authService && typeof authService.logout === 'function') {
+                            authService.logout(true);
+                        } else {
+                            console.error('[SIDEBAR-DEBUG] authService.logout no está disponible');
+                            // Usar el método del sessionManager como respaldo
+                            sessionManager.cerrarSesion();
+                        }
+                    } catch (error) {
+                        console.error('[SIDEBAR-DEBUG] Error al cerrar sesión:', error);
+                        
+                        // Último recurso: redirigir directamente
+                        try {
+                            window.location.href = '/index.html';
+                        } catch (redirectError) {
+                            console.error('[SIDEBAR-DEBUG] Error al redirigir:', redirectError);
+                            alert('Error al cerrar sesión. Por favor, recarga la página.');
+                        }
+                    }
                 });
+            } else {
+                console.warn('[SIDEBAR-DEBUG] No se encontró el enlace de logout');
             }
         }
     }

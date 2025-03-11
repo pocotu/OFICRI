@@ -2,6 +2,7 @@
 
 /* Importaciones de módulos CSS */
 @import './layouts/layout.css';
+@import './layouts/admin.css';
 @import './components/header.css';
 @import './components/sidebar.css';
 @import './components/forms.css';
@@ -9,6 +10,8 @@
 @import './components/cards.css';
 @import './components/tables.css';
 @import './components/UserProfile.css';
+@import './components/loading.css';
+@import './components/stats.css';
 @import './pages/login.css';
 @import './pages/dashboard.css';
 @import './pages/admin.css';

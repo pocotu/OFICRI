@@ -9,6 +9,14 @@ import * as permissionUtils from '../utils/permissions.js';
 // URL base para las operaciones del dashboard
 const BASE_URL = '/api/dashboard';
 
+// Estado local para mantener las estadísticas consistentes
+let dashboardState = {
+    usuariosActivos: 0,
+    documentosPendientes: 0,
+    areasActivas: 0,
+    lastUpdate: null
+};
+
 /**
  * Obtiene los headers con el token de autenticación
  * @returns {Object} - Headers con el token de autenticación
@@ -27,13 +35,22 @@ const getAuthHeaders = () => {
  */
 export const getDashboardStats = async () => {
     try {
+        // Si los datos tienen menos de 1 minuto, usar el caché
+        if (dashboardState.lastUpdate && 
+            (Date.now() - dashboardState.lastUpdate) < 60000) {
+            return { ...dashboardState };
+        }
+
         // Por ahora, simularemos los datos hasta que el backend esté listo
         // TODO: Reemplazar con llamada real a la API cuando esté disponible
-        return {
-            usuariosActivos: Math.floor(Math.random() * 100),
-            documentosPendientes: Math.floor(Math.random() * 50),
-            areasActivas: Math.floor(Math.random() * 20)
+        dashboardState = {
+            usuariosActivos: 44,
+            documentosPendientes: 7,
+            areasActivas: 1,
+            lastUpdate: Date.now()
         };
+
+        return { ...dashboardState };
 
         /* Código para cuando la API esté lista
         const response = await fetch(`${BASE_URL}/stats`, {
@@ -45,15 +62,16 @@ export const getDashboardStats = async () => {
             throw new Error(`Error HTTP: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        dashboardState = {
+            ...data,
+            lastUpdate: Date.now()
+        };
+        return { ...dashboardState };
         */
     } catch (error) {
         console.error('Error en getDashboardStats:', error);
-        return {
-            usuariosActivos: '...',
-            documentosPendientes: '...',
-            areasActivas: '...'
-        };
+        return dashboardState;
     }
 };
 
@@ -72,13 +90,48 @@ export const updateDashboardStats = async () => {
             activeAreas: document.getElementById('activeAreas')
         };
 
-        if (elements.activeUsers) elements.activeUsers.textContent = stats.usuariosActivos;
-        if (elements.pendingDocs) elements.pendingDocs.textContent = stats.documentosPendientes;
-        if (elements.activeAreas) elements.activeAreas.textContent = stats.areasActivas;
+        // Actualizar con animación
+        Object.entries(elements).forEach(([key, element]) => {
+            if (element) {
+                const currentValue = parseInt(element.textContent) || 0;
+                const targetValue = stats[key.replace('active', '').replace('pending', '').toLowerCase()];
+                
+                // Animar el cambio
+                animateNumber(element, currentValue, targetValue);
+            }
+        });
     } catch (error) {
         console.error('Error al actualizar estadísticas:', error);
     }
 };
+
+/**
+ * Anima un número desde un valor inicial hasta un valor final
+ * @param {HTMLElement} element - Elemento a animar
+ * @param {number} start - Valor inicial
+ * @param {number} end - Valor final
+ */
+function animateNumber(element, start, end) {
+    const duration = 1000; // 1 segundo
+    const steps = 60;
+    const stepValue = (end - start) / steps;
+    let current = start;
+    let step = 0;
+
+    const animate = () => {
+        step++;
+        current += stepValue;
+        
+        if (step === steps) {
+            element.textContent = end;
+        } else {
+            element.textContent = Math.round(current);
+            requestAnimationFrame(animate);
+        }
+    };
+
+    requestAnimationFrame(animate);
+}
 
 /**
  * Renderiza el contenido principal del dashboard

@@ -5,20 +5,77 @@
 
 import AuthService from '../../services/auth.service.js';
 
-// Verificar autenticación antes de cargar cualquier módulo
-if (!AuthService.isAuthenticated()) {
-    AuthService.redirectToLogin();
-    throw new Error('No autenticado');
-}
-
-const user = AuthService.getCurrentUser();
-if (!user || !(user.idRol === 1 || user.IDRol === 1)) {
-    AuthService.redirectToLogin();
-    throw new Error('No autorizado');
-}
-
+// Variable para evitar múltiples verificaciones
+let isCheckingAuth = false;
 let loadingModules = false;
 let modules = null;
+
+// Verificar autenticación al cargar la página
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[ADMIN] Iniciando carga de página de administración...');
+    
+    try {
+        // Evitar verificaciones múltiples
+        if (isCheckingAuth) {
+            console.log('[ADMIN] Ya hay una verificación en progreso');
+            return;
+        }
+        isCheckingAuth = true;
+
+        // Verificar autenticación
+        if (!AuthService.isAuthenticated()) {
+            console.log('[ADMIN] Usuario no autenticado');
+            // Guardar la ruta actual antes de redirigir
+            localStorage.setItem('lastPath', window.location.pathname);
+            window.location.replace('/');
+            return;
+        }
+
+        const user = AuthService.getCurrentUser();
+        console.log('[ADMIN] Datos del usuario:', user);
+        
+        // Verificar que el usuario existe y tiene el rol correcto
+        if (!user || !user.IDRol) {
+            console.log('[ADMIN] Datos de usuario inválidos');
+            AuthService.logout(true);
+            return;
+        }
+
+        // Verificar que sea administrador
+        if (user.IDRol !== 1) {
+            console.log('[ADMIN] Usuario no tiene rol de administrador');
+            window.location.replace('/dashboard.html');
+            return;
+        }
+
+        console.log('[ADMIN] Usuario autenticado y autorizado, cargando módulos...');
+
+        // Cargar módulos
+        const loadedModules = await loadModules();
+        if (!loadedModules) {
+            throw new Error('No se pudieron cargar los módulos');
+        }
+
+        // Mostrar la interfaz de administración
+        document.querySelector('.admin-layout').style.display = 'block';
+        document.getElementById('loadingOverlay').style.display = 'none';
+
+        // Inicializar componentes
+        await initializeComponents(loadedModules);
+
+        // Inicializar eventos de navegación
+        initNavigation(loadedModules);
+        
+        // Cargar la ruta inicial
+        await handleRoute(loadedModules);
+
+    } catch (error) {
+        console.error('[ADMIN] Error al inicializar página de administración:', error);
+        AuthService.logout(true);
+    } finally {
+        isCheckingAuth = false;
+    }
+});
 
 // Importar módulos de manera dinámica para evitar problemas de carga
 async function loadModules() {
@@ -46,41 +103,12 @@ async function loadModules() {
 
         return modules;
     } catch (error) {
-        console.error('Error al cargar módulos:', error);
-        AuthService.redirectToLogin();
+        console.error('[ADMIN] Error al cargar módulos:', error);
         return null;
     } finally {
         loadingModules = false;
     }
 }
-
-// Inicialización cuando el DOM está listo
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // Cargar módulos
-        const loadedModules = await loadModules();
-        if (!loadedModules) {
-            throw new Error('No se pudieron cargar los módulos');
-        }
-
-        // Mostrar la interfaz de administración
-        document.querySelector('.admin-layout').style.display = 'block';
-        document.getElementById('loadingOverlay').style.display = 'none';
-
-        // Inicializar componentes
-        await initializeComponents(loadedModules);
-
-        // Inicializar eventos de navegación
-        initNavigation(loadedModules);
-        
-        // Cargar la ruta inicial
-        await handleRoute(loadedModules);
-
-    } catch (error) {
-        console.error('Error al inicializar página de administración:', error);
-        AuthService.redirectToLogin();
-    }
-});
 
 /**
  * Inicializa los componentes principales
@@ -96,7 +124,7 @@ async function initializeComponents({ Header, Sidebar }) {
         await sidebar.render(document.getElementById('sidebarComponent'));
 
     } catch (error) {
-        console.error('Error al inicializar componentes:', error);
+        console.error('[ADMIN] Error al inicializar componentes:', error);
         throw error;
     }
 }
@@ -146,7 +174,7 @@ async function handleRoute({ dashboardModule, usersPage }) {
                 mainContent.innerHTML = '<h2>Página no encontrada</h2>';
         }
     } catch (error) {
-        console.error('Error al manejar ruta:', error);
+        console.error('[ADMIN] Error al manejar ruta:', error);
         mainContent.innerHTML = `
             <div class="alert alert-danger">
                 Error al cargar el contenido: ${error.message}

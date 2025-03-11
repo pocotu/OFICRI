@@ -16,72 +16,39 @@
     
     <!-- Custom CSS -->
     <link href="/src/styles/main.css" rel="stylesheet">
-    <link href="/src/styles/pages/dashboard.css" rel="stylesheet">
-    <link href="/src/styles/pages/users.css" rel="stylesheet">
-    <link href="/src/styles/components/header.css" rel="stylesheet">
-    <link href="/src/styles/components/sidebar.css" rel="stylesheet">
-    <style>
-        /* Estilos específicos para esta página que no están en main.css */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background-color: #fff;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-card h3 {
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-        .stat-card .number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #3498db;
-        }
-        .dashboard-placeholder {
-            text-align: center;
-            padding: 3rem;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .dashboard-placeholder h2 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-        .dashboard-placeholder p {
-            color: #7f8c8d;
-        }
-        #loadingOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .loading-content {
-            text-align: center;
-        }
-        .loading-spinner {
-            width: 3rem;
-            height: 3rem;
-        }
-    </style>
+    
+    <!-- Script de soporte para cerrar sesión - Versión con importación centralizada -->
+    <script type="module">
+        // Importar SessionManager para gestión centralizada de sesiones
+        import { cerrarSesion } from '/src/services/sessionManager.js';
+        
+        // Configurar interceptor de clics para el botón de cerrar sesión
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[ADMIN-HTML] Configurando interceptor de clic para cerrar sesión');
+            
+            document.addEventListener('click', function(e) {
+                // Verificar si el clic fue en el botón de cerrar sesión
+                if (e.target && 
+                    (e.target.id === 'logout-link' || 
+                     e.target.closest('#logout-link') || 
+                     (e.target.tagName === 'A' && e.target.textContent.includes('Cerrar Sesión')) || 
+                     (e.target.closest('a') && e.target.closest('a').textContent.includes('Cerrar Sesión')))) {
+                    
+                    console.log('[ADMIN-HTML] Botón de cerrar sesión interceptado');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Usar la función centralizada en sessionManager.js
+                    cerrarSesion(true, '/index.html');
+                    return false;
+                }
+            }, true);
+        });
+    </script>
 </head>
 <body>
     <!-- Loading Overlay -->
-    <div id="loadingOverlay">
+    <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-content">
             <div class="spinner-border text-primary loading-spinner" role="status">
                 <span class="visually-hidden">Cargando...</span>
@@ -90,7 +57,7 @@
         </div>
     </div>
 
-    <div class="admin-layout" style="display: none;">
+    <div class="admin-layout">
         <header class="admin-header">
             <div id="headerComponent"></div>
         </header>
@@ -102,16 +69,16 @@
         <main class="admin-content">
             <div class="stats-container">
                 <div class="stat-card">
-                    <h3>Usuarios Activos</h3>
                     <div class="number" id="activeUsers">0</div>
+                    <h3>Usuarios Activos</h3>
                 </div>
                 <div class="stat-card">
-                    <h3>Documentos Pendientes</h3>
                     <div class="number" id="pendingDocs">0</div>
+                    <h3>Documentos Pendientes</h3>
                 </div>
                 <div class="stat-card">
-                    <h3>Áreas Activas</h3>
                     <div class="number" id="activeAreas">0</div>
+                    <h3>Áreas Activas</h3>
                 </div>
             </div>
             <div id="mainContent"></div>
@@ -126,36 +93,246 @@
     
     <!-- Auth Check -->
     <script>
+        console.log('[ADMIN-DEBUG] ==================== INICIO VERIFICACIÓN ADMIN ====================');
+        console.log('[ADMIN-DEBUG] URL actual:', window.location.pathname);
+        console.log('[ADMIN-DEBUG] User Agent:', navigator.userAgent);
+        
+        // Función para detectar el navegador
+        function detectBrowser() {
+            const userAgent = navigator.userAgent;
+            let browserName = "Desconocido";
+            
+            if (userAgent.match(/chrome|chromium|crios/i)) {
+                browserName = "Chrome";
+                if (userAgent.indexOf("Edg") > -1) browserName = "Edge";
+                if (userAgent.indexOf("OPR") > -1) browserName = "Opera";
+                if (userAgent.indexOf("Brave") > -1 || typeof navigator.brave !== 'undefined') browserName = "Brave";
+            } else if (userAgent.match(/firefox|fxios/i)) {
+                browserName = "Firefox";
+            } else if (userAgent.match(/safari/i) && !userAgent.match(/chrome|chromium|crios/i)) {
+                browserName = "Safari";
+            } else if (userAgent.match(/opr\//i)) {
+                browserName = "Opera";
+            } else if (userAgent.match(/edg/i)) {
+                browserName = "Edge";
+            }
+            
+            return {
+                browser: browserName,
+                userAgent: userAgent,
+                cookiesEnabled: navigator.cookieEnabled,
+                localStorage: testStorage('localStorage'),
+                sessionStorage: testStorage('sessionStorage')
+            };
+        }
+        
+        // Función para probar almacenamiento
+        function testStorage(type) {
+            try {
+                const storage = window[type];
+                const testKey = `test_${Date.now()}`;
+                storage.setItem(testKey, "test");
+                const result = storage.getItem(testKey) === "test";
+                storage.removeItem(testKey);
+                return result;
+            } catch (e) {
+                console.error('[ADMIN-DEBUG] Error en ' + type + ':', e);
+                return false;
+            }
+        }
+        
+        const browserInfo = detectBrowser();
+        console.log('[ADMIN-DEBUG] Navegador detectado:', JSON.stringify(browserInfo));
+        
         // Verificar autenticación antes de cargar cualquier módulo
         function checkAuth() {
-            const token = localStorage.getItem('token');
-            const user = localStorage.getItem('user');
+            console.log('[ADMIN-DEBUG] ==================== INICIO CHECK AUTH ====================');
+            let token = null;
+            let userStr = null;
             
-            if (!token || !user) {
-                window.location.replace('/');
+            // Intentar obtener datos de localStorage
+            try {
+                console.log('[ADMIN-DEBUG] Intentando obtener token de localStorage');
+                token = localStorage.getItem('token');
+                console.log('[ADMIN-DEBUG] Token de localStorage:', token ? 'EXISTE' : 'NULL');
+                
+                console.log('[ADMIN-DEBUG] Intentando obtener usuario de localStorage');
+                userStr = localStorage.getItem('user');
+                console.log('[ADMIN-DEBUG] Usuario de localStorage:', userStr ? 'EXISTE' : 'NULL');
+            } catch (e) {
+                console.warn('[ADMIN-DEBUG] Error al acceder a localStorage:', e);
+                console.warn('[ADMIN-DEBUG] Stack trace:', e.stack);
+            }
+            
+            // Si no hay en localStorage, intentar sessionStorage
+            if (!token || !userStr) {
+                console.log('[ADMIN-DEBUG] Datos no encontrados en localStorage, intentando sessionStorage');
+                try {
+                    token = sessionStorage.getItem('token');
+                    console.log('[ADMIN-DEBUG] Token de sessionStorage:', token ? 'EXISTE' : 'NULL');
+                    
+                    userStr = sessionStorage.getItem('user');
+                    console.log('[ADMIN-DEBUG] Usuario de sessionStorage:', userStr ? 'EXISTE' : 'NULL');
+                } catch (e) {
+                    console.warn('[ADMIN-DEBUG] Error al acceder a sessionStorage:', e);
+                    console.warn('[ADMIN-DEBUG] Stack trace:', e.stack);
+                }
+            }
+            
+            // Si no hay en sessionStorage, intentar cookies
+            if (!token || !userStr) {
+                console.log('[ADMIN-DEBUG] Datos no encontrados en sessionStorage, intentando cookies');
+                token = getCookie('token');
+                console.log('[ADMIN-DEBUG] Token de cookies:', token ? 'EXISTE' : 'NULL');
+                
+                userStr = getCookie('user');
+                console.log('[ADMIN-DEBUG] Usuario de cookies:', userStr ? 'EXISTE' : 'NULL');
+            }
+            
+            if (!token || !userStr) {
+                console.error('[ADMIN-DEBUG] No se encontraron credenciales de sesión en ningún almacenamiento');
+                console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (NO CREDENCIALES) ====================');
+                safeRedirect('/');
                 return false;
             }
             
             try {
-                const userData = JSON.parse(user);
-                if (!userData || !userData.idRol) {
-                    localStorage.clear();
-                    window.location.replace('/');
+                console.log('[ADMIN-DEBUG] Intentando parsear datos de usuario:', userStr ? userStr.substring(0, 50) + '...' : 'NULL');
+                const userData = JSON.parse(userStr);
+                console.log('[ADMIN-DEBUG] Datos parseados correctamente');
+                console.log('[ADMIN-DEBUG] IDUsuario:', userData.IDUsuario || 'NO EXISTE');
+                console.log('[ADMIN-DEBUG] IDRol:', userData.IDRol || 'NO EXISTE');
+                console.log('[ADMIN-DEBUG] Nombres:', userData.Nombres || 'NO EXISTE');
+                
+                // Usar las propiedades en mayúsculas según el formato normalizado en AuthService
+                if (!userData || !userData.IDUsuario || !userData.IDRol) {
+                    console.error('[ADMIN-DEBUG] Datos de usuario inválidos o incompletos');
+                    clearAllStorage();
+                    console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (DATOS INVÁLIDOS) ====================');
+                    safeRedirect('/');
                     return false;
                 }
+                
+                // Verificar que es un administrador (rol 1)
+                if (userData.IDRol !== 1) {
+                    console.error('[ADMIN-DEBUG] Acceso denegado: rol no autorizado. IDRol:', userData.IDRol);
+                    clearAllStorage();
+                    console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (ROL INVÁLIDO) ====================');
+                    safeRedirect('/');
+                    return false;
+                }
+                
+                console.log('[ADMIN-DEBUG] Verificación exitosa. Usuario:', userData.Nombres);
+                console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (ÉXITO) ====================');
                 return true;
             } catch (error) {
-                console.error('Error al verificar autenticación:', error);
-                localStorage.clear();
-                window.location.replace('/');
+                console.error('[ADMIN-DEBUG] Error al verificar autenticación:', error);
+                console.error('[ADMIN-DEBUG] Stack trace:', error.stack);
+                clearAllStorage();
+                console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (ERROR) ====================');
+                safeRedirect('/');
                 return false;
             }
         }
-
-        // Verificar autenticación inmediatamente
-        if (!checkAuth()) {
-            throw new Error('No autenticado');
+        
+        // Función para limpiar todo el almacenamiento
+        function clearAllStorage() {
+            console.log('[ADMIN-DEBUG] ==================== INICIO CLEAR STORAGE ====================');
+            try {
+                console.log('[ADMIN-DEBUG] Limpiando localStorage');
+                localStorage.clear();
+                console.log('[ADMIN-DEBUG] localStorage limpiado');
+            } catch (e) {
+                console.warn('[ADMIN-DEBUG] Error al limpiar localStorage:', e);
+            }
+            
+            try {
+                console.log('[ADMIN-DEBUG] Limpiando sessionStorage');
+                sessionStorage.clear();
+                console.log('[ADMIN-DEBUG] sessionStorage limpiado');
+            } catch (e) {
+                console.warn('[ADMIN-DEBUG] Error al limpiar sessionStorage:', e);
+            }
+            
+            // Limpiar cookies relevantes
+            console.log('[ADMIN-DEBUG] Limpiando cookies');
+            deleteCookie('token');
+            deleteCookie('user');
+            deleteCookie('redirectionOccurred');
+            console.log('[ADMIN-DEBUG] Cookies limpiadas');
+            console.log('[ADMIN-DEBUG] ==================== FIN CLEAR STORAGE ====================');
         }
+        
+        // Funciones de utilidad para cookies
+        function getCookie(name) {
+            try {
+                const nameEQ = name + "=";
+                const ca = document.cookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i];
+                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                    if (c.indexOf(nameEQ) === 0) {
+                        return decodeURIComponent(c.substring(nameEQ.length, c.length));
+                    }
+                }
+            } catch (e) {
+                console.error('[ADMIN-DEBUG] Error al obtener cookie:', e);
+            }
+            return null;
+        }
+        
+        function deleteCookie(name) {
+            try {
+                document.cookie = name + '=; Max-Age=-99999999; path=/';
+            } catch (e) {
+                console.error('[ADMIN-DEBUG] Error al eliminar cookie:', e);
+            }
+        }
+        
+        // Función de redirección segura
+        function safeRedirect(url) {
+            console.log('[ADMIN-DEBUG] ==================== INICIO REDIRECT ====================');
+            console.log('[ADMIN-DEBUG] Intentando redireccionar a:', url);
+            try {
+                console.log('[ADMIN-DEBUG] Usando window.location.replace');
+                window.location.replace(url);
+            } catch (e) {
+                console.error('[ADMIN-DEBUG] Error al redireccionar:', e);
+                console.error('[ADMIN-DEBUG] Stack trace:', e.stack);
+                try {
+                    console.log('[ADMIN-DEBUG] Usando window.location.href');
+                    window.location.href = url;
+                } catch (e2) {
+                    console.error('[ADMIN-DEBUG] Error al redireccionar con href:', e2);
+                    try {
+                        console.log('[ADMIN-DEBUG] Usando asignación directa');
+                        window.location = url;
+                    } catch (e3) {
+                        console.error('[ADMIN-DEBUG] Error en redirección directa:', e3);
+                    }
+                }
+            }
+            console.log('[ADMIN-DEBUG] ==================== FIN REDIRECT ====================');
+        }
+
+        // Añadir un pequeño retraso para evitar conflictos de verificación
+        console.log('[ADMIN-DEBUG] Programando verificación con setTimeout (100ms)');
+        setTimeout(() => {
+            try {
+                console.log('[ADMIN-DEBUG] Ejecutando verificación programada');
+                if (!checkAuth()) {
+                    console.error('[ADMIN-DEBUG] Verificación fallida');
+                    throw new Error('No autenticado');
+                } else {
+                    console.log('[ADMIN-DEBUG] Usuario autenticado correctamente');
+                }
+            } catch (e) {
+                console.error('[ADMIN-DEBUG] Error en verificación de autenticación:', e);
+                console.error('[ADMIN-DEBUG] Stack trace:', e.stack);
+                safeRedirect('/');
+            }
+            console.log('[ADMIN-DEBUG] ==================== FIN VERIFICACIÓN ADMIN ====================');
+        }, 100);
     </script>
 
     <!-- Main JavaScript -->

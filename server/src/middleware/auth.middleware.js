@@ -4,6 +4,7 @@
  */
 
 const { authService } = require('../services/servicesExport');
+const { pool } = require('../config/database');
 const { UnauthorizedError, ForbiddenError, logger } = require('../utils/utilsExport');
 
 /**
@@ -16,13 +17,38 @@ const authMiddleware = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         
-        // Verificar token
+        if (!token) {
+            throw new UnauthorizedError('Token no proporcionado');
+        }
+
+        // Verificar token en JWT
         const decoded = authService.verifyToken(token);
+        
+        // Verificar si el token existe en la base de datos y no ha expirado
+        const [sessions] = await pool.query(
+            'SELECT * FROM Session WHERE SessionToken = ? AND Expiracion IS NULL',
+            [token]
+        );
+        
+        if (sessions.length === 0) {
+            throw new UnauthorizedError('Sesión inválida o expirada');
+        }
+
+        // Verificar si el usuario está bloqueado
+        const [users] = await pool.query(
+            'SELECT Bloqueado FROM Usuario WHERE IDUsuario = ?',
+            [decoded.id]
+        );
+
+        if (users.length === 0 || users[0].Bloqueado) {
+            throw new UnauthorizedError('Usuario bloqueado o eliminado');
+        }
         
         // Añadir usuario a la solicitud
         req.user = decoded;
         next();
     } catch (error) {
+        logger.error('Error de autenticación:', error);
         next(error);
     }
 };

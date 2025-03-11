@@ -12,7 +12,7 @@ require('dotenv').config();
 const path = require('path');
 
 // Importar configuraciones
-const { dbConfig } = require('./src/config/database');
+const { dbConfig, pool, testConnection } = require('./src/config/database');
 const { sessionConfig } = require('./src/config/session');
 const { corsConfig } = require('./src/config/cors');
 const { rateLimitConfig } = require('./src/config/rateLimit');
@@ -20,6 +20,15 @@ const { initializeDatabase } = require('./scripts/init-database');
 
 // Importar utilidades
 const { logger, errorHandler } = require('./src/utils/utilsExport');
+
+// Verificar variables de entorno requeridas
+const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+    logger.error(`Faltan las siguientes variables de entorno: ${missingEnvVars.join(', ')}`);
+    process.exit(1);
+}
 
 // Importar rutas
 const authRoutes = require('./src/routes/auth.routes');
@@ -33,6 +42,35 @@ const { errorMiddleware } = require('./src/middleware/middlewareExport');
 
 // Crear aplicación Express
 const app = express();
+
+// Configuración básica
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configuración de CORS - Usar la configuración importada
+app.use(cors(corsConfig));
+
+// Middleware adicional para manejar preflight OPTIONS
+app.options('*', cors(corsConfig));
+
+// Configuración de sesiones con SameSite y Secure apropiados
+const sess = {
+    ...sessionConfig,
+    cookie: {
+        ...sessionConfig.cookie,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production'
+    }
+};
+
+app.use(session(sess));
+
+// Configuración de seguridad básica
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false
+}));
 
 // Configuración de tipos MIME
 express.static.mime.define({
@@ -88,58 +126,23 @@ app.use((req, res, next) => {
     next();
 });
 
-// Servir archivos estáticos con opciones específicas
-const staticOptions = {
-    setHeaders: (res, path) => {
-        // Configurar cabeceras para archivos estáticos
-        res.set('X-Content-Type-Options', 'nosniff');
-        
-        // Configurar Cache-Control según el tipo de archivo
-        if (path.endsWith('.html')) {
-            res.set('Cache-Control', 'no-cache');
-        } else {
-            res.set('Cache-Control', 'public, max-age=31536000'); // 1 año para recursos estáticos
-        }
+// Middleware para verificar la conexión a la base de datos
+app.use('/api', async (req, res, next) => {
+    // Excluir rutas de autenticación de la verificación de DB
+    if (req.path.startsWith('/auth/')) {
+        return next();
     }
-};
-
-// Servir archivos estáticos
-app.use('/src', express.static(path.join(__dirname, '../client/src'), staticOptions));
-app.use(express.static(path.join(__dirname, '../client/public'), staticOptions));
-
-// Configuración de Helmet con CSP personalizado
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "http:"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
-            imgSrc: ["'self'", "data:", "https:", "http:"],
-            fontSrc: ["'self'", "https:", "http:", "data:"],
-            connectSrc: ["'self'", process.env.CORS_ORIGIN || "http://localhost:3000"]
-        }
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false
-}));
-
-// Configuración de CORS
-app.use(cors(corsConfig));
-
-// Límite de tasa de solicitudes
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100 // límite de 100 solicitudes por ventana por IP
+    try {
+        await testConnection();
+        next();
+    } catch (error) {
+        logger.error('Error de conexión a la base de datos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error de conexión a la base de datos'
+        });
+    }
 });
-app.use('/api/', limiter);
-
-// Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configuración de sesiones
-app.use(session(sessionConfig));
 
 // Rutas API
 app.use('/api/auth', authRoutes);
@@ -148,13 +151,26 @@ app.use('/api/areas', areaRoutes);
 app.use('/api/mesa-partes', mesaPartesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
+// Servir archivos estáticos
+const staticOptions = {
+    setHeaders: (res, path) => {
+        res.set('X-Content-Type-Options', 'nosniff');
+        if (path.endsWith('.html')) {
+            res.set('Cache-Control', 'no-cache');
+        } else {
+            res.set('Cache-Control', 'public, max-age=31536000');
+        }
+    }
+};
+
+app.use('/src', express.static(path.join(__dirname, '../client/src'), staticOptions));
+app.use(express.static(path.join(__dirname, '../client/public'), staticOptions));
+
 // Manejar rutas del cliente (SPA)
 app.get('*', (req, res, next) => {
-    // Si es una solicitud de API o un archivo estático, continuar al siguiente middleware
     if (req.path.startsWith('/api/') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
         return next();
     }
-    // Para todas las demás rutas, servir el index.html
     res.sendFile(path.join(__dirname, '../client/public/index.html'));
 });
 
@@ -168,12 +184,21 @@ const PORT = process.env.PORT || 3000;
  */
 async function startServer() {
     try {
+        // Verificar conexión a la base de datos
+        logger.info('Verificando conexión a la base de datos...');
+        await testConnection();
+
+        // Inicializar base de datos
         logger.info('Iniciando configuración de la base de datos...');
         await initializeDatabase();
         logger.info('Base de datos inicializada correctamente');
         
+        // Iniciar servidor
         app.listen(PORT, () => {
             logger.info(`Servidor corriendo en puerto ${PORT}`);
+            logger.info(`Modo: ${process.env.NODE_ENV || 'development'}`);
+            logger.info(`Base de datos: ${dbConfig.host}`);
+            
             if (process.env.NODE_ENV !== 'production') {
                 logger.info('\nCredenciales de administrador:');
                 logger.info('CIP: 12345678');
@@ -182,10 +207,23 @@ async function startServer() {
             }
         });
     } catch (error) {
-        logger.logError('Error al iniciar el servidor', error);
+        logger.error('Error al iniciar el servidor:', error);
         process.exit(1);
     }
 }
+
+// Manejar señales de terminación
+process.on('SIGTERM', async () => {
+    logger.info('Recibida señal SIGTERM. Cerrando servidor...');
+    await pool.end();
+    process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+    logger.info('Recibida señal SIGINT. Cerrando servidor...');
+    await pool.end();
+    process.exit(0);
+});
 
 // Iniciar servidor
 startServer();

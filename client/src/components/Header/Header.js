@@ -31,13 +31,17 @@ export class Header {
         const template = `
             <nav class="navbar">
                 <div class="container-fluid">
-                    <a class="navbar-brand" href="#">
-                        <img src="/assets/img/logoOficri2x2.png" alt="OFICRI Logo">
-                        <span>Sistema de Gestión OFICRI</span>
-                    </a>
-                    <div class="user-info" id="user-info-button">
-                        <i class="fas fa-user"></i>
-                        <span>${this.getUserDisplayName()}</span>
+                    <div class="navbar-left">
+                        <a class="navbar-brand" href="#">
+                            <img src="/assets/img/logoOficri2x2.png" alt="OFICRI Logo">
+                            <span>Sistema de Gestión OFICRI</span>
+                        </a>
+                    </div>
+                    <div class="navbar-right">
+                        <div class="user-info" id="user-info-button">
+                            <i class="fas fa-user"></i>
+                            <span>${this.getUserDisplayName()}</span>
+                        </div>
                     </div>
                 </div>
             </nav>

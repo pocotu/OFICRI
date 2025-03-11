@@ -3,9 +3,35 @@
 .navbar {
     background-color: var(--primary-color);
     color: white;
-    padding: 0.75rem 1rem;
+    padding: 0 1rem;
     box-shadow: var(--box-shadow);
-    height: 60px;
+    height: 64px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0;
+}
+
+.container-fluid {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-direction: row !important;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
 }
 
 .navbar-brand {
@@ -14,6 +40,8 @@
     display: flex;
     align-items: center;
     text-decoration: none;
+    padding: 0;
+    margin: 0;
 }
 
 .navbar-brand img {
@@ -24,6 +52,8 @@
 .navbar-menu {
     display: flex;
     align-items: center;
+    margin: 0;
+    padding: 0;
 }
 
 .navbar-item {
@@ -37,14 +67,15 @@
 }
 
 .user-info {
-    display: flex;
-    align-items: center;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
-    transition: all var(--transition-speed) ease;
-    background-color: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
+    display: flex !important;
+    align-items: center !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--border-radius) !important;
+    transition: all var(--transition-speed) ease !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    cursor: pointer !important;
+    margin: 0 !important;
 }
 
 .user-info:hover {
@@ -59,8 +90,13 @@
 /* Responsive */
 @media (max-width: 768px) {
     .navbar {
-        flex-direction: column;
         height: auto;
+        padding: 0.5rem;
+    }
+    
+    .container-fluid {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
     }
     
     .navbar-menu {
@@ -73,5 +109,14 @@
         width: 100%;
         text-align: center;
         padding: 0.75rem;
+    }
+    
+    .navbar-left, .navbar-right {
+        display: flex;
+        align-items: center;
+    }
+    
+    .navbar-right {
+        margin-left: auto;
     }
 } 

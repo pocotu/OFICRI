@@ -30,20 +30,39 @@ class UserService {
      */
     async verificarAPIs() {
         try {
-            // Intenta hacer una solicitud simple para verificar si las APIs existen
-            const response = await fetch(`${this.baseUrl}/status`, { 
+            // Primero intentamos con el endpoint principal
+            let response = await fetch(`${this.baseUrl}/status`, { 
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             });
 
-            // Si obtenemos una respuesta JSON, asumimos que las APIs están disponibles
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                console.log('APIs disponibles');
-                this.apisDisponibles = true;
-                return true;
+            // Si falla, intentamos con un endpoint alternativo
+            if (!response.ok) {
+                response = await fetch(`${this.baseUrl}/health`, { 
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
             }
 
+            // Si ninguno funciona, intentamos con el endpoint de usuarios
+            if (!response.ok) {
+                response = await fetch(`${this.baseUrl}/usuarios`, { 
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+            }
+
+            // Verificamos si la respuesta es válida
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && (contentType.includes('application/json') || contentType.includes('text/json'))) {
+                    console.log('APIs disponibles y funcionando');
+                    this.apisDisponibles = true;
+                    return true;
+                }
+            }
+
+            // Si llegamos aquí, las APIs no están disponibles
             console.warn('APIs no disponibles o no devuelven JSON');
             this.apisDisponibles = false;
             return false;
