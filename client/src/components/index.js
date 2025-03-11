@@ -6,15 +6,24 @@
 // Importar componentes
 import Header from './Header/Header.js';
 import Sidebar from './Sidebar/Sidebar.js';
+import UserProfile from './UserProfile/UserProfile.js';
+import AuthHeader from './AuthHeader/AuthHeader.js';
+import AuthFooter from './AuthFooter/AuthFooter.js';
 
 // Exportar componentes
 export {
     Header,
-    Sidebar
+    Sidebar,
+    UserProfile,
+    AuthHeader,
+    AuthFooter
 };
 
 // Exportación por defecto de todos los componentes
 export default {
     Header,
-    Sidebar
+    Sidebar,
+    UserProfile,
+    AuthHeader,
+    AuthFooter
 }; 

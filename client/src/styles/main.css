@@ -18,9 +18,9 @@
 
 /* Variables globales */
 :root {
-    --primary-color: #c80e27;
+    --primary-color: #0f492e;
     --primary-color-rgb: 44, 62, 80; /* Valores RGB para primary-color */
-    --secondary-color: #3498db;
+    --secondary-color: #2dc76d;
     --success-color: #2ecc71;
     --danger-color: #e74c3c;
     --warning-color: #f39c12;

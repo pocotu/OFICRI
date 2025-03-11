@@ -1,64 +1,195 @@
 /* login.css - Estilos para la página de login */
 
+/* Estilos para el AuthHeader */
+.auth-header {
+    background-color: #0f492e; /* Verde oscuro similar al de la imagen */
+    padding: 10px 20px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.auth-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1800px;
+    margin: 0 auto;
+}
+
+.auth-header-left, .auth-header-right {
+    display: flex;
+    align-items: center;
+}
+
+.auth-header-center {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.auth-logo {
+    height: 60px;
+    width: auto;
+}
+
+.auth-title {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.auth-center-title {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Ajustes responsivos para el header */
+@media (max-width: 768px) {
+    .auth-center-title {
+        font-size: 16px;
+    }
+    
+    .auth-logo {
+        height: 40px;
+    }
+    
+    .auth-title {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .auth-center-title {
+        display: none;
+    }
+}
+
+/* Estilos para el AuthFooter */
+.auth-footer {
+    background-color: #0f492e; /* Verde oscuro similar al del header */
+    padding: 10px 20px;
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    text-align: center;
+}
+
+.auth-footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.auth-footer-text {
+    color: white;
+    font-size: 14px;
+}
+
+/* Ajustes responsivos para el footer */
+@media (max-width: 576px) {
+    .auth-footer-text {
+        font-size: 12px;
+    }
+}
+
+/* Estilos originales para el login */
 .login-page {
-    background-color: var(--light-color);
+    background-color: #f5f5f5; /* Fondo gris claro como en la imagen */
     min-height: 100vh;
+    padding-top: 80px; /* Espacio para el header */
+    padding-bottom: 50px; /* Espacio para el footer */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 130px); /* Altura total menos header y footer */
 }
 
 .login-box {
     background-color: white;
-    padding: var(--spacing-xl);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
 .login-logo {
-    max-width: 150px;
+    max-width: 120px;
     height: auto;
+    margin-bottom: 10px;
 }
 
 .login-box h2 {
-    color: var(--primary-color);
-    font-size: var(--font-size-xl);
-    margin-bottom: var(--spacing-lg);
+    color: #006838; /* Verde OFICRI */
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
 }
 
 .form-label {
-    color: var(--primary-color);
+    color: #333;
     font-weight: 500;
+    font-size: 0.95rem;
 }
 
 .input-group-text {
-    background-color: var(--light-color);
-    color: var(--primary-color);
+    background-color: #f8f9fa;
+    color: #006838;
     border-right: none;
 }
 
 .form-control {
     border-left: none;
+    padding: 0.6rem 0.75rem;
 }
 
 .form-control:focus {
-    border-color: var(--primary-color);
+    border-color: #006838;
     box-shadow: none;
 }
 
 .input-group:focus-within .input-group-text {
-    border-color: var(--primary-color);
+    border-color: #006838;
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    padding: var(--spacing-md) var(--spacing-lg);
-    font-weight: 500;
-    transition: all var(--transition-speed) ease;
+    background-color: #006838;
+    border-color: #006838;
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
 }
 
 .btn-primary:hover {
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-    transform: translateY(-1px);
+    background-color: #005a30;
+    border-color: #005a30;
+    box-shadow: 0 2px 8px rgba(0, 104, 56, 0.3);
+}
+
+.btn-primary i {
+    margin-right: 8px;
 }
 
 .btn-outline-secondary {

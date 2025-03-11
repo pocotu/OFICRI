@@ -8,6 +8,8 @@ import { authService } from '../../services/services.js';
 import * as errorHandler from '../../utils/errorHandler.js';
 import * as navigation from '../../utils/navigation.js';
 import * as sessionManager from '../../services/sessionManager.js';
+import { AuthHeader } from '../../components/AuthHeader/AuthHeader.js';
+import { AuthFooter } from '../../components/AuthFooter/AuthFooter.js';
 
 // Variable para evitar múltiples verificaciones
 let isCheckingAuth = false;
@@ -26,6 +28,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicializar error handler
     if (errorHandler && errorHandler.setLogLevel && errorHandler.LOG_LEVEL) {
         errorHandler.setLogLevel(errorHandler.LOG_LEVEL.DEBUG);
+    }
+    
+    // Renderizar el header de autenticación
+    const authHeader = new AuthHeader();
+    const authHeaderContainer = document.getElementById('authHeaderContainer');
+    if (authHeaderContainer) {
+        authHeader.render(authHeaderContainer);
+    }
+    
+    // Renderizar el footer de autenticación
+    const authFooter = new AuthFooter();
+    const authFooterContainer = document.getElementById('authFooterContainer');
+    if (authFooterContainer) {
+        authFooter.render(authFooterContainer);
     }
     
     // Detectar navegador
