@@ -4,8 +4,9 @@
  */
 
 import * as userModule from '../../modules/userModule.js';
-import AuthService from '../../services/auth.service.js';
+import { authService } from '../../services/services.js';
 import * as permissionUtils from '../../utils/permissions.js';
+import * as errorHandler from '../../utils/errorHandler.js';
 
 /**
  * Renderiza el contenido principal de la página de usuarios
@@ -13,9 +14,9 @@ import * as permissionUtils from '../../utils/permissions.js';
  */
 export const renderUsersContent = () => {
     return `
-        <div class="users-container">
-            <div class="users-header">
-                <h2>Gestión de Usuarios</h2>
+        <div class="module-container users-container">
+            <div class="users-header mb-4">
+                <h2 class="mb-3">Gestión de Usuarios</h2>
                 <div class="users-actions">
                     <button class="btn btn-primary" id="createUserBtn">
                         <i class="fas fa-plus"></i> Nuevo Usuario
@@ -26,8 +27,8 @@ export const renderUsersContent = () => {
                 </div>
             </div>
             
-            <div class="users-filters mb-3">
-                <div class="row">
+            <div class="users-filters mb-4">
+                <div class="row w-100">
                     <div class="col-md-4">
                         <input type="text" class="form-control" id="userSearch" placeholder="Buscar usuario...">
                     </div>
@@ -51,10 +52,13 @@ export const renderUsersContent = () => {
                 </div>
             </div>
             
-            <div id="usersTableContainer">
-                <div class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
+            <div class="users-table-container table-responsive w-100 flex-grow-1">
+                <div id="usersTableContent">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando usuarios...</p>
                     </div>
                 </div>
             </div>
@@ -67,7 +71,7 @@ export const renderUsersContent = () => {
  */
 export const initUsersPage = async () => {
     try {
-        const user = AuthService.getCurrentUser();
+        const user = authService.getCurrentUser();
         if (!user) {
             throw new Error('Usuario no autenticado');
         }
@@ -94,15 +98,30 @@ export const initUsersPage = async () => {
  */
 async function loadInitialData() {
     try {
+        console.log('[USERS-PAGE] Iniciando carga de datos...');
+        
+        // Obtener usuarios desde el módulo
         const users = await userModule.getAllUsers();
-        const tableContainer = document.getElementById('usersTableContainer');
+        console.log('[USERS-PAGE] Usuarios obtenidos:', users.length);
+        
+        // Actualizar la tabla con los usuarios
+        const tableContainer = document.getElementById('usersTableContent');
         if (tableContainer) {
-            const user = AuthService.getCurrentUser();
+            console.log('[USERS-PAGE] Contenedor de tabla encontrado, actualizando contenido');
+            const user = authService.getCurrentUser();
             const permissions = permissionUtils.getRolePermissions(user.IDRol);
             tableContainer.innerHTML = userModule.renderUsersTable(users, permissions);
+            console.log('[USERS-PAGE] Tabla actualizada correctamente');
+        } else {
+            console.error('[USERS-PAGE] No se encontró el contenedor de la tabla (#usersTableContent)');
+            const mainContent = document.getElementById('mainContent');
+            console.log('[USERS-PAGE] Contenido principal:', mainContent);
+            if (mainContent) {
+                console.log('[USERS-PAGE] Estructura HTML actual:', mainContent.innerHTML.substring(0, 200) + '...');
+            }
         }
     } catch (error) {
-        console.error('Error al cargar datos iniciales:', error);
+        console.error('[USERS-PAGE] Error al cargar datos iniciales:', error);
         throw error;
     }
 }
@@ -111,7 +130,7 @@ async function loadInitialData() {
  * Inicializa los eventos de la página
  */
 function initializeEvents() {
-    const user = AuthService.getCurrentUser();
+    const user = authService.getCurrentUser();
     const permissions = permissionUtils.getRolePermissions(user.IDRol);
     
     // Inicializar eventos del módulo de usuarios
@@ -138,6 +157,7 @@ function initializeEvents() {
  * Configura los filtros de la tabla
  */
 function setupFilters() {
+    console.log('[USERS-PAGE] Configurando filtros...');
     const searchInput = document.getElementById('userSearch');
     const areaFilter = document.getElementById('areaFilter');
     const roleFilter = document.getElementById('roleFilter');
@@ -145,18 +165,20 @@ function setupFilters() {
     
     // Función para aplicar filtros
     const applyFilters = () => {
+        console.log('[USERS-PAGE] Aplicando filtros...');
         const searchTerm = searchInput?.value.toLowerCase() || '';
         const areaValue = areaFilter?.value || '';
         const roleValue = roleFilter?.value || '';
         const statusValue = statusFilter?.value || '';
         
-        const rows = document.querySelectorAll('#usersTableContainer tbody tr');
+        const rows = document.querySelectorAll('#usersTableContent tbody tr');
+        console.log('[USERS-PAGE] Filas encontradas para filtrar:', rows.length);
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            const area = row.querySelector('td:nth-child(6)').textContent;
-            const role = row.querySelector('td:nth-child(7)').textContent;
-            const status = row.querySelector('td:nth-child(8)').textContent.toLowerCase();
+            const area = row.querySelector('td:nth-child(6)')?.textContent || '';
+            const role = row.querySelector('td:nth-child(7)')?.textContent || '';
+            const status = row.querySelector('td:nth-child(8)')?.textContent.toLowerCase() || '';
             
             const matchesSearch = text.includes(searchTerm);
             const matchesArea = !areaValue || area.includes(areaValue);
@@ -176,6 +198,8 @@ function setupFilters() {
             element.addEventListener('change', applyFilters);
         }
     });
+    
+    console.log('[USERS-PAGE] Filtros configurados correctamente');
 }
 
 /**
@@ -183,7 +207,9 @@ function setupFilters() {
  * @param {string} message - Mensaje de error
  */
 function showError(message) {
-    const container = document.getElementById('usersTableContainer');
+    console.error('[USERS-PAGE] Mostrando mensaje de error:', message);
+    
+    const container = document.getElementById('usersTableContent');
     if (container) {
         container.innerHTML = `
             <div class="alert alert-danger">
@@ -191,5 +217,8 @@ function showError(message) {
                 ${message}
             </div>
         `;
+        console.log('[USERS-PAGE] Mensaje de error mostrado en la interfaz');
+    } else {
+        console.error('[USERS-PAGE] No se encontró el contenedor para mostrar el error');
     }
 } 

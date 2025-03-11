@@ -5,6 +5,7 @@
 
 import * as sessionManager from '../../services/sessionManager.js';
 import UserService from '../../services/user.service.js';
+import * as errorHandler from '../../utils/errorHandler.js';
 
 export class UserProfile {
     constructor() {
@@ -13,6 +14,7 @@ export class UserProfile {
         this.userRole = null;
         this.loading = true;
         this.error = null;
+        this.diagnostico = null;
     }
 
     async loadUserData() {
@@ -45,7 +47,43 @@ export class UserProfile {
                 const areaId = userData.IDArea || userData.idArea || sessionUser.IDArea || sessionUser.idArea;
                 const rolId = userData.IDRol || userData.idRol || sessionUser.IDRol || sessionUser.idRol;
                 
+                // DIAGNÓSTICO: Intentar llamar directamente al endpoint de diagnóstico
+                try {
+                    errorHandler.log('USERPROFILE', '==== INICIANDO DIAGNÓSTICO DE ÁREAS ====', null, errorHandler.LOG_LEVEL.DEBUG);
+                    const token = await sessionManager.obtenerToken();
+                    
+                    if (token) {
+                        errorHandler.log('USERPROFILE', 'Obteniendo diagnóstico de áreas...', null, errorHandler.LOG_LEVEL.DEBUG);
+                        const response = await fetch('/api/areas/diagnostico', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        errorHandler.log('USERPROFILE', `Respuesta diagnóstico: ${response.status} ${response.statusText}`, null, errorHandler.LOG_LEVEL.DEBUG);
+                        
+                        if (response.ok) {
+                            const diagData = await response.json();
+                            this.diagnostico = diagData.diagnostico;
+                            console.log('Diagnóstico de áreas:', this.diagnostico);
+                            errorHandler.log('USERPROFILE', `Diagnóstico: ${JSON.stringify(this.diagnostico)}`, null, errorHandler.LOG_LEVEL.INFO);
+                        } else {
+                            const errorText = await response.text();
+                            errorHandler.log('USERPROFILE', `Error en diagnóstico: ${errorText}`, null, errorHandler.LOG_LEVEL.WARN);
+                        }
+                    }
+                } catch (diagError) {
+                    console.error('Error al realizar diagnóstico:', diagError);
+                    errorHandler.log('USERPROFILE', `Error de diagnóstico: ${diagError.message}`, null, errorHandler.LOG_LEVEL.ERROR);
+                }
+                
+                // FIN DIAGNÓSTICO
+                
                 if (areaId) {
+                    errorHandler.log('USERPROFILE', `Obteniendo datos de área con ID: ${areaId}`, null, errorHandler.LOG_LEVEL.DEBUG);
                     this.userArea = await UserService.getUserAreaDetails(areaId);
                     console.log('Datos de área:', this.userArea);
                 }

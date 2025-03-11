@@ -237,4 +237,46 @@
     .admin-sidebar {
         width: 100%;
     }
+}
+
+/* Contenedores de módulos específicos */
+.module-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* Específico para el módulo de usuarios */
+#usersContainer, 
+#rolesContainer, 
+#areasContainer, 
+#documentsContainer, 
+#auditContainer {
+    width: 100%;
+    min-height: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+/* Mejoras para el dashboard */
+.dashboard-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.dashboard-row {
+    display: flex;
+    width: 100%;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Asegurar que las tablas ocupen todo el ancho disponible */
+.table-responsive {
+    width: 100%;
+    margin-bottom: 1.5rem;
 } 

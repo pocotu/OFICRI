@@ -8,8 +8,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
 const path = require('path');
+
+// Configurar dotenv para cargar el archivo .env desde la raíz del proyecto
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // Importar configuraciones
 const { dbConfig, pool, testConnection } = require('./src/config/database');
@@ -36,6 +38,7 @@ const userRoutes = require('./src/routes/user.routes');
 const areaRoutes = require('./src/routes/area.routes');
 const mesaPartesRoutes = require('./src/routes/mesaPartes.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
+const roleRoutes = require('./src/routes/role.routes');
 
 // Importar middlewares
 const { errorMiddleware } = require('./src/middleware/middlewareExport');
@@ -147,9 +150,22 @@ app.use('/api', async (req, res, next) => {
 // Rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/usuarios', userRoutes); // Alias en español para compatibilidad
+app.use('/api/usuario', userRoutes);  // Alias en singular para compatibilidad
 app.use('/api/areas', areaRoutes);
+app.use('/api/roles', roleRoutes);    // Ruta para roles (plural)
+app.use('/api/rol', roleRoutes);      // Alias en singular para compatibilidad
 app.use('/api/mesa-partes', mesaPartesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+
+// Endpoints de estado básicos
+app.get('/api/status', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'API funcionando correctamente' });
+});
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ health: 'ok', message: 'Servidor en funcionamiento' });
+});
 
 // Servir archivos estáticos
 const staticOptions = {

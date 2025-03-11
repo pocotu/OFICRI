@@ -85,6 +85,32 @@ body, html {
     min-height: calc(100vh - 64px);
     box-sizing: border-box;
     height: calc(100vh - 64px);
+    width: calc(100% - 250px);
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Asegurar que el contenido dentro de admin-content se expanda correctamente */
+.admin-content > * {
+    width: 100%;
+}
+
+.admin-content .stats-container {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-content #mainContent {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Estilos para el scroll del sidebar */

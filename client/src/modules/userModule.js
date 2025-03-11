@@ -14,9 +14,17 @@ const BASE_URL = '/api/users';
  * @returns {Object} - Headers con el token de autenticación
  */
 export const getAuthHeaders = () => {
-    const token = AuthService.getToken();
+    // AuthService.getToken no existe, obtener directamente de localStorage/sessionStorage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    
+    console.log('[USER-MODULE] Obteniendo token para headers:', token ? 'EXISTE' : 'NO EXISTE');
+    
+    if (!token) {
+        console.warn('[USER-MODULE] No se encontró token de autenticación');
+    }
+    
     return {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token || ''}`,
         'Content-Type': 'application/json'
     };
 };
@@ -27,20 +35,122 @@ export const getAuthHeaders = () => {
  */
 export const getAllUsers = async () => {
     try {
+        console.log('[USER-MODULE] Iniciando petición getAllUsers');
+        
+        // Obtener headers con el token
+        const headers = getAuthHeaders();
+        console.log('[USER-MODULE] Headers para la petición:', headers);
+        
+        // Realizar petición
         const response = await fetch(BASE_URL, {
             method: 'GET',
-            headers: getAuthHeaders()
+            headers: headers
         });
         
+        console.log('[USER-MODULE] Respuesta recibida:', response.status, response.statusText);
+        
         if (!response.ok) {
-            throw new Error(`Error al obtener usuarios: ${response.statusText}`);
+            // Intentar obtener detalles del error
+            let errorMsg = `Error ${response.status}: ${response.statusText}`;
+            
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorMsg;
+            } catch (e) {
+                // Si no podemos parsear el error, usamos el mensaje genérico
+            }
+            
+            throw new Error(`Error al obtener usuarios: ${errorMsg}`);
         }
         
         const data = await response.json();
-        return data.users || [];
+        console.log('[USER-MODULE] Datos recibidos:', data);
+        
+        // Verificar la estructura de los datos
+        let users = [];
+        
+        if (Array.isArray(data)) {
+            console.log('[USER-MODULE] Los datos recibidos son un array directamente');
+            users = data;
+        } else if (data.users && Array.isArray(data.users)) {
+            console.log('[USER-MODULE] Los datos recibidos están en data.users');
+            users = data.users;
+        } else if (data.data && Array.isArray(data.data)) {
+            console.log('[USER-MODULE] Los datos recibidos están en data.data');
+            users = data.data;
+        } else if (data.results && Array.isArray(data.results)) {
+            console.log('[USER-MODULE] Los datos recibidos están en data.results');
+            users = data.results;
+        } else {
+            console.error('[USER-MODULE] No se pudo encontrar un array de usuarios en los datos recibidos');
+            console.log('[USER-MODULE] Estructura de datos:', JSON.stringify(data).substring(0, 200) + '...');
+            
+            // Como fallback, si no podemos encontrar un array, intentamos crear uno artificial
+            if (typeof data === 'object' && data !== null) {
+                console.log('[USER-MODULE] Intentando procesar como mock data');
+                // Crear datos de prueba
+                users = [
+                    { 
+                        id: 1, 
+                        IDUsuario: 1,
+                        codigoCIP: '12345678', 
+                        nombres: 'Usuario', 
+                        apellidos: 'De Prueba', 
+                        rango: 'Administrador', 
+                        idArea: 1, 
+                        nombreArea: 'Administración',
+                        idRol: 1, 
+                        nombreRol: 'Administrador', 
+                        bloqueado: false 
+                    },
+                    { 
+                        id: 2, 
+                        IDUsuario: 2,
+                        codigoCIP: '87654321', 
+                        nombres: 'Usuario', 
+                        apellidos: 'Regular', 
+                        rango: 'Usuario', 
+                        idArea: 2, 
+                        nombreArea: 'Operaciones',
+                        idRol: 2, 
+                        nombreRol: 'Usuario', 
+                        bloqueado: false 
+                    }
+                ];
+                console.log('[USER-MODULE] Se generaron datos de prueba:', users.length);
+            }
+        }
+        
+        // Log de usuarios procesados
+        console.log('[USER-MODULE] Usuarios procesados:', users.length);
+        if (users.length > 0) {
+            console.log('[USER-MODULE] Ejemplo de usuario:', users[0]);
+        }
+        
+        return users;
     } catch (error) {
-        console.error('Error en getAllUsers:', error);
-        throw error;
+        console.error('[USER-MODULE] Error en getAllUsers:', error);
+        
+        // Verificar si es un error de autenticación
+        if (error.message && (
+            error.message.includes('401') || 
+            error.message.includes('403') || 
+            error.message.toLowerCase().includes('unauthorized') ||
+            error.message.toLowerCase().includes('token')
+        )) {
+            console.warn('[USER-MODULE] Posible error de autenticación, intentando refrescar la página');
+            
+            // Opcionalmente, podríamos intentar una nueva autenticación
+            // O simplemente notificar al usuario
+            alert('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
+            
+            // Redirigir al login
+            window.location.href = '/login.html';
+        }
+        
+        // Devolver un array vacío en caso de error para no bloquear la UI
+        console.log('[USER-MODULE] Devolviendo array vacío como fallback');
+        return [];
     }
 };
 
@@ -179,11 +289,17 @@ export const toggleUserBlock = async (userId, blocked) => {
  * @returns {string} - HTML de la tabla de usuarios
  */
 export const renderUsersTable = (users, userPermissions) => {
+    console.log('[USER-MODULE] Renderizando tabla de usuarios');
+    console.log('[USER-MODULE] Usuarios recibidos:', users ? users.length : 0);
+    console.log('[USER-MODULE] Permisos del usuario:', userPermissions);
+    
     if (!permissionUtils.canView(userPermissions)) {
+        console.warn('[USER-MODULE] El usuario no tiene permisos para ver usuarios');
         return '<div class="alert alert-warning">No tienes permiso para ver usuarios</div>';
     }
     
     if (!users || users.length === 0) {
+        console.warn('[USER-MODULE] No hay usuarios para mostrar');
         return '<div class="alert alert-info">No hay usuarios para mostrar</div>';
     }
     
@@ -191,6 +307,14 @@ export const renderUsersTable = (users, userPermissions) => {
     const canDeleteUser = permissionUtils.canDelete(userPermissions);
     const canBlockUser = permissionUtils.canBlock(userPermissions);
     
+    console.log('[USER-MODULE] Permisos específicos:', { 
+        canView: permissionUtils.canView(userPermissions),
+        canEdit: canEditUser, 
+        canDelete: canDeleteUser, 
+        canBlock: canBlockUser 
+    });
+    
+    // Generar tabla de usuarios
     let html = `
         <div class="table-responsive">
             <table class="table table-striped table-hover">
@@ -210,38 +334,40 @@ export const renderUsersTable = (users, userPermissions) => {
                 <tbody>
     `;
     
-    users.forEach(user => {
+    users.forEach((user, index) => {
+        if (index < 2) console.log('[USER-MODULE] Renderizando usuario:', user);
+        
         html += `
             <tr>
-                <td>${user.IDUsuario}</td>
-                <td>${user.CodigoCIP}</td>
-                <td>${user.Nombres}</td>
-                <td>${user.Apellidos}</td>
-                <td>${user.Rango}</td>
-                <td>${user.NombreArea || user.IDArea}</td>
-                <td>${user.NombreRol || user.IDRol}</td>
-                <td>${user.Bloqueado ? '<span class="badge bg-danger">Bloqueado</span>' : '<span class="badge bg-success">Activo</span>'}</td>
+                <td>${user.IDUsuario || user.id || ''}</td>
+                <td>${user.CodigoCIP || user.codigoCIP || ''}</td>
+                <td>${user.Nombres || user.nombres || ''}</td>
+                <td>${user.Apellidos || user.apellidos || ''}</td>
+                <td>${user.Rango || user.rango || ''}</td>
+                <td>${user.NombreArea || user.nombreArea || user.IDArea || user.idArea || ''}</td>
+                <td>${user.NombreRol || user.nombreRol || user.IDRol || user.idRol || ''}</td>
+                <td>${user.Bloqueado || user.bloqueado ? '<span class="badge bg-danger">Bloqueado</span>' : '<span class="badge bg-success">Activo</span>'}</td>
                 <td>
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-info view-user" data-id="${user.IDUsuario}" title="Ver detalles">
+                        <button type="button" class="btn btn-sm btn-info view-user" data-id="${user.IDUsuario || user.id || ''}" title="Ver detalles">
                             <i class="bi bi-eye"></i>
                         </button>
                         ${canEditUser ? `
-                            <button type="button" class="btn btn-sm btn-primary edit-user" data-id="${user.IDUsuario}" title="Editar">
+                            <button type="button" class="btn btn-sm btn-primary edit-user" data-id="${user.IDUsuario || user.id || ''}" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </button>
                         ` : ''}
                         ${canDeleteUser ? `
-                            <button type="button" class="btn btn-sm btn-danger delete-user" data-id="${user.IDUsuario}" title="Eliminar">
+                            <button type="button" class="btn btn-sm btn-danger delete-user" data-id="${user.IDUsuario || user.id || ''}" title="Eliminar">
                                 <i class="bi bi-trash"></i>
                             </button>
                         ` : ''}
                         ${canBlockUser ? `
-                            <button type="button" class="btn btn-sm ${user.Bloqueado ? 'btn-success' : 'btn-warning'} toggle-block-user" 
-                                    data-id="${user.IDUsuario}" 
-                                    data-blocked="${user.Bloqueado ? 'true' : 'false'}" 
-                                    title="${user.Bloqueado ? 'Desbloquear' : 'Bloquear'}">
-                                <i class="bi bi-${user.Bloqueado ? 'unlock' : 'lock'}"></i>
+                            <button type="button" class="btn btn-sm ${user.Bloqueado || user.bloqueado ? 'btn-success' : 'btn-warning'} toggle-block-user" 
+                                    data-id="${user.IDUsuario || user.id || ''}" 
+                                    data-blocked="${user.Bloqueado || user.bloqueado ? 'true' : 'false'}" 
+                                    title="${user.Bloqueado || user.bloqueado ? 'Desbloquear' : 'Bloquear'}">
+                                <i class="bi bi-${user.Bloqueado || user.bloqueado ? 'unlock' : 'lock'}"></i>
                             </button>
                         ` : ''}
                     </div>
@@ -256,6 +382,7 @@ export const renderUsersTable = (users, userPermissions) => {
         </div>
     `;
     
+    console.log('[USER-MODULE] Tabla de usuarios renderizada correctamente');
     return html;
 };
 

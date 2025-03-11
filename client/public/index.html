@@ -2,7 +2,51 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    
+    <!-- Script para evitar caché y forzar recarga de recursos -->
+    <script>
+        (function() {
+            // Verificar si venimos de un cierre de sesión
+            const fromLogout = sessionStorage.getItem('fromLogout') === 'true';
+            
+            if (fromLogout) {
+                console.log('[LOGIN-CACHE] Detectada redirección desde logout, limpiando caché...');
+                
+                // Limpiar indicador de logout
+                sessionStorage.removeItem('fromLogout');
+                
+                // Establecer encabezados para evitar caché
+                const meta = document.createElement('meta');
+                meta.httpEquiv = 'Cache-Control';
+                meta.content = 'no-cache, no-store, must-revalidate';
+                document.head.appendChild(meta);
+                
+                const pragma = document.createElement('meta');
+                pragma.httpEquiv = 'Pragma';
+                pragma.content = 'no-cache';
+                document.head.appendChild(pragma);
+                
+                const expires = document.createElement('meta');
+                expires.httpEquiv = 'Expires';
+                expires.content = '0';
+                document.head.appendChild(expires);
+                
+                // Forzar recarga de recursos
+                if (window.performance && window.performance.navigation.type !== 1) {
+                    console.log('[LOGIN-CACHE] Forzando recarga sin caché...');
+                    window.location.reload(true);
+                }
+            }
+        })();
+    </script>
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Encabezados anti-caché para asegurar contenido fresco -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>OFICRI - Inicio de Sesión</title>
     
     <!-- Bootstrap CSS -->
@@ -14,6 +58,62 @@
     <!-- Custom CSS -->
     <link href="/src/styles/main.css" rel="stylesheet">
     <link href="/src/styles/pages/login.css" rel="stylesheet">
+    
+    <!-- Verificación inmediata de sesión -->
+    <script>
+        // Verificar si hay una sesión activa antes de cargar la página completa
+        (function() {
+            try {
+                console.log('[LOGIN-INIT] Verificando sesión...');
+                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+                
+                if (token && userStr) {
+                    try {
+                        // Intentar parsear los datos del usuario
+                        const userData = JSON.parse(userStr);
+                        console.log('[LOGIN-INIT] Sesión activa detectada para usuario:', userData.Nombres);
+                        
+                        // Verificar rol para redireccionar correctamente
+                        if (userData && userData.IDRol) {
+                            console.log('[LOGIN-INIT] Redirigiendo según rol:', userData.IDRol);
+                            
+                            // Establecer flag
+                            sessionStorage.setItem('redirectionOccurred', 'true');
+                            
+                            // Determinar la URL basada en el rol
+                            const redirectUrl = userData.IDRol === 1 ? '/admin.html' : '/dashboard.html';
+                            console.log('[LOGIN-INIT] Redirigiendo a:', redirectUrl);
+                            
+                            // Realizar la redirección
+                            window.location.replace(redirectUrl);
+                        }
+                    } catch (parseError) {
+                        console.error('[LOGIN-INIT] Error al parsear datos de usuario:', parseError);
+                        // Limpiar datos inválidos
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        sessionStorage.removeItem('token');
+                        sessionStorage.removeItem('user');
+                    }
+                } else {
+                    console.log('[LOGIN-INIT] No hay sesión activa');
+                }
+                
+                // Limpiar flags de redirección para evitar problemas
+                if (window.location.pathname === '/' || 
+                    window.location.pathname === '/index.html' ||
+                    window.location.pathname.endsWith('/OFICRI/') || 
+                    window.location.pathname.endsWith('/OFICRI/index.html')) {
+                    console.log('[LOGIN-INIT] Estamos en página de login, reseteando flags');
+                    sessionStorage.removeItem('redirectionOccurred');
+                    sessionStorage.removeItem('redirectionInProgress');
+                }
+            } catch (e) {
+                console.error('[LOGIN-INIT] Error en verificación inicial:', e);
+            }
+        })();
+    </script>
 </head>
 <body class="login-page">
     <div class="container">

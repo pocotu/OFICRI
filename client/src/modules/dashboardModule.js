@@ -3,8 +3,9 @@
  * Proporciona funciones modulares para gestionar y mostrar el dashboard
  */
 
-import AuthService from '../services/auth.service.js';
+import { authService } from '../services/services.js';
 import * as permissionUtils from '../utils/permissions.js';
+import * as errorHandler from '../utils/errorHandler.js';
 
 // URL base para las operaciones del dashboard
 const BASE_URL = '/api/dashboard';
@@ -22,7 +23,7 @@ let dashboardState = {
  * @returns {Object} - Headers con el token de autenticación
  */
 const getAuthHeaders = () => {
-    const token = AuthService.getToken();
+    const token = authService.getToken();
     return {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -41,18 +42,6 @@ export const getDashboardStats = async () => {
             return { ...dashboardState };
         }
 
-        // Por ahora, simularemos los datos hasta que el backend esté listo
-        // TODO: Reemplazar con llamada real a la API cuando esté disponible
-        dashboardState = {
-            usuariosActivos: 44,
-            documentosPendientes: 7,
-            areasActivas: 1,
-            lastUpdate: Date.now()
-        };
-
-        return { ...dashboardState };
-
-        /* Código para cuando la API esté lista
         const response = await fetch(`${BASE_URL}/stats`, {
             method: 'GET',
             headers: getAuthHeaders()
@@ -68,7 +57,6 @@ export const getDashboardStats = async () => {
             lastUpdate: Date.now()
         };
         return { ...dashboardState };
-        */
     } catch (error) {
         console.error('Error en getDashboardStats:', error);
         return dashboardState;
@@ -76,32 +64,49 @@ export const getDashboardStats = async () => {
 };
 
 /**
- * Actualiza las estadísticas en la interfaz
+ * Actualiza las estadísticas del dashboard y actualiza la UI
  * @returns {Promise<void>}
  */
 export const updateDashboardStats = async () => {
     try {
-        const stats = await getDashboardStats();
-        
-        // Actualizar los elementos del DOM
-        const elements = {
-            activeUsers: document.getElementById('activeUsers'),
-            pendingDocs: document.getElementById('pendingDocs'),
-            activeAreas: document.getElementById('activeAreas')
-        };
+        // Verificar permisos
+        const user = authService.getCurrentUser();
+        if (!user) {
+            throw new Error('Usuario no autenticado');
+        }
 
-        // Actualizar con animación
-        Object.entries(elements).forEach(([key, element]) => {
-            if (element) {
-                const currentValue = parseInt(element.textContent) || 0;
-                const targetValue = stats[key.replace('active', '').replace('pending', '').toLowerCase()];
-                
-                // Animar el cambio
-                animateNumber(element, currentValue, targetValue);
-            }
-        });
+        const permissions = permissionUtils.getRolePermissions(user.IDRol);
+        if (!permissionUtils.hasPermission(permissions, permissionUtils.PERMISSION.VIEW)) {
+            throw new Error('No tiene permisos para ver esta información');
+        }
+
+        // Actualizar estadísticas
+        const stats = await getDashboardStats();
+
+        // Actualizar elementos de la UI
+        const activeUsersElement = document.getElementById('activeUsers');
+        const pendingDocsElement = document.getElementById('pendingDocs');
+        const activeAreasElement = document.getElementById('activeAreas');
+
+        if (activeUsersElement) {
+            const currentValue = parseInt(activeUsersElement.textContent) || 0;
+            animateNumber(activeUsersElement, currentValue, stats.usuariosActivos);
+        }
+
+        if (pendingDocsElement) {
+            const currentValue = parseInt(pendingDocsElement.textContent) || 0;
+            animateNumber(pendingDocsElement, currentValue, stats.documentosPendientes);
+        }
+
+        if (activeAreasElement) {
+            const currentValue = parseInt(activeAreasElement.textContent) || 0;
+            animateNumber(activeAreasElement, currentValue, stats.areasActivas);
+        }
+
+        return stats;
     } catch (error) {
-        console.error('Error al actualizar estadísticas:', error);
+        errorHandler.handleError('DASHBOARD', error, 'actualizar estadísticas', true);
+        return { error: error.message };
     }
 };
 
@@ -179,7 +184,7 @@ export const renderDashboardContent = () => {
 export const initDashboard = async () => {
     try {
         // Verificar permisos
-        const user = AuthService.getCurrentUser();
+        const user = authService.getCurrentUser();
         if (!user) {
             throw new Error('Usuario no autenticado');
         }

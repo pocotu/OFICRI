@@ -3,7 +3,9 @@
  * Proporciona funciones para obtener y gestionar información del usuario
  */
 
-import * as sessionManager from './sessionManager.js';
+// Importamos directamente del archivo services para evitar dependencias circulares
+import { sessionManager } from './services.js';
+import * as errorHandler from '../utils/errorHandler.js';
 
 class UserService {
     constructor() {
@@ -11,6 +13,8 @@ class UserService {
         this.baseUrl = '/api';
         // Flag para determinar si las APIs están disponibles
         this.apisDisponibles = false;
+        
+        errorHandler.log('USER', 'Servicio de usuario inicializado', null, errorHandler.LOG_LEVEL.DEBUG);
     }
 
     /**
@@ -56,18 +60,18 @@ class UserService {
             if (response.ok) {
                 const contentType = response.headers.get('content-type');
                 if (contentType && (contentType.includes('application/json') || contentType.includes('text/json'))) {
-                    console.log('APIs disponibles y funcionando');
+                    errorHandler.log('USER', 'APIs disponibles y funcionando', null, errorHandler.LOG_LEVEL.DEBUG);
                     this.apisDisponibles = true;
                     return true;
                 }
             }
 
             // Si llegamos aquí, las APIs no están disponibles
-            console.warn('APIs no disponibles o no devuelven JSON');
+            errorHandler.log('USER', 'APIs no disponibles o no devuelven JSON', null, errorHandler.LOG_LEVEL.WARN);
             this.apisDisponibles = false;
             return false;
         } catch (error) {
-            console.warn('Error al verificar APIs:', error);
+            errorHandler.handleError('USER', error, 'verificar APIs', false);
             this.apisDisponibles = false;
             return false;
         }
@@ -79,8 +83,8 @@ class UserService {
      */
     async getCurrentUserDetails() {
         try {
-            const token = sessionManager.obtenerToken();
-            const user = sessionManager.obtenerUsuarioActual();
+            const token = await sessionManager.obtenerToken();
+            const user = await sessionManager.obtenerUsuarioActual();
             
             if (!token || !user) {
                 throw new Error('No hay usuario autenticado');
@@ -89,11 +93,11 @@ class UserService {
             // Verificar que el ID del usuario esté definido
             const userId = user.IDUsuario || user.id;
             if (!userId) {
-                console.error("Estructura del objeto usuario:", JSON.stringify(user));
+                errorHandler.log('USER', 'Estructura del objeto usuario: ' + JSON.stringify(user), null, errorHandler.LOG_LEVEL.ERROR);
                 throw new Error('El ID del usuario no está definido en la sesión');
             }
             
-            console.log("Usando IDUsuario:", userId);
+            errorHandler.log('USER', 'Usando IDUsuario: ' + userId, null, errorHandler.LOG_LEVEL.DEBUG);
             
             // Si sabemos que las APIs no están disponibles, devolvemos directamente el usuario de sesión
             if (this.apisDisponibles === false) {
@@ -125,7 +129,7 @@ class UserService {
                     
                     if (!alternativeResponse.ok) {
                         // Si ninguna ruta funciona, usamos los datos de sesión
-                        console.warn('APIs de usuario no disponibles');
+                        errorHandler.log('USER', 'APIs de usuario no disponibles', null, errorHandler.LOG_LEVEL.WARN);
                         this.apisDisponibles = false;
                         return this.enriquecerUsuario(user);
                     }
@@ -133,7 +137,7 @@ class UserService {
                     // Intentamos procesar la respuesta alternativa
                     const respText = await alternativeResponse.text();
                     if (this.esHTML(respText)) {
-                        console.warn('API devuelve HTML en lugar de JSON');
+                        errorHandler.log('USER', 'API devuelve HTML en lugar de JSON', null, errorHandler.LOG_LEVEL.WARN);
                         this.apisDisponibles = false;
                         return this.enriquecerUsuario(user);
                     }
@@ -145,7 +149,7 @@ class UserService {
                 // Procesamos la respuesta principal
                 const respText = await response.text();
                 if (this.esHTML(respText)) {
-                    console.warn('API devuelve HTML en lugar de JSON');
+                    errorHandler.log('USER', 'API devuelve HTML en lugar de JSON', null, errorHandler.LOG_LEVEL.WARN);
                     this.apisDisponibles = false;
                     return this.enriquecerUsuario(user);
                 }
@@ -153,13 +157,13 @@ class UserService {
                 const userData = JSON.parse(respText);
                 return this.procesarRespuestaUsuario(userData);
             } catch (error) {
-                console.error('Error al procesar la respuesta:', error);
+                errorHandler.handleError('USER', error, 'procesar respuesta de API', false);
                 this.apisDisponibles = false;
                 return this.enriquecerUsuario(user);
             }
         } catch (error) {
-            console.error('Error al obtener detalles del usuario:', error);
-            return sessionManager.obtenerUsuarioActual();
+            errorHandler.handleError('USER', error, 'obtener detalles del usuario', false);
+            return await sessionManager.obtenerUsuarioActual();
         }
     }
     
@@ -204,7 +208,10 @@ class UserService {
      */
     async getUserAreaDetails(areaId) {
         try {
-            const token = sessionManager.obtenerToken();
+            errorHandler.log('USER', `==== INICIO OBTENCIÓN ÁREA (ID: ${areaId}) ====`, null, errorHandler.LOG_LEVEL.DEBUG);
+            
+            const token = await sessionManager.obtenerToken();
+            errorHandler.log('USER', `Token obtenido: ${token ? 'EXISTE' : 'NO EXISTE'}`, null, errorHandler.LOG_LEVEL.DEBUG);
             
             if (!token) {
                 throw new Error('No hay usuario autenticado');
@@ -216,64 +223,74 @@ class UserService {
             
             // Si sabemos que las APIs no están disponibles, devolvemos directamente datos simulados
             if (this.apisDisponibles === false) {
+                errorHandler.log('USER', `APIs no disponibles, devolviendo área simulada`, null, errorHandler.LOG_LEVEL.WARN);
                 return this.obtenerAreaSimulada(areaId);
             }
 
             try {
-                // API GET /api/area/{id} - basada en la tabla AreaEspecializada de db.sql
-                const response = await fetch(`${this.baseUrl}/area/${areaId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
-
-                // También probamos con areas (plural) como alternativa
-                if (!response.ok) {
-                    const alternativeResponse = await fetch(`${this.baseUrl}/areas/${areaId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (!alternativeResponse.ok) {
-                        // Si ninguna ruta funciona, usamos datos simulados
-                        console.warn('APIs de área no disponibles');
-                        this.apisDisponibles = false;
-                        return this.obtenerAreaSimulada(areaId);
-                    }
-                    
-                    // Intentamos procesar la respuesta alternativa
-                    const respText = await alternativeResponse.text();
-                    if (this.esHTML(respText)) {
-                        console.warn('API de área devuelve HTML en lugar de JSON');
-                        this.apisDisponibles = false;
-                        return this.obtenerAreaSimulada(areaId);
-                    }
-                    
-                    return JSON.parse(respText);
-                }
+                // URL completa para facilitar la depuración
+                const url = `${this.baseUrl}/areas/${areaId}`;
+                errorHandler.log('USER', `Solicitando área a URL: ${url}`, null, errorHandler.LOG_LEVEL.DEBUG);
                 
-                // Procesamos la respuesta principal
-                const respText = await response.text();
-                if (this.esHTML(respText)) {
-                    console.warn('API de área devuelve HTML en lugar de JSON');
+                // Mostrar headers completos
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                };
+                errorHandler.log('USER', `Headers: ${JSON.stringify(headers)}`, null, errorHandler.LOG_LEVEL.DEBUG);
+                
+                // Usar directamente la ruta correcta
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                errorHandler.log('USER', `Respuesta recibida: ${response.status} ${response.statusText}`, null, errorHandler.LOG_LEVEL.DEBUG);
+                
+                if (!response.ok) {
+                    errorHandler.log('USER', `Error al obtener área: ${response.status} ${response.statusText}`, null, errorHandler.LOG_LEVEL.WARN);
+                    
+                    // Intentar obtener más detalles del error
+                    try {
+                        const errorText = await response.text();
+                        errorHandler.log('USER', `Detalles del error: ${errorText}`, null, errorHandler.LOG_LEVEL.WARN);
+                    } catch (e) {
+                        errorHandler.log('USER', `No se pudieron leer detalles del error`, null, errorHandler.LOG_LEVEL.WARN);
+                    }
+                    
                     this.apisDisponibles = false;
                     return this.obtenerAreaSimulada(areaId);
                 }
                 
-                return JSON.parse(respText);
+                // Procesamos la respuesta
+                const respText = await response.text();
+                errorHandler.log('USER', `Texto de respuesta recibido: ${respText}`, null, errorHandler.LOG_LEVEL.DEBUG);
+                
+                if (this.esHTML(respText)) {
+                    errorHandler.log('USER', 'API de área devuelve HTML en lugar de JSON', null, errorHandler.LOG_LEVEL.WARN);
+                    this.apisDisponibles = false;
+                    return this.obtenerAreaSimulada(areaId);
+                }
+                
+                try {
+                    const areaData = JSON.parse(respText);
+                    errorHandler.log('USER', `Datos de área parseados: ${JSON.stringify(areaData)}`, null, errorHandler.LOG_LEVEL.DEBUG);
+                    errorHandler.log('USER', `==== FIN OBTENCIÓN ÁREA (ÉXITO) ====`, null, errorHandler.LOG_LEVEL.DEBUG);
+                    return areaData;
+                } catch (parseError) {
+                    errorHandler.log('USER', `Error al parsear JSON: ${parseError.message}`, null, errorHandler.LOG_LEVEL.ERROR);
+                    this.apisDisponibles = false;
+                    return this.obtenerAreaSimulada(areaId);
+                }
             } catch (error) {
-                console.error('Error al obtener detalles del área:', error);
+                errorHandler.log('USER', `Error en la petición: ${error.message}`, null, errorHandler.LOG_LEVEL.ERROR);
+                errorHandler.handleError('USER', error, 'obtener detalles del área', false);
                 return this.obtenerAreaSimulada(areaId);
             }
         } catch (error) {
-            console.error('Error al obtener detalles del área:', error);
+            errorHandler.log('USER', `Error general: ${error.message}`, null, errorHandler.LOG_LEVEL.ERROR);
+            errorHandler.handleError('USER', error, 'obtener detalles del área', false);
             return this.obtenerAreaSimulada(areaId);
         }
     }
@@ -285,12 +302,22 @@ class UserService {
      */
     obtenerAreaSimulada(areaId) {
         // Según la estructura de la tabla AreaEspecializada en db.sql
+        errorHandler.log('USER', `Generando área simulada para ID: ${areaId}`, null, errorHandler.LOG_LEVEL.WARN);
+        
+        // Para depurar, devolvemos información sobre por qué estamos usando un área simulada
+        const razon = this.apisDisponibles === false 
+            ? "APIs marcadas como no disponibles" 
+            : "Error al obtener datos del área";
+        
         return {
             IDArea: areaId,
-            NombreArea: 'Área no disponible',
-            CodigoIdentificacion: '',
-            TipoArea: '',
-            Descripcion: 'La información del área no pudo ser cargada.',
+            NombreArea: `Área no disponible [${razon}]`,
+            CodigoIdentificacion: `DEBUG-${Date.now()}`,
+            TipoArea: 'SIMULADO',
+            Descripcion: `La información del área no pudo ser cargada. 
+                Posible causa: ${razon}. 
+                ID solicitado: ${areaId}. 
+                Timestamp: ${new Date().toISOString()}`,
             IsActive: true
         };
     }
@@ -302,7 +329,7 @@ class UserService {
      */
     async getUserRoleDetails(rolId) {
         try {
-            const token = sessionManager.obtenerToken();
+            const token = await sessionManager.obtenerToken();
             
             if (!token) {
                 throw new Error('No hay usuario autenticado');
@@ -341,7 +368,7 @@ class UserService {
                     
                     if (!alternativeResponse.ok) {
                         // Si ninguna ruta funciona, usamos datos simulados
-                        console.warn('APIs de rol no disponibles');
+                        errorHandler.log('USER', 'APIs de rol no disponibles', null, errorHandler.LOG_LEVEL.WARN);
                         this.apisDisponibles = false;
                         return this.obtenerRolSimulado(rolId);
                     }
@@ -349,7 +376,7 @@ class UserService {
                     // Intentamos procesar la respuesta alternativa
                     const respText = await alternativeResponse.text();
                     if (this.esHTML(respText)) {
-                        console.warn('API de rol devuelve HTML en lugar de JSON');
+                        errorHandler.log('USER', 'API de rol devuelve HTML en lugar de JSON', null, errorHandler.LOG_LEVEL.WARN);
                         this.apisDisponibles = false;
                         return this.obtenerRolSimulado(rolId);
                     }
@@ -360,18 +387,18 @@ class UserService {
                 // Procesamos la respuesta principal
                 const respText = await response.text();
                 if (this.esHTML(respText)) {
-                    console.warn('API de rol devuelve HTML en lugar de JSON');
+                    errorHandler.log('USER', 'API de rol devuelve HTML en lugar de JSON', null, errorHandler.LOG_LEVEL.WARN);
                     this.apisDisponibles = false;
                     return this.obtenerRolSimulado(rolId);
                 }
                 
                 return JSON.parse(respText);
             } catch (error) {
-                console.error('Error al obtener detalles del rol:', error);
+                errorHandler.handleError('USER', error, 'obtener detalles del rol', false);
                 return this.obtenerRolSimulado(rolId);
             }
         } catch (error) {
-            console.error('Error al obtener detalles del rol:', error);
+            errorHandler.handleError('USER', error, 'obtener detalles del rol', false);
             return this.obtenerRolSimulado(rolId);
         }
     }
@@ -429,7 +456,7 @@ class UserService {
      */
     async getUserActivityStats(userId) {
         try {
-            const token = sessionManager.obtenerToken();
+            const token = await sessionManager.obtenerToken();
             
             if (!token) {
                 throw new Error('No hay usuario autenticado');
@@ -450,7 +477,7 @@ class UserService {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.warn('API de estadísticas no encontrada');
+                    errorHandler.log('USER', 'API de estadísticas no encontrada', null, errorHandler.LOG_LEVEL.WARN);
                     return null;
                 }
                 
@@ -466,7 +493,7 @@ class UserService {
             const statsData = await response.json();
             return statsData;
         } catch (error) {
-            console.error('Error al obtener estadísticas del usuario:', error);
+            errorHandler.handleError('USER', error, 'obtener estadísticas del usuario', false);
             // Devolver estadísticas vacías para evitar errores en la UI
             return {
                 documentosCreados: 0,
@@ -477,4 +504,6 @@ class UserService {
     }
 }
 
-export default new UserService(); 
+// Crear una única instancia del servicio
+const userService = new UserService();
+export default userService; 

@@ -9,11 +9,16 @@ import UserProfile from '../UserProfile/UserProfile.js';
 
 export class Header {
     constructor() {
-        this.user = sessionManager.obtenerUsuarioActual();
+        console.log('[HEADER-DEBUG] Inicializando componente Header');
+        this.user = null;
+        // No asignamos this.user aquí porque obtenerUsuarioActual es async
+        // En su lugar, cargaremos los datos del usuario en el método render
     }
 
     getUserDisplayName() {
         if (!this.user) return 'Usuario';
+        
+        console.log('[HEADER-DEBUG] Datos de usuario para mostrar:', this.user);
         
         // Intentar obtener el nombre completo con diferentes posibles propiedades
         const nombres = this.user.Nombres || this.user.nombres || this.user.name || '';
@@ -28,6 +33,20 @@ export class Header {
     }
 
     async render(container) {
+        console.log('[HEADER-DEBUG] Iniciando renderizado de Header');
+        
+        try {
+            // Cargar los datos del usuario de manera asíncrona
+            this.user = await sessionManager.obtenerUsuarioActual();
+            console.log('[HEADER-DEBUG] Usuario obtenido:', this.user);
+        } catch (error) {
+            console.error('[HEADER-DEBUG] Error al obtener usuario:', error);
+            this.user = null;
+        }
+        
+        const nombreUsuario = this.getUserDisplayName();
+        console.log('[HEADER-DEBUG] Nombre para mostrar:', nombreUsuario);
+        
         const template = `
             <nav class="navbar">
                 <div class="container-fluid">
@@ -40,7 +59,7 @@ export class Header {
                     <div class="navbar-right">
                         <div class="user-info" id="user-info-button">
                             <i class="fas fa-user"></i>
-                            <span>${this.getUserDisplayName()}</span>
+                            <span>${nombreUsuario}</span>
                         </div>
                     </div>
                 </div>

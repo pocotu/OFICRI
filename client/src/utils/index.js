@@ -1,20 +1,23 @@
 /**
- * Índice de utilidades
- * Exporta todas las utilidades disponibles para facilitar su importación
+ * Archivo de índice para exportar todas las utilidades
+ * Facilita la importación de utilidades en otros archivos
  */
 
 // Importar utilidades
-import * as permissionsUtils from './permissions.js';
+import * as permissionUtils from './permissions.js';
 import * as navigationUtils from './navigation.js';
+import * as errorHandler from './errorHandler.js';
 
 // Exportar utilidades
 export {
-    permissionsUtils,
-    navigationUtils
+    permissionUtils,
+    navigationUtils,
+    errorHandler
 };
 
 // Exportación por defecto de todas las utilidades
 export default {
-    permissionsUtils,
-    navigationUtils
+    permissionUtils,
+    navigationUtils,
+    errorHandler
 }; 

@@ -1,15 +1,19 @@
 /**
- * Módulo de login
- * Maneja la autenticación de usuarios
+ * Página de login
+ * Maneja la lógica y renderizado del formulario de login
  */
 
-// Importar módulos directamente
-import AuthService from '../../services/auth.service.js';
+// Importar servicios
+import { authService } from '../../services/services.js';
+import * as errorHandler from '../../utils/errorHandler.js';
 import * as navigation from '../../utils/navigation.js';
 import * as sessionManager from '../../services/sessionManager.js';
 
 // Variable para evitar múltiples verificaciones
 let isCheckingAuth = false;
+
+// Variable para indicar que la página se ha cargado completamente
+let isPageLoaded = false;
 
 // Verificar si ya estamos autenticados al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
@@ -19,6 +23,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[LOGIN-DEBUG] Search params:', window.location.search);
     console.log('[LOGIN-DEBUG] Hash:', window.location.hash);
     
+    // Inicializar error handler
+    if (errorHandler && errorHandler.setLogLevel && errorHandler.LOG_LEVEL) {
+        errorHandler.setLogLevel(errorHandler.LOG_LEVEL.DEBUG);
+    }
+    
     // Detectar navegador
     const browserInfo = detectBrowser();
     console.log('[LOGIN-DEBUG] Navegador detectado:', JSON.stringify(browserInfo));
@@ -27,119 +36,78 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[LOGIN-DEBUG] SessionStorage disponible:', testSessionStorage());
     
     try {
-        // Evitar verificaciones múltiples
-        if (isCheckingAuth) {
-            console.log('[LOGIN-DEBUG] Ya hay una verificación en progreso, abortando');
-            return;
-        }
-        isCheckingAuth = true;
-
-        // Limpiar cualquier mensaje de error previo
+        // Obtener referencias a elementos del DOM
+        const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('loginMessage');
+        
+        // Resetear mensaje de error si existe
         if (loginMessage) {
             loginMessage.style.display = 'none';
+            loginMessage.innerHTML = '';
             console.log('[LOGIN-DEBUG] Mensaje de login oculto');
         }
-
-        // Si estamos en la página de login y ya estamos autenticados, redirigir
-        const isLoginPage = window.location.pathname === '/' || window.location.pathname === '/index.html';
+        
+        // Verificar si estamos en la página de login
+        const isLoginPage = window.location.pathname === '/' || 
+                            window.location.pathname === '/index.html';
         console.log('[LOGIN-DEBUG] ¿Es página de login?:', isLoginPage);
-
+        
+        // Si no estamos en la página de login, redirigir
         if (!isLoginPage) {
-            console.log('[LOGIN-DEBUG] No estamos en la página de login, terminando verificación');
-            isCheckingAuth = false;
+            console.log('[LOGIN-DEBUG] No estamos en la página de login, redirigiendo');
+            window.location.replace('/');
             return;
-        }
-
-        // Verificar si ya se realizó una redirección para evitar bucles
-        let redirectionOccurred = false;
-        try {
-            redirectionOccurred = sessionStorage.getItem('redirectionOccurred') === 'true';
-            console.log('[LOGIN-DEBUG] Valor actual de redirectionOccurred:', redirectionOccurred);
-        } catch (e) {
-            console.error('[LOGIN-DEBUG] Error al leer redirectionOccurred de sessionStorage:', e);
         }
         
-        if (redirectionOccurred) {
-            console.log('[LOGIN-DEBUG] Ya se produjo una redirección, evitando bucle');
-            try {
+        // Verificar si ya ha ocurrido una redirección (para prevenir bucles)
+        const redirectionOccurred = sessionStorage.getItem('redirectionOccurred');
+        console.log('[LOGIN-DEBUG] Valor actual de redirectionOccurred:', redirectionOccurred === 'true');
+        
+        // Si es la primera carga de la página, resetear el flag
+        if (!redirectionOccurred && window.performance) {
+            const navEntries = window.performance.getEntriesByType('navigation');
+            const navigationType = navEntries.length > 0 
+                ? navEntries[0].type 
+                : (window.performance.navigation ? 
+                    (window.performance.navigation.type === 0 ? 'navigate' : 'other') 
+                    : 'unknown');
+                    
+            if (navigationType === 'navigate' || navigationType === 0) {
+                console.log('[LOGIN-DEBUG] Primera navegación a la página, reseteando flag');
                 sessionStorage.removeItem('redirectionOccurred');
-                console.log('[LOGIN-DEBUG] Flag redirectionOccurred limpiado de sessionStorage');
-            } catch (e) {
-                console.error('[LOGIN-DEBUG] Error al limpiar redirectionOccurred:', e);
             }
-            console.log('[LOGIN-DEBUG] Inicializando formulario de login');
-            initializeLoginForm();
-            setupPasswordToggle();
-            isCheckingAuth = false;
-            console.log('[LOGIN-DEBUG] ==================== FIN CARGA PÁGINA (EVITANDO BUCLE) ====================');
-            return;
         }
-
-        // Verificar autenticación
-        console.log('[LOGIN-DEBUG] Llamando a AuthService.isAuthenticated()');
-        const isAuthenticated = AuthService.isAuthenticated();
-        console.log('[LOGIN-DEBUG] Resultado isAuthenticated:', isAuthenticated);
-
-        if (isAuthenticated) {
-            console.log('[LOGIN-DEBUG] Usuario autenticado, obteniendo datos');
-            const user = AuthService.getCurrentUser();
-            console.log('[LOGIN-DEBUG] Datos del usuario obtenidos:', user ? JSON.stringify(user) : 'NULL');
-
-            if (user && user.IDRol) {
-                // Marcar que se ha producido una redirección
-                try {
-                    console.log('[LOGIN-DEBUG] Marcando flag de redirección en sessionStorage');
-                    sessionStorage.setItem('redirectionOccurred', 'true');
-                    console.log('[LOGIN-DEBUG] Flag establecido correctamente');
-                } catch (e) {
-                    console.error('[LOGIN-DEBUG] No se pudo guardar flag en sessionStorage:', e);
-                }
-                
-                // Obtener la última ruta visitada
-                let lastPath = null;
-                try {
-                    lastPath = localStorage.getItem('lastPath');
-                    console.log('[LOGIN-DEBUG] Última ruta visitada obtenida:', lastPath);
-                } catch (e) {
-                    console.error('[LOGIN-DEBUG] Error al obtener lastPath:', e);
-                }
-
-                if (lastPath && lastPath !== '/' && lastPath !== '/index.html') {
-                    console.log('[LOGIN-DEBUG] Redirigiendo a última ruta:', lastPath);
-                    try {
-                        localStorage.removeItem('lastPath');
-                        console.log('[LOGIN-DEBUG] lastPath eliminado de localStorage');
-                    } catch (e) {
-                        console.warn('[LOGIN-DEBUG] Error al eliminar lastPath:', e);
-                    }
-                    console.log('[LOGIN-DEBUG] Llamando a safeRedirect() para:', lastPath);
-                    safeRedirect(lastPath);
-                } else {
-                    // Redirigir según el rol
-                    const route = user.IDRol === 1 ? '/admin.html' : '/dashboard.html';
-                    console.log('[LOGIN-DEBUG] Redirigiendo según rol a:', route);
-                    console.log('[LOGIN-DEBUG] Llamando a safeRedirect() para:', route);
-                    safeRedirect(route);
-                }
-                console.log('[LOGIN-DEBUG] ==================== FIN CARGA PÁGINA (REDIRIGIENDO) ====================');
-                return;
+        
+        // Verificar si el usuario ya está autenticado
+        try {
+            console.log('[LOGIN-DEBUG] Llamando a authService.isAuthenticated()');
+            if (authService && typeof authService.isAuthenticated === 'function') {
+                const isLoggedIn = authService.isAuthenticated(true);
+                console.log('[LOGIN-DEBUG] Resultado isAuthenticated:', isLoggedIn);
             } else {
-                console.log('[LOGIN-DEBUG] Usuario autenticado pero sin datos válidos');
-                AuthService.logout(false);
+                console.warn('[LOGIN-DEBUG] authService o su método isAuthenticated no disponible');
             }
+        } catch (authError) {
+            console.error('[LOGIN-DEBUG] Error al verificar autenticación:', authError);
         }
-
-        console.log('[LOGIN-DEBUG] Usuario no autenticado, mostrando formulario de login');
-        initializeLoginForm();
-        setupPasswordToggle();
+        
+        // Inicializar el formulario solo si existe en el DOM
+        if (loginForm) {
+            console.log('[LOGIN-DEBUG] Mostrando formulario de login');
+            initializeLoginForm();
+            
+            // Configurar el toggle de la contraseña
+            setupPasswordToggle();
+        } else {
+            console.warn('[LOGIN-DEBUG] Formulario de login no encontrado en el DOM');
+        }
+        
         console.log('[LOGIN-DEBUG] ==================== FIN CARGA PÁGINA (MOSTRANDO FORM) ====================');
     } catch (error) {
-        console.error('[LOGIN-DEBUG] Error en la verificación inicial:', error);
+        console.error('[LOGIN-DEBUG] Error en inicio de página:', error);
         console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
-        AuthService.logout(false);
     } finally {
-        isCheckingAuth = false;
+        isPageLoaded = true;
     }
 });
 
@@ -279,120 +247,230 @@ function safeRedirect(url) {
 function initializeLoginForm() {
     console.log('[LOGIN-DEBUG] ==================== INICIO INIT LOGIN FORM ====================');
     console.log('[LOGIN-DEBUG] Inicializando formulario de login');
-    const loginForm = document.getElementById('loginForm');
     
-    if (!loginForm) {
-        console.error('[LOGIN-DEBUG] No se encontró el formulario de login');
-        console.log('[LOGIN-DEBUG] ==================== FIN INIT LOGIN FORM (ERROR) ====================');
-        return;
-    }
-
-    // Eliminar listener previo si existe
-    const oldForm = loginForm.cloneNode(true);
-    loginForm.parentNode.replaceChild(oldForm, loginForm);
-    
-    console.log('[LOGIN-DEBUG] Formulario clonado para eliminar listeners previos');
-    
-    // Referencia al nuevo formulario
-    const newForm = document.getElementById('loginForm');
-    
-    newForm.addEventListener('submit', async (e) => {
-        console.log('[LOGIN-DEBUG] ==================== INICIO SUBMIT FORM ====================');
-        console.log('[LOGIN-DEBUG] Evento submit del formulario capturado');
-        e.preventDefault();
+    try {
+        // Obtener referencias
+        const loginForm = document.getElementById('loginForm');
         
-        // Validar el formulario usando Bootstrap
-        if (!newForm.checkValidity()) {
-            console.log('[LOGIN-DEBUG] Formulario inválido según validación HTML5');
-            e.stopPropagation();
-            newForm.classList.add('was-validated');
-            console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (INVÁLIDO) ====================');
-            return;
-        }
-
-        const submitButton = newForm.querySelector('button[type="submit"]');
+        // Clonar y reemplazar el formulario para eliminar listeners previos
+        const oldForm = loginForm;
+        const newForm = oldForm.cloneNode(true);
+        oldForm.parentNode.replaceChild(newForm, oldForm);
+        console.log('[LOGIN-DEBUG] Formulario clonado para eliminar listeners previos');
+        
+        // Obtener referencias actualizadas
+        const formActual = document.getElementById('loginForm');
         const cipInput = document.getElementById('cip');
         const passwordInput = document.getElementById('password');
+        const submitButton = formActual.querySelector('button[type="submit"]');
+        const loginMessage = document.getElementById('loginMessage');
         
-        console.log('[LOGIN-DEBUG] Datos de formulario - CIP:', cipInput.value, 'Password length:', passwordInput.value.length);
-
-        try {
-            // Deshabilitar el botón y mostrar loading
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Iniciando sesión...';
-            console.log('[LOGIN-DEBUG] Botón deshabilitado, mostrando spinner');
+        // Agregar evento de envío del formulario
+        formActual.addEventListener('submit', async (event) => {
+            console.log('[LOGIN-DEBUG] ==================== INICIO SUBMIT FORM ====================');
+            console.log('[LOGIN-DEBUG] Evento submit del formulario capturado');
             
-            console.log('[LOGIN-DEBUG] Llamando a AuthService.login');
-            const response = await AuthService.login(cipInput.value, passwordInput.value);
-            console.log('[LOGIN-DEBUG] Respuesta del método login:', JSON.stringify(response));
+            // Prevenir comportamiento por defecto
+            event.preventDefault();
             
-            if (!response.success) {
-                console.error('[LOGIN-DEBUG] Login fallido:', response.message);
-                throw new Error(response.message || 'Error al iniciar sesión');
-            }
-
-            // Verificar que tenemos un usuario válido
-            const user = response.user;
-            console.log('[LOGIN-DEBUG] Datos del usuario recibidos:', user ? JSON.stringify(user) : 'NULL');
-            
-            if (!user || !user.IDRol) {
-                console.error('[LOGIN-DEBUG] Datos de usuario incompletos');
-                throw new Error('Datos de usuario incompletos');
-            }
-
-            // Mostrar mensaje de éxito
-            console.log('[LOGIN-DEBUG] Mostrando alerta de éxito');
-            await Swal.fire({
-                icon: 'success',
-                title: '¡Bienvenido!',
-                text: 'Iniciando sesión...',
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            // Redirigir según el rol
-            const route = user.IDRol === 1 ? '/admin.html' : '/dashboard.html';
-            console.log('[LOGIN-DEBUG] Redirigiendo a:', route);
-            
-            // Marcar redirección para evitar bucles
             try {
-                sessionStorage.setItem('redirectionOccurred', 'true');
-                console.log('[LOGIN-DEBUG] Flag de redirección establecido');
-            } catch (e) {
-                console.warn('[LOGIN-DEBUG] Error al establecer flag de redirección:', e);
-            }
-            
-            safeRedirect(route);
-            console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (ÉXITO) ====================');
-
-        } catch (error) {
-            console.error('[LOGIN-DEBUG] Error en login:', error);
-            console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
-            
-            // Mostrar mensaje de error
-            console.log('[LOGIN-DEBUG] Mostrando alerta de error');
-            await Swal.fire({
-                icon: 'error',
-                title: 'Error de autenticación',
-                text: error.message || 'Credenciales incorrectas',
-                confirmButtonText: 'Intentar nuevamente'
-            });
-            
-            // Limpiar el campo de contraseña
-            passwordInput.value = '';
-            console.log('[LOGIN-DEBUG] Campo de contraseña limpiado');
-            
-            console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (ERROR) ====================');
-        } finally {
-            // Restaurar el botón de submit
-            submitButton.disabled = false;
-            submitButton.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión';
-            console.log('[LOGIN-DEBUG] Botón de submit restaurado');
-        }
-    });
+                // Validar formulario
+                if (!formActual.checkValidity()) {
+                    event.stopPropagation();
+                    formActual.classList.add('was-validated');
+                    console.log('[LOGIN-DEBUG] Formulario inválido, deteniendo envío');
+                    return;
+                }
+                
+                console.log('[LOGIN-DEBUG] Datos de formulario - CIP:', cipInput.value, 'Password length:', passwordInput.value.length);
+                
+                // Deshabilitar el botón y mostrar loading
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Iniciando sesión...';
+                console.log('[LOGIN-DEBUG] Botón deshabilitado, mostrando spinner');
+                
+                // Verificar si el servicio de autenticación está disponible
+                if (!authService || typeof authService.login !== 'function') {
+                    console.error('[LOGIN-DEBUG] Servicio de autenticación no disponible');
+                    throw new Error('El servicio de autenticación no está disponible en este momento');
+                }
+                
+                console.log('[LOGIN-DEBUG] Llamando a authService.login');
+                try {
+                    const response = await authService.login(cipInput.value, passwordInput.value);
+                    console.log('[LOGIN-DEBUG] Respuesta del método login:', response ? JSON.stringify(response) : 'NULL');
+                    
+                    if (!response || !response.success) {
+                        console.error('[LOGIN-DEBUG] Login fallido:', response ? response.message : 'Respuesta vacía');
+                        throw new Error(response && response.message ? response.message : 'Error al iniciar sesión');
+                    }
     
-    console.log('[LOGIN-DEBUG] Listener de submit agregado al formulario');
-    console.log('[LOGIN-DEBUG] ==================== FIN INIT LOGIN FORM ====================');
+                    // Verificar que tenemos un usuario válido
+                    const user = response.user;
+                    console.log('[LOGIN-DEBUG] Datos del usuario recibidos:', user ? JSON.stringify(user) : 'NULL');
+                    
+                    if (!user || !user.IDRol) {
+                        console.error('[LOGIN-DEBUG] Datos de usuario incompletos');
+                        throw new Error('Datos de usuario incompletos');
+                    }
+                    
+                    // Mostrar mensaje de éxito
+                    if (window.Swal) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '¡Bienvenido!',
+                            text: 'Iniciando sesión...',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }
+                    
+                    console.log('[LOGIN-DEBUG] Login exitoso, redirigiendo según rol...');
+                    
+                    // NUEVO: Verificaciones exhaustivas de almacenamiento
+                    const tokenGuardado = localStorage.getItem('token');
+                    const tokenSesion = sessionStorage.getItem('token');
+                    const userGuardado = localStorage.getItem('user');
+                    const userSesion = sessionStorage.getItem('user');
+                    
+                    console.log('[LOGIN-DEBUG] Verificación exhaustiva de almacenamiento:');
+                    console.log('[LOGIN-DEBUG] Token en localStorage:', tokenGuardado ? 'EXISTE' : 'NO EXISTE');
+                    console.log('[LOGIN-DEBUG] Token en sessionStorage:', tokenSesion ? 'EXISTE' : 'NO EXISTE');
+                    console.log('[LOGIN-DEBUG] User en localStorage:', userGuardado ? 'EXISTE' : 'NO EXISTE');
+                    console.log('[LOGIN-DEBUG] User en sessionStorage:', userSesion ? 'EXISTE' : 'NO EXISTE');
+                    
+                    // NUEVO: Guardar los datos nuevamente de forma directa para asegurar que existan
+                    console.log('[LOGIN-DEBUG] Guardando datos nuevamente como medida de seguridad');
+                    
+                    try {
+                        localStorage.setItem('token', response.token);
+                        localStorage.setItem('user', JSON.stringify(user));
+                        sessionStorage.setItem('token', response.token);
+                        sessionStorage.setItem('user', JSON.stringify(user));
+                        sessionStorage.setItem('redirectionOccurred', 'true');
+                        
+                        console.log('[LOGIN-DEBUG] Datos guardados exitosamente');
+                    } catch (storageError) {
+                        console.error('[LOGIN-DEBUG] Error al guardar datos:', storageError);
+                    }
+                    
+                    // Verificar almacenamiento después de guardar nuevamente
+                    const tokenVerificado = localStorage.getItem('token') || sessionStorage.getItem('token');
+                    console.log('[LOGIN-DEBUG] Verificación final de token:', tokenVerificado ? 'OK' : 'FALLIDO');
+                    
+                    if (!tokenVerificado) {
+                        console.error('[LOGIN-DEBUG] ¡ALERTA! El token no se guardó correctamente');
+                        // Intentar con cookies como último recurso
+                        document.cookie = `token=${response.token}; path=/; max-age=86400`;
+                        console.log('[LOGIN-DEBUG] Intentando guardar token en cookie');
+                    }
+                    
+                    // NUEVO: Obtener la URL de redirección directamente de la respuesta
+                    const redirectTo = response.redirectTo || (user.IDRol === 1 ? '/admin.html' : '/dashboard.html');
+                    console.log('[LOGIN-DEBUG] URL de redirección final:', redirectTo);
+                    
+                    // NUEVO: Utilizar un enfoque directo para la redirección
+                    console.log('[LOGIN-DEBUG] Preparando redirección con timeout de seguridad');
+                    
+                    setTimeout(() => {
+                        try {
+                            console.log('[LOGIN-DEBUG] Iniciando redirección ahora');
+                            
+                            // Crear un elemento <a> para navegación segura
+                            const link = document.createElement('a');
+                            link.href = redirectTo;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            console.log('[LOGIN-DEBUG] Elemento <a> creado con href:', link.href);
+                            
+                            // Simular clic
+                            link.click();
+                            console.log('[LOGIN-DEBUG] Clic simulado en enlace');
+                            
+                            // Limpiar
+                            setTimeout(() => document.body.removeChild(link), 100);
+                            
+                            // Plan B: si después de 500ms seguimos en la misma página, intentar con métodos alternativos
+                            setTimeout(() => {
+                                if (window.location.pathname === '/' || 
+                                    window.location.pathname === '/index.html' ||
+                                    window.location.pathname.endsWith('/OFICRI/') || 
+                                    window.location.pathname.endsWith('/OFICRI/index.html')) {
+                                    
+                                    console.log('[LOGIN-DEBUG] Todavía en página de login, intentando métodos alternativos');
+                                    
+                                    try {
+                                        console.log('[LOGIN-DEBUG] Intentando window.location.replace');
+                                        window.location.replace(redirectTo);
+                                    } catch (error1) {
+                                        console.error('[LOGIN-DEBUG] Error con replace:', error1);
+                                        
+                                        try {
+                                            console.log('[LOGIN-DEBUG] Intentando window.location.href');
+                                            window.location.href = redirectTo;
+                                        } catch (error2) {
+                                            console.error('[LOGIN-DEBUG] Error con href:', error2);
+                                            window.location = redirectTo;
+                                        }
+                                    }
+                                }
+                            }, 500);
+                        } catch (redirectError) {
+                            console.error('[LOGIN-DEBUG] Error crítico durante redirección:', redirectError);
+                            
+                            // Último intento
+                            window.location = redirectTo;
+                        }
+                    }, 1000); // Aumentamos a 1 segundo para dar más tiempo
+                    
+                } catch (loginError) {
+                    console.error('[LOGIN-DEBUG] Error durante el proceso de login:', loginError);
+                    throw loginError;
+                }
+                
+                console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (ÉXITO) ====================');
+            } catch (error) {
+                console.error('[LOGIN-DEBUG] Error en login:', error);
+                console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
+                
+                // Mostrar mensaje de error
+                console.log('[LOGIN-DEBUG] Mostrando alerta de error');
+                if (window.Swal) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message || 'Error al iniciar sesión',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                } else if (loginMessage) {
+                    loginMessage.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            ${error.message || 'Error al iniciar sesión'}
+                        </div>
+                    `;
+                    loginMessage.style.display = 'block';
+                }
+                
+                // Limpiar campo de contraseña
+                passwordInput.value = '';
+                console.log('[LOGIN-DEBUG] Campo de contraseña limpiado');
+                
+                console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (ERROR) ====================');
+            } finally {
+                // Restaurar el botón
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión';
+                console.log('[LOGIN-DEBUG] Botón de submit restaurado');
+            }
+        });
+        
+        console.log('[LOGIN-DEBUG] Listener de submit agregado al formulario');
+        console.log('[LOGIN-DEBUG] ==================== FIN INIT LOGIN FORM ====================');
+    } catch (error) {
+        console.error('[LOGIN-DEBUG] Error al inicializar formulario:', error);
+        console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
+    }
 }
 
 /**
