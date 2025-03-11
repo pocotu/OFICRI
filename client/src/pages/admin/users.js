@@ -139,7 +139,17 @@ function initializeEvents() {
     // Evento para el botón de actualizar
     const refreshBtn = document.getElementById('refreshUsersBtn');
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadInitialData);
+        refreshBtn.addEventListener('click', (e) => {
+            // Si se presiona con Shift, forzar recarga completa sin caché
+            if (e.shiftKey) {
+                userModule.forcePageReload();
+            } else {
+                loadInitialData();
+            }
+        });
+        
+        // Agregar título informativo
+        refreshBtn.setAttribute('title', 'Click para actualizar datos. Shift+Click para forzar recarga completa sin caché');
     }
     
     // Evento para el botón de crear usuario

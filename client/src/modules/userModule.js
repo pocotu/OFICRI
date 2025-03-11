@@ -515,7 +515,7 @@ export const initUserEvents = (userPermissions) => {
                 const user = await getUserById(userId);
                 const areas = await getAllAreas();
                 const roles = await getAllRoles();
-                showUserForm(user, areas, roles);
+                renderUserFormModal(user, areas, roles);
             } catch (error) {
                 showAlert('error', `Error al preparar la edición del usuario: ${error.message}`);
             }
@@ -566,7 +566,7 @@ export const initUserEvents = (userPermissions) => {
             try {
                 const areas = await getAllAreas();
                 const roles = await getAllRoles();
-                showUserForm(null, areas, roles);
+                renderUserFormModal(null, areas, roles);
             } catch (error) {
                 showAlert('error', `Error al preparar el formulario de creación: ${error.message}`);
             }
@@ -629,6 +629,72 @@ export const initUserEvents = (userPermissions) => {
             closeModal();
         }
     });
+    
+    // Evento para los botones de editar usuario
+    document.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const userId = this.getAttribute('data-id');
+            console.log('[USER-MODULE] Click en editar usuario:', userId);
+            
+            try {
+                // Obtener usuario por ID
+                const user = await getUserById(userId);
+                
+                // Obtener áreas y roles
+                const [areas, roles] = await Promise.all([
+                    getAllAreas(),
+                    getAllRoles()
+                ]);
+                
+                // Mostrar formulario de edición
+                renderUserFormModal(user, areas, roles);
+            } catch (error) {
+                console.error('[USER-MODULE] Error al preparar edición de usuario:', error);
+                showAlert('error', 'No se pudo cargar la información del usuario.');
+            }
+        });
+    });
+    
+    // Evento para el botón de crear usuario cuando está en la tabla
+    document.querySelectorAll('.create-user-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            try {
+                // Obtener áreas y roles
+                const [areas, roles] = await Promise.all([
+                    getAllAreas(),
+                    getAllRoles()
+                ]);
+                
+                // Mostrar formulario de creación
+                renderUserFormModal(null, areas, roles);
+            } catch (error) {
+                console.error('[USER-MODULE] Error al preparar creación de usuario:', error);
+                showAlert('error', 'No se pudieron cargar los datos necesarios para crear un usuario.');
+            }
+        });
+    });
+};
+
+/**
+ * Muestra el formulario de creación/edición de usuario
+ * Obtiene automáticamente las áreas y roles necesarios
+ * @param {Object} user - Usuario a editar (null para crear nuevo)
+ */
+export const showUserForm = async (user = null) => {
+    try {
+        console.log('[USER-MODULE] Mostrando formulario de usuario', user ? `para editar ID: ${user.IDUsuario}` : 'para crear nuevo');
+        
+        // Obtener áreas y roles necesarios para el formulario
+        const areas = await getAllAreas();
+        const roles = await getAllRoles();
+        
+        // Mostrar el formulario utilizando la función interna
+        renderUserFormModal(user, areas, roles);
+        
+    } catch (error) {
+        console.error('[USER-MODULE] Error al mostrar formulario de usuario:', error);
+        showAlert('error', 'Error al cargar el formulario. Inténtelo de nuevo.');
+    }
 };
 
 /**
@@ -784,12 +850,12 @@ const showUserDetails = (user) => {
 };
 
 /**
- * Muestra el formulario de usuario en un modal
- * @param {Object|null} user - Usuario a editar (null para crear)
+ * Muestra un modal con el formulario de usuario
+ * @param {Object} user - Usuario a editar (null para crear nuevo)
  * @param {Array} areas - Array de áreas disponibles
  * @param {Array} roles - Array de roles disponibles
  */
-const showUserForm = (user, areas, roles) => {
+const renderUserFormModal = (user, areas, roles) => {
     const isEdit = !!user;
     const title = isEdit ? `Editar Usuario: ${user.Nombres} ${user.Apellidos}` : 'Crear Nuevo Usuario';
     const content = renderUserForm(user, areas, roles);
@@ -843,4 +909,25 @@ const getAllRoles = async () => {
         console.error('Error en getAllRoles:', error);
         throw error;
     }
+};
+
+/**
+ * Fuerza una recarga completa de la página sin caché
+ * Útil para cuando se hacen cambios que requieren una recarga completa
+ */
+export const forcePageReload = () => {
+    console.log('[USER-MODULE] Forzando recarga completa de la página sin caché...');
+    
+    // Generar un parámetro único basado en la marca de tiempo
+    const timestamp = new Date().getTime();
+    
+    // Verificar si la URL ya tiene parámetros
+    const hasParams = window.location.href.includes('?');
+    
+    // Añadir el parámetro de recarga
+    const separator = hasParams ? '&' : '?';
+    const newUrl = `${window.location.href}${separator}_reload=${timestamp}`;
+    
+    // Recargar con la nueva URL
+    window.location.href = newUrl;
 }; 

@@ -335,6 +335,37 @@
         }, 100);
     </script>
 
+    <!-- Anti-Cache Script -->
+    <script>
+        // Función para evitar caché en recursos
+        function addCacheBuster() {
+            // Solo ejecutar en entorno de desarrollo
+            if (!window.location.hostname.includes('localhost') && 
+                !window.location.hostname.includes('127.0.0.1')) {
+                return;
+            }
+            
+            console.log('[CACHE] Iniciando prevención de caché para recursos...');
+            
+            // Agregar parámetro de consulta a los scripts
+            document.querySelectorAll('script[src]').forEach(script => {
+                if (script.src && 
+                    !script.src.includes('cdn.jsdelivr.net') && 
+                    !script.src.includes('http')) {
+                    const originalSrc = script.getAttribute('src');
+                    if (!originalSrc.includes('?v=')) {
+                        const newSrc = `${originalSrc}?v=${new Date().getTime()}`;
+                        console.log(`[CACHE] Actualizando script: ${originalSrc} → ${newSrc}`);
+                        script.setAttribute('src', newSrc);
+                    }
+                }
+            });
+        }
+        
+        // Ejecutar al cargar la página
+        window.addEventListener('DOMContentLoaded', addCacheBuster);
+    </script>
+
     <!-- Main JavaScript -->
     <script type="module" src="/src/pages/admin/admin.js"></script>
 </body>

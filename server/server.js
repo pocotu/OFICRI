@@ -171,10 +171,20 @@ app.get('/api/health', (req, res) => {
 const staticOptions = {
     setHeaders: (res, path) => {
         res.set('X-Content-Type-Options', 'nosniff');
-        if (path.endsWith('.html')) {
-            res.set('Cache-Control', 'no-cache');
+        
+        // Desactivar caché en modo desarrollo o activarla en producción
+        if (process.env.NODE_ENV === 'production') {
+            if (path.endsWith('.html')) {
+                res.set('Cache-Control', 'no-cache');
+            } else {
+                res.set('Cache-Control', 'public, max-age=31536000');
+            }
         } else {
-            res.set('Cache-Control', 'public, max-age=31536000');
+            // En desarrollo, desactivar completamente la caché
+            res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+            res.set('Surrogate-Control', 'no-store');
         }
     }
 };
