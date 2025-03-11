@@ -6,6 +6,7 @@
 // Importar módulos
 import * as sessionManager from '../../services/sessionManager.js';
 import UserProfile from '../UserProfile/UserProfile.js';
+import sidebarToggle from '../../modules/sidebarToggle.js';
 
 export class Header {
     constructor() {
@@ -51,6 +52,9 @@ export class Header {
             <nav class="navbar">
                 <div class="container-fluid">
                     <div class="navbar-left">
+                        <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+                            <i class="fas fa-bars"></i>
+                        </button>
                         <a class="navbar-brand" href="#">
                             <img src="/assets/img/logoOficri2x2.png" alt="OFICRI Logo">
                             <span>Sistema de Gestión OFICRI</span>
@@ -77,7 +81,36 @@ export class Header {
                 
                 userInfoButton.addEventListener('click', this.handleUserInfoClick.bind(this));
             }
+            
+            // Inicializar el toggle del sidebar después de renderizar
+            this.initSidebarToggle();
         }
+    }
+    
+    /**
+     * Inicializa el toggle del sidebar
+     */
+    initSidebarToggle() {
+        // Crear el overlay para el sidebar si no existe
+        if (!document.querySelector('.sidebar-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+            
+            // Agregar evento para cerrar el sidebar al hacer clic en el overlay
+            overlay.addEventListener('click', () => {
+                sidebarToggle.hide();
+            });
+        }
+        
+        // Inicializar el módulo de toggle del sidebar con configuración predeterminada
+        sidebarToggle.init({
+            sidebarSelector: '.admin-sidebar',
+            contentSelector: '.admin-content',
+            buttonSelector: '#sidebar-toggle-btn',
+            mainSelector: 'main',
+            layoutSelector: '.admin-layout'
+        });
     }
     
     async handleUserInfoClick() {

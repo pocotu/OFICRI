@@ -1,0 +1,124 @@
+/* sidebarToggle.css - Estilos para el toggle del sidebar */
+
+/* Botón hamburguesa */
+.sidebar-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    background-color: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all var(--transition-speed) ease;
+    margin-right: 10px;
+    padding: 0;
+}
+
+.sidebar-toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-toggle-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-toggle-btn i {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+/* Animación del botón hamburguesa */
+.sidebar-toggle-btn.active i {
+    transform: rotate(90deg);
+}
+
+/* Prevenir scroll del body cuando el sidebar está abierto en móviles */
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* Estilos para el sidebar superpuesto */
+.admin-sidebar {
+    position: fixed;
+    top: 64px; /* altura del header */
+    left: 0;
+    height: calc(100vh - 64px);
+    width: 250px;
+    background-color: var(--dark-color);
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: none;
+    overflow-y: auto;
+}
+
+.admin-sidebar.hidden {
+    transform: translateX(-100%);
+    box-shadow: none;
+}
+
+.admin-sidebar:not(.hidden) {
+    transform: translateX(0);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Layout con main content a pantalla completa */
+.admin-layout {
+    display: grid;
+    grid-template-areas: 
+        "header header"
+        "main main";
+    grid-template-columns: 1fr;
+    grid-template-rows: 64px 1fr;
+}
+
+/* Asegura que el contenido principal ocupe todo el ancho */
+.admin-content {
+    grid-area: main;
+    width: 100%;
+    margin-left: 0;
+    padding: 20px;
+    transition: padding-left 0.3s ease;
+}
+
+/* Solo en pantallas grandes, podemos añadir padding cuando el sidebar está visible */
+@media (min-width: 1200px) {
+    .admin-content {
+        padding-left: 20px;
+    }
+    
+    body:has(.admin-sidebar:not(.hidden)) .admin-content {
+        padding-left: 270px; /* 250px (ancho del sidebar) + 20px (padding) */
+    }
+}
+
+/* Añadir capa oscura para dispositivos móviles cuando el sidebar está abierto */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.admin-sidebar:not(.hidden) ~ .sidebar-overlay {
+    display: block;
+    opacity: 1;
+}
+
+/* Ajustes para mantener alineado el botón en dispositivos pequeños */
+@media (max-width: 480px) {
+    .sidebar-toggle-btn {
+        margin-right: 5px;
+    }
+} 

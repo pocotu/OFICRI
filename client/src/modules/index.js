@@ -10,6 +10,7 @@ import * as areaModule from './areaModule.js';
 import * as auditModule from './auditModule.js';
 import * as adminModule from './adminModule.js';
 import * as loginModule from './loginModule.js';
+import sidebarToggle from './sidebarToggle.js';
 
 // Exportar módulos
 export {
@@ -18,7 +19,8 @@ export {
     areaModule,
     auditModule,
     adminModule,
-    loginModule
+    loginModule,
+    sidebarToggle
 };
 
 // Exportación por defecto de todos los módulos
@@ -28,5 +30,6 @@ export default {
     areaModule,
     auditModule,
     adminModule,
-    loginModule
+    loginModule,
+    sidebarToggle
 }; 
