@@ -68,22 +68,17 @@ async function initializeRoles() {
             {
                 nombreRol: 'Administrador',
                 descripcion: 'Control total del sistema',
-                permisos: 255 // Todos los permisos (11111111 en binario)
+                permisos: 255 // Todos los permisos (11111111 en binario) - bits 0..7
             },
             {
-                nombreRol: 'Supervisor',
-                descripcion: 'Supervisión de operaciones',
-                permisos: 184 // Ver (8) + Derivar (16) + Auditar (32) + Exportar (64)
+                nombreRol: 'Mesa de Partes',
+                descripcion: 'Gestión de documentos entrantes y salientes',
+                permisos: 91  // Bits 0,1,3,4,6 (Crear, Editar, Ver, Derivar, Exportar)
             },
             {
-                nombreRol: 'Operador',
-                descripcion: 'Operaciones básicas del sistema',
-                permisos: 31  // Crear (1) + Editar (2) + Eliminar (4) + Ver (8) + Derivar (16)
-            },
-            {
-                nombreRol: 'Visualizador',
-                descripcion: 'Solo lectura',
-                permisos: 8   // Solo Ver (8)
+                nombreRol: 'Responsable de Área',
+                descripcion: 'Responsable de un área especializada',
+                permisos: 91  // Bits 0,1,3,4,6 (Crear, Editar, Ver, Derivar, Exportar)
             }
         ];
 
@@ -100,7 +95,12 @@ async function initializeRoles() {
                 );
                 console.log(`Rol ${rol.nombreRol} creado exitosamente`);
             } else {
-                console.log(`Rol ${rol.nombreRol} ya existe`);
+                // Actualizar los permisos del rol existente
+                await pool.query(
+                    'UPDATE Rol SET Descripcion = ?, Permisos = ? WHERE NombreRol = ?',
+                    [rol.descripcion, rol.permisos, rol.nombreRol]
+                );
+                console.log(`Rol ${rol.nombreRol} actualizado exitosamente`);
             }
         }
     } catch (error) {
