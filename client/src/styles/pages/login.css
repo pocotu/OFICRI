@@ -214,16 +214,36 @@
     margin-right: 8px;
 }
 
+/* Estilos para el botón de mostrar/ocultar contraseña */
 .btn-outline-secondary {
     border-color: #ced4da;
     background-color: transparent;
     color: var(--dark-color);
+    height: 100%; /* Asegura que el botón tenga la misma altura que el input */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.6rem 0.75rem; /* Mismo padding que el form-control */
 }
 
 .btn-outline-secondary:hover {
     background-color: var(--light-color);
     border-color: var(--primary-color);
     color: var(--primary-color);
+}
+
+/* Ajustes para el input-group que contiene el campo de contraseña y el botón */
+.input-group {
+    display: flex;
+    align-items: stretch; /* Estira los elementos para que tengan la misma altura */
+}
+
+/* Estilos específicos para el botón de toggle password */
+#togglePassword {
+    border-left: 0; /* Elimina el borde izquierdo para unirse perfectamente al input */
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
 }
 
 #loginMessage {
@@ -279,28 +299,73 @@
 }
 
 /* Estilos para el botón de mostrar/ocultar contraseña */
-.password-toggle-btn {
+.password-toggle-btn,
+#togglePassword {
     transition: all 0.2s ease;
     position: relative;
     z-index: 5;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.password-toggle-btn:hover {
+.password-toggle-btn:hover,
+#togglePassword:hover {
     background-color: #f8f9fa;
     color: var(--primary-color);
 }
 
-.password-toggle-btn.active {
+.password-toggle-btn.active,
+#togglePassword.active {
     background-color: #e9ecef;
     color: var(--primary-color);
 }
 
-.password-toggle-btn i {
+.password-toggle-btn i,
+#togglePassword i {
     transition: all 0.2s ease;
 }
 
-.password-toggle-btn:hover i {
+.password-toggle-btn:hover i,
+#togglePassword:hover i {
     transform: scale(1.2);
+}
+
+/* Estilos específicos para el input-group de contraseña */
+.login-box .input-group {
+    height: 42px; /* Altura fija para todo el grupo */
+    display: flex !important;
+    align-items: stretch !important;
+}
+
+.login-box .input-group-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100% !important;
+    margin: 0;
+    padding: 0 12px;
+}
+
+.login-box .form-control {
+    height: 100% !important;
+    padding: 0 12px;
+}
+
+.login-box #togglePassword {
+    height: 100% !important;
+    padding: 0 12px !important;
+    margin: 0;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: var(--border-radius) !important;
+    border-bottom-right-radius: var(--border-radius) !important;
+    border-left: 0;
+    border-color: #ced4da !important;
 } 

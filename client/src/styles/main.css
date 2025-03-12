@@ -78,6 +78,20 @@ a:hover {
     justify-content: center !important;
 }
 
+/* Reglas específicas para el formulario de login */
+#loginForm .input-group,
+#loginForm .input-group-text,
+#loginForm .form-control,
+#loginForm #togglePassword {
+    height: 42px !important;
+}
+
+#loginForm #togglePassword {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
 /* Reglas para asegurar que los inputs en modales sean siempre legibles */
 .modal .form-control,
 .modal .form-select,
