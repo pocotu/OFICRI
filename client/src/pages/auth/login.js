@@ -6,8 +6,6 @@
 // Importar servicios
 import { authService } from '../../services/services.js';
 import * as errorHandler from '../../utils/errorHandler.js';
-import * as navigation from '../../utils/navigation.js';
-import * as sessionManager from '../../services/sessionManager.js';
 import { AuthHeader } from '../../components/AuthHeader/AuthHeader.js';
 import { AuthFooter } from '../../components/AuthFooter/AuthFooter.js';
 
@@ -502,14 +500,44 @@ function setupPasswordToggle() {
         return;
     }
 
+    // Asegurar que los estados iniciales estén sincronizados
+    const icon = togglePassword.querySelector('i');
+    
+    // Asegurar que siempre inicie oculta y con el ícono de ojo tachado (estilo Facebook)
+    password.setAttribute('type', 'password');
+    icon.className = ''; // Limpiar clases existentes
+    icon.classList.add('fas', 'fa-eye-slash'); // Ojo tachado cuando no se ve la contraseña
+    togglePassword.setAttribute('title', 'Mostrar contraseña');
+    
+    // Agregar una clase visual para destacar el botón de toggle
+    togglePassword.classList.add('password-toggle-btn');
+    
+    // Establecer la función de toggle
     togglePassword.addEventListener('click', function () {
-        // Cambiar el tipo de input
-        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-        password.setAttribute('type', type);
+        // Si la contraseña está oculta, mostrarla
+        if (password.getAttribute('type') === 'password') {
+            // Mostrar la contraseña
+            password.setAttribute('type', 'text');
+            // Cambiar a ojo sin tachar (indicando que ahora se puede ver la contraseña)
+            icon.className = '';
+            icon.classList.add('fas', 'fa-eye');
+            this.setAttribute('title', 'Ocultar contraseña');
+            
+            // Agregar clase visual para indicar estado activo
+            this.classList.add('active');
+        } else {
+            // Ocultar la contraseña
+            password.setAttribute('type', 'password');
+            // Cambiar a ojo tachado (indicando que no se puede ver la contraseña)
+            icon.className = '';
+            icon.classList.add('fas', 'fa-eye-slash');
+            this.setAttribute('title', 'Mostrar contraseña');
+            
+            // Quitar clase visual de estado activo
+            this.classList.remove('active');
+        }
         
-        // Cambiar el icono
-        const icon = this.querySelector('i');
-        icon.classList.toggle('fa-eye');
-        icon.classList.toggle('fa-eye-slash');
+        // Hacer que el campo de contraseña tenga el foco después de cambiar
+        password.focus();
     });
 } 

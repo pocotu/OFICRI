@@ -1,7 +1,9 @@
 /* buttons.css - Estilos para botones */
 
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 400;
     text-align: center;
     white-space: nowrap;
@@ -12,6 +14,7 @@
     padding: 0.5rem 1rem;
     font-size: 1rem;
     line-height: 1.5;
+    height: 38px;
     border-radius: var(--border-radius);
     transition: all var(--transition-speed) ease;
     cursor: pointer;

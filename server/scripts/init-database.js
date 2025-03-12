@@ -155,7 +155,7 @@ async function createAdminUser() {
                     '12345678',
                     'Juan',
                     'Perez',
-                    'Administrador Principal',
+                    'SubOficial de Primera',
                     passwordHash,
                     salt,
                     adminArea[0].IDArea,

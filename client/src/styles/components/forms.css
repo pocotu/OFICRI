@@ -8,6 +8,14 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
+    color: var(--dark-color);
+}
+
+/* Asegurar que las etiquetas en modales sean visibles */
+.modal .form-label {
+    color: var(--dark-color) !important;
+    font-weight: 500;
+    font-size: 0.95rem;
 }
 
 .form-control {
@@ -22,6 +30,30 @@
     border: 1px solid #ced4da;
     border-radius: var(--border-radius);
     transition: border-color var(--transition-speed) ease-in-out;
+}
+
+/* Asegurar que los controles en modales tengan colores adecuados */
+.modal .form-control {
+    background-color: #fff !important;
+    color: #000 !important;
+    border: 1px solid #ced4da;
+    caret-color: var(--primary-color);
+}
+
+.modal .form-select {
+    background-color: #fff !important;
+    color: #000 !important;
+    border: 1px solid #ced4da;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    border-radius: var(--border-radius);
+}
+
+/* Asegurar que el texto de input sea visible en modales */
+.modal input,
+.modal select,
+.modal textarea {
+    color: #000 !important;
 }
 
 .form-control:focus {

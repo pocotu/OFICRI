@@ -397,19 +397,19 @@ export const renderUserForm = (user = null, areas = [], roles = []) => {
     const isEdit = !!user;
     
     return `
-        <form id="userForm" class="needs-validation" novalidate>
+        <form id="userForm" class="needs-validation user-form" novalidate>
             ${isEdit ? `<input type="hidden" name="IDUsuario" value="${user.IDUsuario}">` : ''}
             
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label for="codigoCIP" class="form-label">Código CIP</label>
+                    <label for="codigoCIP" class="form-label fw-bold">Código CIP</label>
                     <input type="text" class="form-control" id="codigoCIP" name="CodigoCIP" 
                            value="${isEdit ? user.CodigoCIP : ''}" required ${isEdit ? 'readonly' : ''}>
                     <div class="invalid-feedback">El código CIP es obligatorio</div>
                 </div>
                 
                 <div class="col-md-6">
-                    <label for="rango" class="form-label">Rango</label>
+                    <label for="rango" class="form-label fw-bold">Rango</label>
                     <input type="text" class="form-control" id="rango" name="Rango" 
                            value="${isEdit ? user.Rango : ''}" required>
                     <div class="invalid-feedback">El rango es obligatorio</div>
@@ -418,14 +418,14 @@ export const renderUserForm = (user = null, areas = [], roles = []) => {
             
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label for="nombres" class="form-label">Nombres</label>
+                    <label for="nombres" class="form-label fw-bold">Nombres</label>
                     <input type="text" class="form-control" id="nombres" name="Nombres" 
                            value="${isEdit ? user.Nombres : ''}" required>
                     <div class="invalid-feedback">Los nombres son obligatorios</div>
                 </div>
                 
                 <div class="col-md-6">
-                    <label for="apellidos" class="form-label">Apellidos</label>
+                    <label for="apellidos" class="form-label fw-bold">Apellidos</label>
                     <input type="text" class="form-control" id="apellidos" name="Apellidos" 
                            value="${isEdit ? user.Apellidos : ''}" required>
                     <div class="invalid-feedback">Los apellidos son obligatorios</div>
@@ -434,7 +434,7 @@ export const renderUserForm = (user = null, areas = [], roles = []) => {
             
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label for="idArea" class="form-label">Área</label>
+                    <label for="idArea" class="form-label fw-bold">Área</label>
                     <select class="form-select" id="idArea" name="IDArea" required>
                         <option value="">Seleccione un área</option>
                         ${areas.map(area => `
@@ -447,7 +447,7 @@ export const renderUserForm = (user = null, areas = [], roles = []) => {
                 </div>
                 
                 <div class="col-md-6">
-                    <label for="idRol" class="form-label">Rol</label>
+                    <label for="idRol" class="form-label fw-bold">Rol</label>
                     <select class="form-select" id="idRol" name="IDRol" required>
                         <option value="">Seleccione un rol</option>
                         ${roles.map(rol => `
@@ -463,20 +463,20 @@ export const renderUserForm = (user = null, areas = [], roles = []) => {
             ${!isEdit ? `
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="password" class="form-label">Contraseña</label>
+                        <label for="password" class="form-label fw-bold">Contraseña</label>
                         <input type="password" class="form-control" id="password" name="Password" required>
                         <div class="invalid-feedback">La contraseña es obligatoria</div>
                     </div>
                     
                     <div class="col-md-6">
-                        <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
+                        <label for="confirmPassword" class="form-label fw-bold">Confirmar Contraseña</label>
                         <input type="password" class="form-control" id="confirmPassword" name="ConfirmPassword" required>
                         <div class="invalid-feedback">Las contraseñas no coinciden</div>
                     </div>
                 </div>
             ` : ''}
             
-            <div class="d-flex justify-content-end">
+            <div class="d-flex justify-content-end mt-4">
                 <button type="button" class="btn btn-secondary me-2" id="cancelUserForm">Cancelar</button>
                 <button type="submit" class="btn btn-primary">${isEdit ? 'Actualizar' : 'Crear'} Usuario</button>
             </div>

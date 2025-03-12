@@ -100,19 +100,52 @@
 
 /* Estilos originales para el login */
 .login-page {
-    background-color: var(--light-color); /* Usar variable global en lugar de color directo */
+    position: relative;
     min-height: 100vh;
     padding-top: 80px; /* Espacio para el header */
     padding-bottom: 50px; /* Espacio para el footer */
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+}
+
+/* Restauramos el fondo de imagen con desenfoque */
+.login-page::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/assets/img/fondo_toxicologia.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(1px);
+    transform: scale(1.1); /* Para evitar bordes blancos por el blur */
+    z-index: -1;
+    opacity: 0.9; /* Ajustar opacidad para mejor legibilidad */
+}
+
+/* Restauramos la capa oscura para mejorar contraste */
+.login-page::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.1); /* Capa oscura para mejorar contraste */
+    z-index: -1;
 }
 
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 }
 
 .login-container {
@@ -123,13 +156,16 @@
 }
 
 .login-box {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.25); /* Fondo con alta transparencia */
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     width: 100%;
     max-width: 400px;
     margin: 0 auto;
+    -webkit-backdrop-filter: blur(10px); /* Soporte para Safari */
+    backdrop-filter: blur(10px); /* Efecto de desenfoque para crear glassmorphism */
 }
 
 .login-logo {
@@ -139,41 +175,52 @@
 }
 
 .login-box h2 {
-    color: var(--primary-color); /* Usar variable global en lugar de color directo */
+    color: white; /* Cambiar a blanco para mejor visibilidad sobre fondo transparente */
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
     font-weight: 600;
 }
 
 .form-label {
-    color: var(--dark-color); /* Usar variable global en lugar de color directo */
+    color: white; /* Cambiar a blanco para mejor visibilidad */
     font-weight: 500;
     font-size: 0.95rem;
 }
 
 .input-group-text {
-    background-color: var(--light-color); /* Usar variable global en lugar de color directo */
-    color: var(--primary-color); /* Usar variable global en lugar de color directo */
+    background-color: rgba(255, 255, 255, 0.2); /* Fondo transparente */
+    color: white;
+    border: none;
     border-right: none;
 }
 
 .form-control {
-    border-left: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
     padding: 0.6rem 0.75rem;
 }
 
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .form-control:focus {
-    border-color: var(--primary-color); /* Usar variable global en lugar de color directo */
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    border: none;
     box-shadow: none;
 }
 
 .input-group:focus-within .input-group-text {
-    border-color: var(--primary-color); /* Usar variable global en lugar de color directo */
+    background-color: rgba(255, 255, 255, 0.3);
+    border: none;
 }
 
+/* Mantenemos los estilos del botón pero restauramos las variables globales */
 .btn-primary {
-    background-color: var(--primary-color); /* Usar variable global en lugar de color directo */
-    border-color: var(--primary-color); /* Usar variable global en lugar de color directo */
+    background-color: var(--primary-color); /* Restaurar variable global */
+    border-color: var(--primary-color); /* Restaurar variable global */
     padding: 0.7rem 1rem;
     font-weight: 600;
     transition: all var(--transition-speed) ease; /* Usar variable global */
@@ -183,8 +230,8 @@
 }
 
 .btn-primary:hover {
-    background-color: var(--secondary-color); /* Usar variable global en lugar de color directo */
-    border-color: var(--secondary-color); /* Usar variable global en lugar de color directo */
+    background-color: var(--secondary-color); /* Restaurar variable global */
+    border-color: var(--secondary-color); /* Restaurar variable global */
     box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.3); /* Usar variable RGB */
 }
 
@@ -194,6 +241,8 @@
 
 .btn-outline-secondary {
     border-color: #ced4da;
+    background-color: transparent;
+    color: var(--dark-color);
 }
 
 .btn-outline-secondary:hover {
@@ -208,12 +257,12 @@
 }
 
 #loginMessage.error {
-    background-color: var(--danger-color);
+    background-color: rgba(231, 76, 60, 0.8);
     color: white;
 }
 
 #loginMessage.success {
-    background-color: var(--success-color);
+    background-color: rgba(46, 204, 113, 0.8);
     color: white;
 }
 
@@ -231,4 +280,52 @@
     .login-box h2 {
         font-size: var(--font-size-lg);
     }
+}
+
+/* Estilos para la checkbox de recordarme */
+.form-check-input {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.form-check-label {
+    color: white;
+}
+
+/* Links en el formulario */
+.login-box a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+}
+
+.login-box a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+/* Estilos para el botón de mostrar/ocultar contraseña */
+.password-toggle-btn {
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 5;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.password-toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    color: var(--primary-color);
+}
+
+.password-toggle-btn.active {
+    background-color: rgba(255, 255, 255, 0.4);
+    color: var(--primary-color);
+}
+
+.password-toggle-btn i {
+    transition: all 0.2s ease;
+}
+
+.password-toggle-btn:hover i {
+    transform: scale(1.2);
 } 

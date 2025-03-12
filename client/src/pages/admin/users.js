@@ -19,10 +19,10 @@ export const renderUsersContent = () => {
                 <h2 class="mb-3">Gestión de Usuarios</h2>
                 <div class="users-actions">
                     <button class="btn btn-primary" id="createUserBtn">
-                        <i class="fas fa-plus"></i> Nuevo Usuario
+                        <i class="fas fa-plus me-2"></i> Nuevo Usuario
                     </button>
                     <button class="btn btn-secondary" id="refreshUsersBtn">
-                        <i class="fas fa-sync-alt"></i> Actualizar
+                        <i class="fas fa-sync-alt me-2"></i> Actualizar
                     </button>
                 </div>
             </div>
