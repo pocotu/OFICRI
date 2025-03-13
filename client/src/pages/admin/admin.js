@@ -50,8 +50,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Verificar que sea administrador
         if (user.IDRol !== 1) {
-            console.warn('[ADMIN] Usuario no tiene rol de administrador, redirigiendo al dashboard');
-            window.location.replace('/dashboard.html');
+            console.warn('[ADMIN] Usuario no tiene rol de administrador, redirigiendo según rol');
+            
+            // Determinar la redirección según el rol del usuario
+            if (user.IDRol === 2) {
+                // Si es usuario de Mesa de Partes, redirigir a su interfaz específica
+                console.log('[ADMIN] Usuario con rol de Mesa de Partes (2), redirigiendo a /mesaPartes.html');
+                window.location.replace('/mesaPartes.html');
+            } else {
+                // Para otros roles, redirigir al dashboard general
+                console.log('[ADMIN] Usuario con rol ' + user.IDRol + ', redirigiendo a /dashboard.html');
+                window.location.replace('/dashboard.html');
+            }
             return;
         }
 

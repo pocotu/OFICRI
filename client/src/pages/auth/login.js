@@ -380,7 +380,29 @@ function initializeLoginForm() {
                     }
                     
                     // NUEVO: Obtener la URL de redirección directamente de la respuesta
-                    const redirectTo = response.redirectTo || (user.IDRol === 1 ? '/admin.html' : '/dashboard.html');
+                    // Si response.redirectTo no existe, determinar según el rol
+                    let redirectTo;
+                    
+                    if (response.redirectTo) {
+                        redirectTo = response.redirectTo;
+                        console.log('[LOGIN-DEBUG] Usando URL de redirección proporcionada por el servidor:', redirectTo);
+                    } else {
+                        // Determinar la URL basándose en el rol
+                        if (user.IDRol === 1) {
+                            redirectTo = '/admin.html';
+                            console.log('[LOGIN-DEBUG] Usuario Admin (rol 1), redirigiendo a:', redirectTo);
+                        } else if (user.IDRol === 2) {
+                            redirectTo = '/mesaPartes.html';
+                            console.log('[LOGIN-DEBUG] Usuario Mesa de Partes (rol 2), redirigiendo a:', redirectTo);
+                            
+                            // Limpiar contador de redirecciones
+                            sessionStorage.removeItem('mp_redirection_count');
+                        } else {
+                            redirectTo = '/dashboard.html';
+                            console.log('[LOGIN-DEBUG] Usuario estándar (rol ' + user.IDRol + '), redirigiendo a:', redirectTo);
+                        }
+                    }
+                    
                     console.log('[LOGIN-DEBUG] URL de redirección final:', redirectTo);
                     
                     // NUEVO: Utilizar un enfoque directo para la redirección

@@ -110,12 +110,28 @@ class AuthService {
                 { idUsuario: userData.IDUsuario, idRol: userData.IDRol }, 
                 errorHandler.LOG_LEVEL.INFO);
             
+            // Determinar la URL de redirección según el rol
+            let redirectTo = '/dashboard.html';
+            
+            if (userData.IDRol === 1) {
+                redirectTo = '/admin.html';
+                errorHandler.log('AUTH', 'Usuario con rol Admin (1), redirigiendo a: ' + redirectTo, null, errorHandler.LOG_LEVEL.INFO);
+            } else if (userData.IDRol === 2) {
+                redirectTo = '/mesaPartes.html';
+                errorHandler.log('AUTH', 'Usuario con rol Mesa de Partes (2), redirigiendo a: ' + redirectTo, null, errorHandler.LOG_LEVEL.INFO);
+                
+                // Limpiar cualquier contador de redirección para evitar detección de ciclos
+                sessionStorage.removeItem('mp_redirection_count');
+            } else {
+                errorHandler.log('AUTH', 'Usuario con rol estándar (' + userData.IDRol + '), redirigiendo a: ' + redirectTo, null, errorHandler.LOG_LEVEL.INFO);
+            }
+            
             // Devolver objeto con toda la información necesaria para el cliente
             return {
                 success: true,
                 user: userData,
                 token: token,
-                redirectTo: userData.IDRol === 1 ? '/admin.html' : '/dashboard.html'
+                redirectTo: redirectTo
             };
         } catch (error) {
             errorHandler.handleError('AUTH', error, 'login', true);
@@ -312,7 +328,22 @@ class AuthService {
                     this._safeRedirect(lastPath);
                 } else {
                     // Determinar la ruta según el rol
-                    const redirectTo = userData.IDRol === 1 ? '/admin.html' : '/dashboard.html';
+                    let redirectTo = '/dashboard.html';
+                    
+                    if (userData.IDRol === 1) {
+                        redirectTo = '/admin.html';
+                    } else if (userData.IDRol === 2) {
+                        redirectTo = '/mesaPartes.html';
+                        
+                        // Limpiar cualquier contador de redirección para Mesa de Partes
+                        try {
+                            sessionStorage.removeItem('mp_redirection_count');
+                            errorHandler.log('AUTH', 'Contador de redirecciones de Mesa de Partes limpiado', null, errorHandler.LOG_LEVEL.DEBUG);
+                        } catch (e) {
+                            errorHandler.log('AUTH', 'Error al limpiar contador de redirecciones MP: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
+                        }
+                    }
+                    
                     errorHandler.log('AUTH', 'Redirigiendo según rol ' + userData.IDRol + ' a: ' + redirectTo, null, errorHandler.LOG_LEVEL.INFO);
                     
                     // Realizar la redirección
@@ -332,12 +363,10 @@ class AuthService {
                 // Reiniciar el flag cuando no estamos en la página de login
                 try {
                     sessionStorage.removeItem('redirectionOccurred');
-                    errorHandler.log('AUTH', 'Flag de redirección eliminado (no estamos en login)', null, errorHandler.LOG_LEVEL.DEBUG);
-                } catch (storageError) {
-                    errorHandler.log('AUTH', 'Error al eliminar flag de redirección: ' + storageError.message, null, errorHandler.LOG_LEVEL.WARN);
+                    errorHandler.log('AUTH', 'Flag de redirección reiniciado (no estamos en login)', null, errorHandler.LOG_LEVEL.DEBUG);
+                } catch (e) {
+                    errorHandler.log('AUTH', 'Error al reiniciar flag de redirección: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
                 }
-            } else {
-                errorHandler.log('AUTH', 'No se cumplieron condiciones para redirección automática', null, errorHandler.LOG_LEVEL.DEBUG);
             }
         } catch (error) {
             errorHandler.handleError('AUTH', error, 'manejar redirección automática', false);
@@ -352,6 +381,15 @@ class AuthService {
     _safeRedirect(url) {
         try {
             errorHandler.log('AUTH', 'Iniciando redirección a: ' + url, null, errorHandler.LOG_LEVEL.INFO);
+            
+            // Detección específica para Mesa de Partes
+            if (url.includes('mesaPartes.html')) {
+                // Asegurarse que el contador está limpio para evitar falsos positivos
+                try {
+                    sessionStorage.removeItem('mp_redirection_count');
+                    errorHandler.log('AUTH', 'Contador de redirecciones de Mesa de Partes limpiado antes de redirección', null, errorHandler.LOG_LEVEL.INFO);
+                } catch (e) {}
+            }
             
             // Normalizar la URL para asegurar un formato correcto
             let normalizedUrl = url;
@@ -371,76 +409,56 @@ class AuthService {
                 origen: window.location.origin
             }, errorHandler.LOG_LEVEL.DEBUG);
             
-            // Crear un elemento <a> para la navegación
+            // Método principal: window.location.replace (más limpio)
             try {
-                const link = document.createElement('a');
-                link.href = normalizedUrl;
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                
-                errorHandler.log('AUTH', 'Elemento <a> creado con href: ' + link.href, null, errorHandler.LOG_LEVEL.DEBUG);
-                
-                // Simular clic
-                link.click();
-                
-                // Limpiar
-                setTimeout(() => document.body.removeChild(link), 100);
-                
-                // Si lo anterior no funcionó, intentar otros métodos
-                setTimeout(() => {
-                    errorHandler.log('AUTH', 'Verificando si la redirección ocurrió...', null, errorHandler.LOG_LEVEL.DEBUG);
-                    
-                    // Si todavía estamos en la misma página, probar otros métodos
-                    if (window.location.href.includes('/index.html') || window.location.pathname === '/') {
-                        // Intentar redirección 1: window.location.replace (preferido)
-                        try {
-                            errorHandler.log('AUTH', 'Intentando window.location.replace', null, errorHandler.LOG_LEVEL.DEBUG);
-                            window.location.replace(normalizedUrl);
-                            return true;
-                        } catch (error) {
-                            errorHandler.log('AUTH', 'Error con window.location.replace: ' + error.message, null, errorHandler.LOG_LEVEL.WARN);
-                        }
-                        
-                        // Intentar redirección 2: window.location.href
-                        try {
-                            errorHandler.log('AUTH', 'Intentando window.location.href', null, errorHandler.LOG_LEVEL.DEBUG);
-                            window.location.href = normalizedUrl;
-                            return true;
-                        } catch (error) {
-                            errorHandler.log('AUTH', 'Error con window.location.href: ' + error.message, null, errorHandler.LOG_LEVEL.WARN);
-                        }
-                        
-                        // Último intento: asignación directa
-                        errorHandler.log('AUTH', 'Intentando asignación directa', null, errorHandler.LOG_LEVEL.DEBUG);
-                        window.location = normalizedUrl;
-                    }
-                }, 500);
-                
-                return true;
-            } catch (linkError) {
-                errorHandler.log('AUTH', 'Error con elemento <a>: ' + linkError.message, null, errorHandler.LOG_LEVEL.WARN);
-            }
-            
-            // Si el método anterior falló, intentar los métodos directos
-            // Intentar redirección 1: window.location.replace (preferido)
-            try {
+                errorHandler.log('AUTH', 'Utilizando window.location.replace como método principal', null, errorHandler.LOG_LEVEL.DEBUG);
                 window.location.replace(normalizedUrl);
                 return true;
-            } catch (error) {
-                errorHandler.log('AUTH', 'Error con window.location.replace: ' + error.message, null, errorHandler.LOG_LEVEL.WARN);
+            } catch (replaceError) {
+                errorHandler.log('AUTH', 'Error con window.location.replace: ' + replaceError.message, null, errorHandler.LOG_LEVEL.WARN);
+                
+                // Método alternativo: window.location.href
+                try {
+                    errorHandler.log('AUTH', 'Intentando window.location.href como alternativa', null, errorHandler.LOG_LEVEL.DEBUG);
+                    window.location.href = normalizedUrl;
+                    return true;
+                } catch (hrefError) {
+                    errorHandler.log('AUTH', 'Error con window.location.href: ' + hrefError.message, null, errorHandler.LOG_LEVEL.WARN);
+                }
+                
+                // Último recurso: crear un elemento <a> para la navegación
+                try {
+                    errorHandler.log('AUTH', 'Intentando navegación con elemento <a> como último recurso', null, errorHandler.LOG_LEVEL.DEBUG);
+                    const link = document.createElement('a');
+                    link.href = normalizedUrl;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    
+                    // Simular clic
+                    link.click();
+                    
+                    // Limpiar
+                    setTimeout(() => {
+                        try {
+                            document.body.removeChild(link);
+                        } catch (e) {}
+                    }, 100);
+                    
+                    return true;
+                } catch (linkError) {
+                    errorHandler.log('AUTH', 'Error con elemento <a>: ' + linkError.message, null, errorHandler.LOG_LEVEL.ERROR);
+                    
+                    // Último intento desesperado: asignación directa
+                    try {
+                        errorHandler.log('AUTH', 'Último intento: asignación directa a window.location', null, errorHandler.LOG_LEVEL.DEBUG);
+                        window.location = normalizedUrl;
+                        return true;
+                    } catch (finalError) {
+                        errorHandler.log('AUTH', 'Todos los métodos de redirección fallaron', null, errorHandler.LOG_LEVEL.ERROR);
+                        return false;
+                    }
+                }
             }
-            
-            // Intentar redirección 2: window.location.href
-            try {
-                window.location.href = normalizedUrl;
-                return true;
-            } catch (error) {
-                errorHandler.log('AUTH', 'Error con window.location.href: ' + error.message, null, errorHandler.LOG_LEVEL.WARN);
-            }
-            
-            // Último intento: asignación directa
-            window.location = normalizedUrl;
-            return true;
         } catch (error) {
             errorHandler.handleError('AUTH', error, 'redirección segura', false);
             return false;

@@ -82,7 +82,16 @@
                             sessionStorage.setItem('redirectionOccurred', 'true');
                             
                             // Determinar la URL basada en el rol
-                            const redirectUrl = userData.IDRol === 1 ? '/admin.html' : '/dashboard.html';
+                            let redirectUrl = '/dashboard.html';
+                            
+                            if (userData.IDRol === 1) {
+                                redirectUrl = '/admin.html';
+                            } else if (userData.IDRol === 2) {
+                                redirectUrl = '/mesaPartes.html';
+                                // Limpiar contador de redirecciones para evitar falsos positivos
+                                sessionStorage.removeItem('mp_redirection_count');
+                            }
+                            
                             console.log('[LOGIN-INIT] Redirigiendo a:', redirectUrl);
                             
                             // Realizar la redirección
