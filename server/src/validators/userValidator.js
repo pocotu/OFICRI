@@ -12,10 +12,10 @@ const { BadRequestError } = require('../utils/utilsExport');
  * @param {Function} next - Función next de Express
  */
 function validateCreateUser(req, res, next) {
-    const { codigoCIP, nombres, apellidos, rango, password, idArea, idRol } = req.body;
+    const { codigoCIP, nombres, apellidos, grado, password, idArea, idRol } = req.body;
     
     // Validar que se proporcionen los campos requeridos
-    if (!codigoCIP || !nombres || !apellidos || !password || !idArea || !idRol) {
+    if (!codigoCIP || !nombres || !apellidos || !grado || !password || !idArea || !idRol) {
         return next(new BadRequestError('Todos los campos son requeridos'));
     }
     
@@ -49,10 +49,10 @@ function validateCreateUser(req, res, next) {
  * @param {Function} next - Función next de Express
  */
 function validateUpdateUser(req, res, next) {
-    const { nombres, apellidos, rango, password, idArea, idRol, bloqueado } = req.body;
+    const { nombres, apellidos, grado, password, idArea, idRol, bloqueado } = req.body;
     
     // Validar que se proporcione al menos un campo para actualizar
-    if (!nombres && !apellidos && !rango && !password && idArea === undefined && idRol === undefined && bloqueado === undefined) {
+    if (!nombres && !apellidos && !grado && !password && idArea === undefined && idRol === undefined && bloqueado === undefined) {
         return next(new BadRequestError('Debe proporcionar al menos un campo para actualizar'));
     }
     

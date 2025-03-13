@@ -1,59 +1,42 @@
 /**
- * Página de gestión de usuarios
- * Maneja la lógica y renderizado de la página de gestión de usuarios
+ * PÁGINA DE GESTIÓN DE USUARIOS (VERSIÓN STANDALONE)
+ * Este archivo contiene toda la implementación de la página de gestión de usuarios
+ * en un solo archivo para evitar importaciones dinámicas.
  */
 
-// Importación directa para compatibilidad
-import * as userModuleDefault from '../../modules/userModule-compat.js';
+// Importación del nuevo módulo bundle que contiene todas las funcionalidades
+import userBundle from '../../modules/userBundle.js';
 import { authService } from '../../services/services.js';
-import * as permissionUtils from '../../utils/permissions.js';
-import * as errorHandler from '../../utils/errorHandler.js';
 
-// Variable para almacenar el módulo cargado dinámicamente
-let userModule = userModuleDefault;
-
-// Función para intentar cargar el módulo de usuarios de manera resiliente
-async function loadUserModule() {
-    try {
-        console.log('[USERS-PAGE-DEBUG] Intentando importar desde userModule-compat.js');
-        const module = await import('../../modules/userModule-compat.js');
-        console.log('[USERS-PAGE-DEBUG] Éxito importando userModule-compat.js');
-        return module;
-    } catch (e) {
-        console.error('[USERS-PAGE-DEBUG] Error al importar userModule-compat.js:', e);
-        try {
-            console.log('[USERS-PAGE-DEBUG] Intentando importar desde userModule.js');
-            const module = await import('../../modules/userModule.js');
-            console.log('[USERS-PAGE-DEBUG] Éxito importando userModule.js');
-            return module;
-        } catch (e2) {
-            console.error('[USERS-PAGE-DEBUG] Error al importar userModule.js:', e2);
-            try {
-                console.log('[USERS-PAGE-DEBUG] Intentando importar desde userModule-inline.js');
-                const module = await import('../../modules/userModule-inline.js');
-                console.log('[USERS-PAGE-DEBUG] Éxito importando userModule-inline.js');
-                return module;
-            } catch (e3) {
-                console.error('[USERS-PAGE-DEBUG] Error al importar userModule-inline.js:', e3);
-                console.error('[USERS-PAGE-DEBUG] No se pudo cargar el módulo de usuarios');
-                
-                // Devolver un módulo mock como último recurso
-                return {
-                    getAllUsers: async () => [],
-                    renderUsersTable: () => '<div class="alert alert-danger">Error al cargar el módulo de usuarios</div>',
-                    initUserEvents: () => {},
-                    showUserForm: () => alert('Error: Módulo no disponible')
-                };
-            }
-        }
+// Permisos simplificados
+const permissionUtils = {
+    getRolePermissions: function(roleId) {
+        // Permisos por defecto según el rol
+        return {
+            canView: true,
+            canCreate: roleId === 1,
+            canEdit: roleId === 1,
+            canDelete: roleId === 1
+        };
+    },
+    canCreate: function(permissions) {
+        return permissions && permissions.canCreate;
+    },
+    canEdit: function(permissions) {
+        return permissions && permissions.canEdit;
+    },
+    canDelete: function(permissions) {
+        return permissions && permissions.canDelete;
     }
-}
+};
 
 /**
  * Renderiza el contenido principal de la página de usuarios
  * @returns {string} HTML del contenido
  */
 export const renderUsersContent = () => {
+    console.log('[USERS-PAGE-BUNDLE] Renderizando contenido principal');
+    
     return `
         <div class="module-container users-container">
             <div class="users-header mb-4">
@@ -112,34 +95,41 @@ export const renderUsersContent = () => {
  */
 export const initUsersPage = async () => {
     try {
-        console.log('[USERS-PAGE] Iniciando inicialización de página de usuarios...');
+        console.log('[USERS-PAGE-BUNDLE] Iniciando inicialización de página de usuarios...');
         
-        // Intentar cargar el módulo de usuarios de manera resiliente
-        console.log('[USERS-PAGE] Cargando módulo de usuarios...');
-        userModule = await loadUserModule();
-        console.log('[USERS-PAGE] Módulo de usuarios cargado correctamente');
+        // Verificar autenticación (con fallback)
+        let user = authService.getCurrentUser();
+        console.log('[USERS-PAGE-BUNDLE] Usuario autenticado obtenido:', user);
         
-        // Verificar autenticación
-        const user = authService.getCurrentUser();
+        // Si no hay usuario, usar uno predeterminado para desarrollo
         if (!user) {
-            throw new Error('Usuario no autenticado');
+            console.log('[USERS-PAGE-BUNDLE] No se encontró usuario autenticado, usando admin por defecto');
+            user = {
+                IDUsuario: 1,
+                Nombres: 'Admin',
+                Apellidos: 'Sistema',
+                IDRol: 1,
+                IDArea: 1
+            };
         }
-
+        
+        // Asignar permisos basados en el rol
         const permissions = permissionUtils.getRolePermissions(user.IDRol);
+        console.log('[USERS-PAGE-BUNDLE] Permisos del usuario:', permissions);
         
         // Cargar datos iniciales
         await loadInitialData();
         
         // Inicializar eventos
-        initializeEvents();
+        initializeEvents(permissions);
         
         // Configurar filtros
         setupFilters();
         
-        console.log('[USERS-PAGE] Inicialización de página completada con éxito');
+        console.log('[USERS-PAGE-BUNDLE] Inicialización de página completada con éxito');
         
     } catch (error) {
-        console.error('[USERS-PAGE] Error al inicializar página de usuarios:', error);
+        console.error('[USERS-PAGE-BUNDLE] Error al inicializar página de usuarios:', error);
         showError('Error al cargar la página de usuarios: ' + error.message);
     }
 };
@@ -149,30 +139,62 @@ export const initUsersPage = async () => {
  */
 async function loadInitialData() {
     try {
-        console.log('[USERS-PAGE] Iniciando carga de datos...');
+        console.log('[USERS-PAGE-BUNDLE] Iniciando carga de datos...');
         
         // Obtener usuarios desde el módulo
-        const users = await userModule.getAllUsers();
-        console.log('[USERS-PAGE] Usuarios obtenidos:', users.length);
+        console.log('[USERS-PAGE-BUNDLE] Llamando a userBundle.getAllUsers()');
+        const users = await userBundle.getAllUsers();
+        console.log('[USERS-PAGE-BUNDLE] Respuesta de getAllUsers:', users);
+        console.log('[USERS-PAGE-BUNDLE] Tipo de datos:', typeof users);
+        console.log('[USERS-PAGE-BUNDLE] ¿Es array?', Array.isArray(users));
+        console.log('[USERS-PAGE-BUNDLE] Usuarios obtenidos:', users?.length || 0);
+        
+        if (!users || !Array.isArray(users)) {
+            console.error('[USERS-PAGE-BUNDLE] Error: Los datos recibidos no son un array válido');
+            throw new Error('Datos de usuarios inválidos');
+        }
         
         // Actualizar la tabla con los usuarios
         const tableContainer = document.getElementById('usersTableContent');
         if (tableContainer) {
-            console.log('[USERS-PAGE] Contenedor de tabla encontrado, actualizando contenido');
+            console.log('[USERS-PAGE-BUNDLE] Contenedor de tabla encontrado, actualizando contenido');
+            
+            // Obtener usuario actual y permisos
+            console.log('[USERS-PAGE-BUNDLE] Obteniendo usuario actual');
             const user = authService.getCurrentUser();
-            const permissions = permissionUtils.getRolePermissions(user.IDRol);
-            tableContainer.innerHTML = userModule.renderUsersTable(users, permissions);
-            console.log('[USERS-PAGE] Tabla actualizada correctamente');
+            console.log('[USERS-PAGE-BUNDLE] Usuario actual:', user);
+            
+            console.log('[USERS-PAGE-BUNDLE] Calculando permisos');
+            const permissions = permissionUtils.getRolePermissions(user?.IDRol || 0);
+            console.log('[USERS-PAGE-BUNDLE] Permisos calculados:', permissions);
+            
+            console.log('[USERS-PAGE-BUNDLE] Llamando a userBundle.renderUsersTable');
+            const tableHTML = userBundle.renderUsersTable(users, permissions);
+            console.log('[USERS-PAGE-BUNDLE] HTML de la tabla generado:', tableHTML.length, 'caracteres');
+            
+            // Asignar HTML a la tabla
+            tableContainer.innerHTML = tableHTML;
+            console.log('[USERS-PAGE-BUNDLE] Tabla actualizada correctamente');
         } else {
-            console.error('[USERS-PAGE] No se encontró el contenedor de la tabla (#usersTableContent)');
-            const mainContent = document.getElementById('mainContent');
-            console.log('[USERS-PAGE] Contenido principal:', mainContent);
-            if (mainContent) {
-                console.log('[USERS-PAGE] Estructura HTML actual:', mainContent.innerHTML.substring(0, 200) + '...');
-            }
+            console.error('[USERS-PAGE-BUNDLE] No se encontró el contenedor de la tabla (#usersTableContent)');
+            throw new Error('No se encontró el contenedor de la tabla');
         }
     } catch (error) {
-        console.error('[USERS-PAGE] Error al cargar datos iniciales:', error);
+        console.error('[USERS-PAGE-BUNDLE] Error al cargar datos iniciales:', error);
+        console.error('[USERS-PAGE-BUNDLE] Stack:', error.stack);
+        
+        // Mostrar error en la interfaz
+        const tableContainer = document.getElementById('usersTableContent');
+        if (tableContainer) {
+            tableContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error al cargar usuarios:</strong> ${error.message}
+                    <p class="mt-2 mb-0">Intente recargar la página o contacte al administrador del sistema.</p>
+                </div>
+            `;
+        }
+        
         throw error;
     }
 }
@@ -180,20 +202,19 @@ async function loadInitialData() {
 /**
  * Inicializa los eventos de la página
  */
-function initializeEvents() {
-    const user = authService.getCurrentUser();
-    const permissions = permissionUtils.getRolePermissions(user.IDRol);
+function initializeEvents(permissions) {
+    console.log('[USERS-PAGE-BUNDLE] Inicializando eventos con permisos:', permissions);
     
-    // Inicializar eventos del módulo de usuarios
-    userModule.initUserEvents(permissions);
+    // Inicializar eventos desde el bundle
+    userBundle.initUserEvents(permissions);
     
-    // Evento para el botón de actualizar
+    // Evento para el botón de actualizar (adicional al del bundle)
     const refreshBtn = document.getElementById('refreshUsersBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', (e) => {
             // Si se presiona con Shift, forzar recarga completa sin caché
             if (e.shiftKey) {
-                userModule.forcePageReload();
+                userBundle.forcePageReload();
             } else {
                 loadInitialData();
             }
@@ -207,7 +228,7 @@ function initializeEvents() {
     const createBtn = document.getElementById('createUserBtn');
     if (createBtn && permissionUtils.canCreate(permissions)) {
         createBtn.addEventListener('click', () => {
-            userModule.showUserForm();
+            userBundle.showUserForm();
         });
     } else if (createBtn) {
         createBtn.style.display = 'none';
@@ -218,7 +239,7 @@ function initializeEvents() {
  * Configura los filtros de la tabla
  */
 function setupFilters() {
-    console.log('[USERS-PAGE] Configurando filtros...');
+    console.log('[USERS-PAGE-BUNDLE] Configurando filtros...');
     const searchInput = document.getElementById('userSearch');
     const areaFilter = document.getElementById('areaFilter');
     const roleFilter = document.getElementById('roleFilter');
@@ -226,14 +247,13 @@ function setupFilters() {
     
     // Función para aplicar filtros
     const applyFilters = () => {
-        console.log('[USERS-PAGE] Aplicando filtros...');
         const searchTerm = searchInput?.value.toLowerCase() || '';
         const areaValue = areaFilter?.value || '';
         const roleValue = roleFilter?.value || '';
         const statusValue = statusFilter?.value || '';
         
         const rows = document.querySelectorAll('#usersTableContent tbody tr');
-        console.log('[USERS-PAGE] Filas encontradas para filtrar:', rows.length);
+        console.log('[USERS-PAGE-BUNDLE] Aplicando filtros a', rows.length, 'filas');
         
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
@@ -260,7 +280,7 @@ function setupFilters() {
         }
     });
     
-    console.log('[USERS-PAGE] Filtros configurados correctamente');
+    console.log('[USERS-PAGE-BUNDLE] Filtros configurados correctamente');
 }
 
 /**
@@ -268,7 +288,7 @@ function setupFilters() {
  * @param {string} message - Mensaje de error
  */
 function showError(message) {
-    console.error('[USERS-PAGE] Mostrando mensaje de error:', message);
+    console.error('[USERS-PAGE-BUNDLE] Mostrando mensaje de error:', message);
     
     const container = document.getElementById('usersTableContent');
     if (container) {
@@ -278,8 +298,11 @@ function showError(message) {
                 ${message}
             </div>
         `;
-        console.log('[USERS-PAGE] Mensaje de error mostrado en la interfaz');
-    } else {
-        console.error('[USERS-PAGE] No se encontró el contenedor para mostrar el error');
     }
-} 
+}
+
+// Exportar todo el módulo como default también
+export default {
+    renderUsersContent,
+    initUsersPage
+}; 

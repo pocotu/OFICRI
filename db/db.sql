@@ -79,7 +79,7 @@ CREATE TABLE Usuario (
     CodigoCIP VARCHAR(8) NOT NULL UNIQUE, -- CIP para login
     Nombres VARCHAR(100) NOT NULL,
     Apellidos VARCHAR(100) NOT NULL,
-    Rango VARCHAR(50) NOT NULL,
+    Grado VARCHAR(50) NOT NULL,
 
     PasswordHash VARCHAR(255) NOT NULL,
     Salt VARCHAR(255) NOT NULL,

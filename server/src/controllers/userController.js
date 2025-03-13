@@ -69,7 +69,7 @@ async function getUserById(req, res, next) {
  */
 async function createUser(req, res, next) {
     try {
-        const { codigoCIP, nombres, apellidos, rango, password, idArea, idRol } = req.body;
+        const { codigoCIP, nombres, apellidos, grado, password, idArea, idRol } = req.body;
         
         // Validar datos de entrada
         if (!codigoCIP || !nombres || !apellidos || !password || !idArea || !idRol) {
@@ -81,7 +81,7 @@ async function createUser(req, res, next) {
             codigoCIP,
             nombres,
             apellidos,
-            rango,
+            grado,
             password,
             idArea: parseInt(idArea),
             idRol: parseInt(idRol)
@@ -111,13 +111,13 @@ async function updateUser(req, res, next) {
             throw new BadRequestError('ID de usuario inválido');
         }
         
-        const { nombres, apellidos, rango, password, idArea, idRol, bloqueado } = req.body;
+        const { nombres, apellidos, grado, password, idArea, idRol, bloqueado } = req.body;
         
-        // Preparar datos para actualización
+        // Crear objeto con datos a actualizar
         const userData = {};
         if (nombres !== undefined) userData.nombres = nombres;
         if (apellidos !== undefined) userData.apellidos = apellidos;
-        if (rango !== undefined) userData.rango = rango;
+        if (grado !== undefined) userData.grado = grado;
         if (password !== undefined) userData.password = password;
         if (idArea !== undefined) userData.idArea = parseInt(idArea);
         if (idRol !== undefined) userData.idRol = parseInt(idRol);

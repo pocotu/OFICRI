@@ -147,7 +147,7 @@ async function createAdminUser() {
             // Insertar usuario administrador
             await pool.query(
                 `INSERT INTO Usuario (
-                    CodigoCIP, Nombres, Apellidos, Rango,
+                    CodigoCIP, Nombres, Apellidos, Grado,
                     PasswordHash, Salt, IDArea, IDRol,
                     UltimoAcceso, IntentosFallidos, Bloqueado
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0, FALSE)`,

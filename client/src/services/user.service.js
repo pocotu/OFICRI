@@ -193,7 +193,7 @@ class UserService {
             IDUsuario: user.IDUsuario || user.id,
             Nombres: user.Nombres || user.nombres,
             Apellidos: user.Apellidos || user.apellidos,
-            Rango: user.Rango || user.rango,
+            Grado: user.Grado || user.grado,
             CodigoCIP: user.CodigoCIP || user.codigoCIP || user.cip,
             IDArea: user.IDArea || user.idArea || user.areaId,
             IDRol: user.IDRol || user.idRol || user.rolId,

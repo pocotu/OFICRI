@@ -17,7 +17,7 @@ async function getAllUsers(filters = {}) {
         let query = `
             SELECT 
                 u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, 
-                u.Rango, u.IDArea, u.IDRol, u.UltimoAcceso, u.Bloqueado,
+                u.Grado, u.IDArea, u.IDRol, u.UltimoAcceso, u.Bloqueado,
                 a.NombreArea, r.NombreRol
             FROM Usuario u
             LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
@@ -74,7 +74,7 @@ async function getUserById(id) {
         const [users] = await pool.query(
             `SELECT 
                 u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, 
-                u.Rango, u.IDArea, u.IDRol, u.UltimoAcceso, u.Bloqueado,
+                u.Grado, u.IDArea, u.IDRol, u.UltimoAcceso, u.Bloqueado,
                 a.NombreArea, r.NombreRol
             FROM Usuario u
             LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
@@ -110,7 +110,7 @@ async function getUserById(id) {
  * @returns {Object} Datos del usuario creado
  */
 async function createUser(userData) {
-    const { codigoCIP, nombres, apellidos, rango, password, idArea, idRol } = userData;
+    const { codigoCIP, nombres, apellidos, grado, password, idArea, idRol } = userData;
     
     try {
         // Verificar si el usuario ya existe
@@ -130,11 +130,11 @@ async function createUser(userData) {
         // Insertar usuario
         const [result] = await pool.query(
             `INSERT INTO Usuario (
-                CodigoCIP, Nombres, Apellidos, Rango, 
+                CodigoCIP, Nombres, Apellidos, Grado, 
                 PasswordHash, Salt, IDArea, IDRol,
                 UltimoAcceso, IntentosFallidos, Bloqueado
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0, FALSE)`,
-            [codigoCIP, nombres, apellidos, rango, passwordHash, salt, idArea, idRol]
+            [codigoCIP, nombres, apellidos, grado, passwordHash, salt, idArea, idRol]
         );
         
         logger.info(`Usuario creado: ${codigoCIP} - ${nombres} ${apellidos}`);
@@ -170,12 +170,12 @@ async function updateUser(id, userData) {
         
         // Preparar datos para actualización
         const updateData = {};
-        const allowedFields = ['Nombres', 'Apellidos', 'Rango', 'IDArea', 'IDRol', 'Bloqueado'];
+        const allowedFields = ['Nombres', 'Apellidos', 'Grado', 'IDArea', 'IDRol', 'Bloqueado'];
         
         // Mapear campos del objeto userData a nombres de columnas en la base de datos
         if (userData.nombres) updateData.Nombres = userData.nombres;
         if (userData.apellidos) updateData.Apellidos = userData.apellidos;
-        if (userData.rango) updateData.Rango = userData.rango;
+        if (userData.grado) updateData.Grado = userData.grado;
         if (userData.idArea) updateData.IDArea = userData.idArea;
         if (userData.idRol) updateData.IDRol = userData.idRol;
         if (userData.bloqueado !== undefined) updateData.Bloqueado = userData.bloqueado;

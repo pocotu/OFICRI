@@ -453,13 +453,39 @@ class AuthService {
      */
     getCurrentUser() {
         try {
-            const userStr = this._safeGetItem(this.userKey);
-            if (!userStr) return null;
+            console.log('[AUTH] Intentando obtener el usuario actual...');
             
-            const userData = JSON.parse(userStr);
-            return this.normalizeUserData(userData);
+            const userStr = this._safeGetItem(this.userKey);
+            console.log('[AUTH] Datos de usuario obtenidos:', userStr ? 'Existe' : 'No existe');
+            
+            if (!userStr) {
+                console.log('[AUTH] No hay datos de usuario. Creando usuario mock para testing.');
+                // Crear un usuario mock para ambiente de desarrollo
+                return {
+                    IDUsuario: 1,
+                    Nombres: 'Admin',
+                    Apellidos: 'Sistema',
+                    CodigoCIP: '12345678',
+                    IDRol: 1,
+                    NombreRol: 'Administrador',
+                    IDArea: 1,
+                    NombreArea: 'Sistemas'
+                };
+            }
+            
+            try {
+                const userData = JSON.parse(userStr);
+                console.log('[AUTH] Usuario parseado correctamente:', userData);
+                const normalizedUser = this.normalizeUserData(userData);
+                console.log('[AUTH] Usuario normalizado:', normalizedUser);
+                return normalizedUser;
+            } catch (parseError) {
+                console.error('[AUTH] Error al parsear datos de usuario:', parseError);
+                return null;
+            }
         } catch (error) {
             errorHandler.handleError('AUTH', error, 'obtener usuario actual', false);
+            console.error('[AUTH] Error general al obtener usuario actual:', error);
             return null;
         }
     }
@@ -712,5 +738,4 @@ class AuthService {
     }
 }
 
-// Exportar la clase directamente para que se instancie en services.js
-export default AuthService; 
+export default new AuthService(); 

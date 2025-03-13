@@ -11,12 +11,8 @@
 import apiService from './api.service.js';
 export { apiService };
 
-// Luego importamos y exportamos AuthService (la clase, no una instancia)
-import AuthService from './auth.service.js';
-export { AuthService };
-
-// Creamos una instancia de AuthService y la exportamos
-const authService = new AuthService();
+// Importamos la instancia de AuthService
+import authService from './auth.service.js';
 export { authService };
 
 // Finalmente importamos y exportamos los módulos que dependen de los anteriores

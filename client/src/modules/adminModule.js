@@ -5,7 +5,7 @@
 
 import AuthService from '../services/auth.service.js';
 import * as permissionUtils from '../utils/permissions.js';
-import * as userModule from './userModule.js';
+import * as userModule from './user/indexUser.js';
 import * as documentModule from './documentModule.js';
 import * as areaModule from './areaModule.js';
 import * as auditModule from './auditModule.js';
@@ -640,7 +640,7 @@ export const renderUsersModule = (users, permissions) => {
                                 <th>CIP</th>
                                 <th>Nombre</th>
                                 <th>Apellidos</th>
-                                <th>Rango</th>
+                                <th>Grado</th>
                                 <th>Área</th>
                                 <th>Rol</th>
                                 <th>Estado</th>
@@ -716,7 +716,7 @@ export const renderUsersTableRows = (users, permissions) => {
             <td>${user.CodigoCIP}</td>
             <td>${user.Nombres}</td>
             <td>${user.Apellidos}</td>
-            <td>${user.Rango}</td>
+            <td>${user.Grado}</td>
             <td>${user.NombreArea || '-'}</td>
             <td>${permissionUtils.getRoleName(user.IDRol)}</td>
             <td>

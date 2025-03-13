@@ -160,41 +160,119 @@ async function loadModules() {
         return modules;
     }
 
-    console.log('[ADMIN] Iniciando carga de módulos...');
+    console.log('[ADMIN-DEBUG] ==================== INICIO CARGA DE MÓDULOS ====================');
+    console.log('[ADMIN-DEBUG] Iniciando carga de módulos en:', new Date().toISOString());
+    console.log('[ADMIN-DEBUG] URL actual:', window.location.href);
+    console.log('[ADMIN-DEBUG] Ruta base:', window.location.origin);
     loadingModules = true;
 
     try {
-        console.log('[ADMIN] Importando módulos necesarios...');
+        console.log('[ADMIN-DEBUG] Preparando lista de módulos a importar...');
+        
+        // Lista de módulos a importar con rutas completas para depuración
+        const modulePaths = {
+            dashboard: '../../modules/dashboardModule.js',
+            users: '../../modules/userModule-compat.js',
+            permissions: '../../utils/permissions.js',
+            header: '../../components/Header/Header.js',
+            sidebar: '../../components/Sidebar/Sidebar.js'
+        };
+        
+        console.log('[ADMIN-DEBUG] Rutas de módulos a cargar:', JSON.stringify(modulePaths, null, 2));
         
         // Lista de módulos a importar
         const modulePromises = [
-            import('../../modules/dashboardModule.js').catch(e => {
-                console.error('[ADMIN] Error al cargar dashboardModule:', e);
-                return { default: null };
+            import(modulePaths.dashboard)
+                .then(module => {
+                    console.log('[ADMIN-DEBUG] Módulo dashboard cargado exitosamente');
+                    return module;
+                })
+                .catch(e => {
+                    console.error('[ADMIN-DEBUG] Error al cargar dashboardModule:', e, '\nTipo de error:', e.constructor.name, '\nMensaje:', e.message);
+                    return { default: null };
+                }),
+            
+            // Importación con más detalles para el módulo de usuarios
+            new Promise((resolve) => {
+                console.log('[ADMIN-DEBUG] Intentando cargar el módulo de usuarios desde:', modulePaths.users);
+                
+                // Intentar múltiples rutas alternativas si la principal falla
+                import(modulePaths.users)
+                    .then(module => {
+                        console.log('[ADMIN-DEBUG] Módulo de usuarios cargado exitosamente desde la ruta principal');
+                        resolve(module);
+                    })
+                    .catch(e => {
+                        console.error('[ADMIN-DEBUG] Error al cargar el módulo de usuarios desde ruta principal:', e);
+                        console.error('[ADMIN-DEBUG] Detalles del error:', {
+                            tipo: e.constructor.name,
+                            mensaje: e.message,
+                            stack: e.stack
+                        });
+                        
+                        // Intentar con ruta alternativa
+                        console.log('[ADMIN-DEBUG] Intentando ruta alternativa: ../../modules/userModule.js');
+                        import('../../modules/userModule.js')
+                            .then(module => {
+                                console.log('[ADMIN-DEBUG] Módulo de usuarios cargado exitosamente desde ruta alternativa');
+                                resolve(module);
+                            })
+                            .catch(e2 => {
+                                console.error('[ADMIN-DEBUG] Error en ruta alternativa:', e2);
+                                resolve({ default: null });
+                            });
+                    });
             }),
-            import('./users.js').catch(e => {
-                console.error('[ADMIN] Error al cargar users.js:', e);
-                return { default: null };
-            }),
-            import('../../utils/permissions.js').catch(e => {
-                console.error('[ADMIN] Error al cargar permissions.js:', e);
-                return { default: null };
-            }),
-            import('../../components/Header/Header.js').catch(e => {
-                console.error('[ADMIN] Error al cargar Header.js:', e);
-                return { default: null };
-            }),
-            import('../../components/Sidebar/Sidebar.js').catch(e => {
-                console.error('[ADMIN] Error al cargar Sidebar.js:', e);
-                return { default: null };
-            })
+            
+            import(modulePaths.permissions)
+                .then(module => {
+                    console.log('[ADMIN-DEBUG] Módulo permissions cargado exitosamente');
+                    return module;
+                })
+                .catch(e => {
+                    console.error('[ADMIN-DEBUG] Error al cargar permissions.js:', e, '\nTipo de error:', e.constructor.name, '\nMensaje:', e.message);
+                    return { default: null };
+                }),
+            
+            import(modulePaths.header)
+                .then(module => {
+                    console.log('[ADMIN-DEBUG] Módulo Header cargado exitosamente');
+                    return module;
+                })
+                .catch(e => {
+                    console.error('[ADMIN-DEBUG] Error al cargar Header.js:', e, '\nTipo de error:', e.constructor.name, '\nMensaje:', e.message);
+                    return { default: null };
+                }),
+            
+            import(modulePaths.sidebar)
+                .then(module => {
+                    console.log('[ADMIN-DEBUG] Módulo Sidebar cargado exitosamente');
+                    return module;
+                })
+                .catch(e => {
+                    console.error('[ADMIN-DEBUG] Error al cargar Sidebar.js:', e, '\nTipo de error:', e.constructor.name, '\nMensaje:', e.message);
+                    return { default: null };
+                })
         ];
         
         // Esperar a que se resuelvan todas las promesas
+        console.log('[ADMIN-DEBUG] Esperando resolución de todas las promesas de importación...');
         const imports = await Promise.all(modulePromises);
         
-        console.log('[ADMIN] Módulos importados:', imports.map((m, i) => 
-            `Módulo ${i}: ${m ? 'Cargado' : 'Error'}`));
+        console.log('[ADMIN-DEBUG] Resultado de importaciones:', imports.map((m, i) => {
+            const moduleNames = ['dashboard', 'users', 'permissions', 'header', 'sidebar'];
+            return `Módulo ${moduleNames[i]}: ${m ? 'Cargado' : 'Error'}`;
+        }));
+        
+        // Verificar la estructura de los módulos importados
+        imports.forEach((moduleImport, index) => {
+            const moduleNames = ['dashboard', 'users', 'permissions', 'header', 'sidebar'];
+            console.log(`[ADMIN-DEBUG] Estructura del módulo ${moduleNames[index]}:`, {
+                isDefined: !!moduleImport,
+                hasDefault: moduleImport && 'default' in moduleImport,
+                keys: moduleImport ? Object.keys(moduleImport) : []
+            });
+        });
         
         // Verificar que todos los módulos esenciales se hayan cargado
         if (!imports[0] || !imports[3] || !imports[4]) {
@@ -209,7 +287,8 @@ async function loadModules() {
             Sidebar: imports[4].default
         };
         
-        console.log('[ADMIN] Módulos cargados exitosamente:', Object.keys(modules));
+        console.log('[ADMIN-DEBUG] Módulos cargados exitosamente:', Object.keys(modules));
+        console.log('[ADMIN-DEBUG] ==================== FIN CARGA DE MÓDULOS ====================');
 
         return modules;
     } catch (error) {
@@ -321,12 +400,77 @@ async function handleRoute(modules) {
                 break;
             case '/admin/users.html':
                 console.log('[ADMIN-ROUTE] Cargando página de usuarios');
+                console.log('[ADMIN-DEBUG-ROUTE] ==================== INICIO CARGA PÁGINA USUARIOS ====================');
                 mainContent.className = 'module-content w-100 flex-grow-1';
-                if (!usersPage || typeof usersPage.renderUsersContent !== 'function') {
-                    throw new Error('El módulo de usuarios no está disponible o no tiene los métodos requeridos');
+                
+                // Cargar e inicializar la página de usuarios usando los archivos bundle
+                try {
+                    console.log('[ADMIN-DEBUG-ROUTE] Importando la versión bundle de la página de usuarios...');
+                    
+                    // Import script directo en el HTML para evitar problemas de carga dinámica
+                    const scriptElement = document.createElement('script');
+                    scriptElement.type = 'module';
+                    scriptElement.innerHTML = `
+                        import userBundle from '/src/modules/userBundle.js';
+                        import usersPage from '/src/pages/admin/usersPage.js';
+                        
+                        window.userModule = userBundle;
+                        window.usersPage = usersPage;
+                        
+                        // Inicializar cuando el DOM esté listo
+                        document.addEventListener('DOMContentLoaded', () => {
+                            console.log('[SCRIPT-LOADER] DOM cargado, renderizando contenido de usuarios');
+                            const mainContent = document.getElementById('mainContent');
+                            if (mainContent) {
+                                mainContent.innerHTML = usersPage.renderUsersContent();
+                                usersPage.initUsersPage();
+                            }
+                        });
+                        
+                        // Si el DOM ya está listo, ejecutar inmediatamente
+                        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                            console.log('[SCRIPT-LOADER] DOM ya cargado, renderizando contenido de usuarios inmediatamente');
+                            const mainContent = document.getElementById('mainContent');
+                            if (mainContent) {
+                                mainContent.innerHTML = usersPage.renderUsersContent();
+                                setTimeout(() => usersPage.initUsersPage(), 0);
+                            }
+                        }
+                    `;
+                    document.head.appendChild(scriptElement);
+                    
+                    // Agregar un placeholder mientras se carga el script
+                    mainContent.innerHTML = `
+                        <div class="module-container users-container">
+                            <h2 class="mb-4">Gestión de Usuarios</h2>
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando módulo de usuarios...</span>
+                                </div>
+                                <p class="mt-3">Cargando módulo de usuarios...</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('[ADMIN-DEBUG-ROUTE] Script de carga añadido a la página');
+                    console.log('[ADMIN-DEBUG-ROUTE] ==================== FIN CARGA PÁGINA USUARIOS (CARGA DIRECTA) ====================');
+                } catch (error) {
+                    console.error('[ADMIN-ROUTE] Error al cargar página de usuarios:', error);
+                    console.error('[ADMIN-DEBUG-ROUTE] Detalles:', {
+                        tipo: error.constructor.name,
+                        mensaje: error.message,
+                        stack: error.stack
+                    });
+                    
+                    mainContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Error al cargar el módulo de usuarios:</strong>
+                            <p>${error.message}</p>
+                            <p class="mt-2"><small>Para más información, abra la consola (F12)</small></p>
+                        </div>
+                    `;
                 }
-                mainContent.innerHTML = usersPage.renderUsersContent();
-                await usersPage.initUsersPage();
                 break;
             case '/admin/roles.html':
                 mainContent.className = 'module-content w-100 flex-grow-1';

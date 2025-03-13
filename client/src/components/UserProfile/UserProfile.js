@@ -149,7 +149,7 @@ export class UserProfile {
             nombres: this.user.Nombres || this.user.nombres || this.user.name || this.user.firstName || 'Usuario',
             apellidos: this.user.Apellidos || this.user.apellidos || this.user.lastName || this.user.surname || '',
             nombreCompleto: `${this.user.Nombres || this.user.nombres || ''} ${this.user.Apellidos || this.user.apellidos || ''}`.trim(),
-            rango: this.user.Rango || this.user.rango || this.user.rank || '',
+            grado: this.user.Grado || this.user.grado || this.user.rank || '',
             cip: this.user.CodigoCIP || this.user.codigoCIP || this.user.cip || this.user.codigo || '',
             ultimoAcceso: this.user.UltimoAcceso || this.user.ultimoAcceso || this.user.lastAccess || new Date().toISOString()
         };
@@ -174,7 +174,7 @@ export class UserProfile {
                                 <div class="avatar-placeholder">Avatar de usuario</div>
                             </div>
                             <h3 class="card-title mb-2">${userDisplay.nombreCompleto}</h3>
-                            <p class="text-muted mb-3">${userDisplay.rango}</p>
+                            <p class="text-muted mb-3">${userDisplay.grado}</p>
                             
                             <div class="badge bg-secondary mb-3" id="role-badge">
                                 ${rolInfo.nombre}
@@ -207,10 +207,10 @@ export class UserProfile {
                             
                             <div class="row py-2 border-bottom">
                                 <div class="col-sm-4">
-                                    <h6 class="mb-0">Rango</h6>
+                                    <h6 class="mb-0">Grado</h6>
                                 </div>
                                 <div class="col-sm-8 text-secondary">
-                                    ${userDisplay.rango || 'No disponible'}
+                                    ${userDisplay.grado || 'No disponible'}
                                 </div>
                             </div>
                             

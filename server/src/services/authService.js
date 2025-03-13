@@ -92,7 +92,7 @@ async function login(codigoCIP, password) {
                 codigoCIP: user.CodigoCIP,
                 nombres: user.Nombres,
                 apellidos: user.Apellidos,
-                rango: user.Rango,
+                grado: user.Grado,
                 idArea: user.IDArea,
                 idRol: user.IDRol,
                 permisos: user.Permisos
