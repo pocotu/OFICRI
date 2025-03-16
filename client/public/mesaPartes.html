@@ -6,422 +6,126 @@
     <title>OFICRI - Mesa de Partes</title>
     
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
+    <!-- Estilos personalizados -->
     <link href="/src/styles/main.css" rel="stylesheet">
-    
-    <!-- Script de soporte para cerrar sesión - Versión con importación centralizada -->
-    <script type="module">
-        // Importar SessionManager para gestión centralizada de sesiones
-        import { cerrarSesion } from '/src/services/sessionManager.js';
-        
-        // Configurar interceptor de clics para el botón de cerrar sesión
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[MESA-PARTES-HTML] Configurando interceptor de clic para cerrar sesión');
-            
-            document.addEventListener('click', function(e) {
-                // Verificar si el clic fue en el botón de cerrar sesión
-                if (e.target && 
-                    (e.target.id === 'logout-link' || 
-                     e.target.closest('#logout-link') || 
-                     (e.target.tagName === 'A' && e.target.textContent.includes('Cerrar Sesión')) || 
-                     (e.target.closest('a') && e.target.closest('a').textContent.includes('Cerrar Sesión')))) {
-                    
-                    console.log('[MESA-PARTES-HTML] Botón de cerrar sesión interceptado');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Usar la función centralizada en sessionManager.js
-                    cerrarSesion(true, '/index.html');
-                    return false;
-                }
-            }, true);
-        });
-    </script>
+    <link href="/src/styles/components/buttons.css" rel="stylesheet">
+    <link href="/src/styles/components/forms.css" rel="stylesheet">
+    <link href="/src/styles/layouts/layout.css" rel="stylesheet">
+    <link href="/src/styles/components/sidebar.css" rel="stylesheet">
+    <link href="/src/styles/components/header.css" rel="stylesheet">
+    <link href="/src/styles/components/tables.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="spinner-border text-primary loading-spinner" role="status">
-                <span class="visually-hidden">Cargando...</span>
+    <!-- Contenedor principal -->
+    <div class="wrapper">
+        <!-- Header -->
+        <div id="headerContainer"></div>
+
+        <!-- Contenedor de contenido principal -->
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar -->
+                <div id="sidebarContainer" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse"></div>
+
+                <!-- Contenido principal -->
+                <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                    <!-- Contenedor de errores -->
+                    <div id="errorContainer" class="alert alert-danger d-none"></div>
+
+                    <!-- Contenedor de contenido dinámico -->
+                    <div id="mainContent">
+                        <!-- El contenido se cargará dinámicamente según la navegación -->
+                    </div>
+                </main>
             </div>
-            <h4 class="mt-3">Cargando panel de Mesa de Partes...</h4>
         </div>
     </div>
 
-    <div class="admin-layout">
-        <header class="admin-header">
-            <div id="headerComponent"></div>
-        </header>
-        
-        <aside class="admin-sidebar">
-            <div id="sidebarComponent"></div>
-        </aside>
-        
-        <main class="admin-content">
-            <div class="stats-container">
-                <div class="stat-card">
-                    <div class="number" id="receivedDocs">0</div>
-                    <h3>Documentos Recibidos</h3>
-                </div>
-                <div class="stat-card">
-                    <div class="number" id="pendingDocs">0</div>
-                    <h3>Documentos Pendientes</h3>
-                </div>
-                <div class="stat-card">
-                    <div class="number" id="completedDocs">0</div>
-                    <h3>Documentos Completados</h3>
-                </div>
-            </div>
-            <div id="mainContent" class="flex-grow-1 w-100"></div>
-        </main>
-    </div>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- SweetAlert2 for nice alerts -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Auth Check -->
-    <script>
-        console.log('[MESA-PARTES-DEBUG] ==================== INICIO VERIFICACIÓN MESA PARTES ====================');
-        console.log('[MESA-PARTES-DEBUG] URL actual:', window.location.pathname);
-        console.log('[MESA-PARTES-DEBUG] User Agent:', navigator.userAgent);
+    <!-- Script simplificado para Mesa de Partes -->
+    <script type="module">
+        import { initSessionUI } from '/src/utils/sessionUI.js';
         
-        // Variable para detectar ciclos de redirección
-        const redirectionCount = parseInt(sessionStorage.getItem('mp_redirection_count') || '0');
-        console.log('[MESA-PARTES-DEBUG] Contador de redirecciones:', redirectionCount);
-        
-        // Si se detecta un posible ciclo (más de 2 redirecciones), mostrar error y detener
-        if (redirectionCount > 2) {
-            console.error('[MESA-PARTES-DEBUG] ¡POSIBLE CICLO DE REDIRECCIÓN DETECTADO!');
-            console.error('[MESA-PARTES-DEBUG] Limpiando contador para futuro inicio de sesión');
-            sessionStorage.removeItem('mp_redirection_count');
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configuración de depuración
+            const debugEnabled = true;
             
-            // Mostrar error al usuario
-            window.addEventListener('DOMContentLoaded', function() {
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
+            function debugLog(message) {
+                if (debugEnabled) {
+                    console.log(`[MesaPartes] ${message}`);
                 }
-                
-                // Mostrar alerta
-                if (window.Swal) {
-                    Swal.fire({
-                        title: 'Error de inicio de sesión',
-                        text: 'Se detectó un ciclo de redirección. Por favor, cierre sesión e intente nuevamente.',
-                        icon: 'error',
-                        confirmButtonText: 'Volver al login',
-                        allowOutsideClick: false
-                    }).then(() => {
-                        // Limpiar almacenamiento
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        // Redirigir al login
-                        window.location.replace('/index.html');
-                    });
-                } else {
-                    alert('Error: Se detectó un ciclo de redirección. Por favor, cierre sesión e intente nuevamente.');
-                    // Limpiar y redirigir
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.replace('/index.html');
+            }
+            
+            debugLog('Inicializando página de Mesa de Partes');
+            
+            // Inicializar la gestión de sesión con el módulo centralizado
+            const sessionManager = initSessionUI({
+                logoutButtonSelector: '#btnLogout',
+                userNameSelector: '#userDisplayName',
+                debugLogger: debugLog,
+                onLogoutSuccess: () => {
+                    debugLog('Sesión cerrada correctamente');
+                },
+                onLogoutError: (error) => {
+                    debugLog(`Error al cerrar sesión: ${error.message}`);
+                    window.location.href = '/index.html?nocache=' + Date.now();
                 }
             });
             
-            // Detener ejecución
-            throw new Error('Ciclo de redirección detectado y mitigado');
-        }
-        
-        // Incrementar contador de redirecciones
-        sessionStorage.setItem('mp_redirection_count', (redirectionCount + 1).toString());
-        
-        // Función para detectar el navegador
-        function detectBrowser() {
-            const userAgent = navigator.userAgent;
-            let browserName = "Desconocido";
-            
-            if (userAgent.match(/chrome|chromium|crios/i)) {
-                browserName = "Chrome";
-                if (userAgent.indexOf("Edg") > -1) browserName = "Edge";
-                if (userAgent.indexOf("OPR") > -1) browserName = "Opera";
-                if (userAgent.indexOf("Brave") > -1 || typeof navigator.brave !== 'undefined') browserName = "Brave";
-            } else if (userAgent.match(/firefox|fxios/i)) {
-                browserName = "Firefox";
-            } else if (userAgent.match(/safari/i) && !userAgent.match(/chrome|chromium|crios/i)) {
-                browserName = "Safari";
-            } else if (userAgent.match(/opr\//i)) {
-                browserName = "Opera";
-            } else if (userAgent.match(/edg/i)) {
-                browserName = "Edge";
-            }
-            
-            return {
-                browser: browserName,
-                userAgent: userAgent,
-                cookiesEnabled: navigator.cookieEnabled,
-                localStorage: testStorage('localStorage'),
-                sessionStorage: testStorage('sessionStorage')
-            };
-        }
-        
-        // Función para probar almacenamiento
-        function testStorage(type) {
-            try {
-                const storage = window[type];
-                const testKey = `test_${Date.now()}`;
-                storage.setItem(testKey, "test");
-                const result = storage.getItem(testKey) === "test";
-                storage.removeItem(testKey);
-                return result;
-            } catch (e) {
-                console.error('[MESA-PARTES-DEBUG] Error en ' + type + ':', e);
-                return false;
-            }
-        }
-        
-        const browserInfo = detectBrowser();
-        console.log('[MESA-PARTES-DEBUG] Navegador detectado:', JSON.stringify(browserInfo));
-        
-        // Verificar autenticación antes de cargar cualquier módulo
-        function checkAuth() {
-            console.log('[MESA-PARTES-DEBUG] ==================== INICIO CHECK AUTH ====================');
-            let token = null;
-            let userStr = null;
-            
-            // Intentar obtener datos de localStorage
-            try {
-                console.log('[MESA-PARTES-DEBUG] Intentando obtener token de localStorage');
-                token = localStorage.getItem('token');
-                console.log('[MESA-PARTES-DEBUG] Token de localStorage:', token ? 'EXISTE' : 'NULL');
-                
-                console.log('[MESA-PARTES-DEBUG] Intentando obtener usuario de localStorage');
-                userStr = localStorage.getItem('user');
-                console.log('[MESA-PARTES-DEBUG] Usuario de localStorage:', userStr ? 'EXISTE' : 'NULL');
-            } catch (e) {
-                console.warn('[MESA-PARTES-DEBUG] Error al acceder a localStorage:', e);
-                console.warn('[MESA-PARTES-DEBUG] Stack trace:', e.stack);
-            }
-            
-            // Si no hay en localStorage, intentar sessionStorage
-            if (!token || !userStr) {
-                console.log('[MESA-PARTES-DEBUG] Datos no encontrados en localStorage, intentando sessionStorage');
-                try {
-                    token = sessionStorage.getItem('token');
-                    console.log('[MESA-PARTES-DEBUG] Token de sessionStorage:', token ? 'EXISTE' : 'NULL');
-                    
-                    userStr = sessionStorage.getItem('user');
-                    console.log('[MESA-PARTES-DEBUG] Usuario de sessionStorage:', userStr ? 'EXISTE' : 'NULL');
-                } catch (e) {
-                    console.warn('[MESA-PARTES-DEBUG] Error al acceder a sessionStorage:', e);
-                    console.warn('[MESA-PARTES-DEBUG] Stack trace:', e.stack);
-                }
-            }
-            
-            // Si no hay en sessionStorage, intentar cookies
-            if (!token || !userStr) {
-                console.log('[MESA-PARTES-DEBUG] Datos no encontrados en sessionStorage, intentando cookies');
-                token = getCookie('token');
-                console.log('[MESA-PARTES-DEBUG] Token de cookies:', token ? 'EXISTE' : 'NULL');
-                
-                userStr = getCookie('user');
-                console.log('[MESA-PARTES-DEBUG] Usuario de cookies:', userStr ? 'EXISTE' : 'NULL');
-            }
-            
-            if (!token || !userStr) {
-                console.error('[MESA-PARTES-DEBUG] No se encontraron credenciales de sesión en ningún almacenamiento');
-                console.log('[MESA-PARTES-DEBUG] ==================== FIN CHECK AUTH (NO CREDENCIALES) ====================');
-                safeRedirect('/');
-                return false;
-            }
-            
-            try {
-                console.log('[MESA-PARTES-DEBUG] Intentando parsear datos de usuario:', userStr ? userStr.substring(0, 50) + '...' : 'NULL');
-                const userData = JSON.parse(userStr);
-                console.log('[MESA-PARTES-DEBUG] Datos parseados correctamente');
-                console.log('[MESA-PARTES-DEBUG] IDUsuario:', userData.IDUsuario || 'NO EXISTE');
-                console.log('[MESA-PARTES-DEBUG] IDRol:', userData.IDRol || 'NO EXISTE');
-                console.log('[MESA-PARTES-DEBUG] Nombres:', userData.Nombres || 'NO EXISTE');
-                
-                // Resetear contador de redirecciones ya que tenemos un usuario válido
-                // Esto es esencial para evitar falsos positivos de ciclos
-                if (userData && userData.IDUsuario) {
-                    console.log('[MESA-PARTES-DEBUG] Usuario válido, reseteando contador de redirecciones');
-                    sessionStorage.removeItem('mp_redirection_count');
-                }
-                
-                // Usar las propiedades en mayúsculas según el formato normalizado en AuthService
-                if (!userData || !userData.IDUsuario || !userData.IDRol) {
-                    console.error('[MESA-PARTES-DEBUG] Datos de usuario inválidos o incompletos');
-                    clearAllStorage();
-                    console.log('[MESA-PARTES-DEBUG] ==================== FIN CHECK AUTH (DATOS INVÁLIDOS) ====================');
-                    safeRedirect('/');
-                    return false;
-                }
-                
-                // Verificar que es un usuario de Mesa de Partes (normalmente rol 2)
-                if (userData.IDRol !== 2) {
-                    console.error('[MESA-PARTES-DEBUG] Acceso denegado: rol no autorizado. IDRol:', userData.IDRol);
-                    clearAllStorage();
-                    console.log('[MESA-PARTES-DEBUG] ==================== FIN CHECK AUTH (ROL INVÁLIDO) ====================');
-                    safeRedirect('/');
-                    return false;
-                }
-                
-                console.log('[MESA-PARTES-DEBUG] Verificación exitosa. Usuario:', userData.Nombres);
-                console.log('[MESA-PARTES-DEBUG] ==================== FIN CHECK AUTH (ÉXITO) ====================');
-                return true;
-            } catch (error) {
-                console.error('[MESA-PARTES-DEBUG] Error al verificar autenticación:', error);
-                console.error('[MESA-PARTES-DEBUG] Stack trace:', error.stack);
-                clearAllStorage();
-                console.log('[MESA-PARTES-DEBUG] ==================== FIN CHECK AUTH (ERROR) ====================');
-                safeRedirect('/');
-                return false;
-            }
-        }
-        
-        // Función para limpiar todo el almacenamiento
-        function clearAllStorage() {
-            console.log('[MESA-PARTES-DEBUG] ==================== INICIO CLEAR STORAGE ====================');
-            try {
-                console.log('[MESA-PARTES-DEBUG] Limpiando localStorage');
-                localStorage.clear();
-                console.log('[MESA-PARTES-DEBUG] localStorage limpiado');
-            } catch (e) {
-                console.warn('[MESA-PARTES-DEBUG] Error al limpiar localStorage:', e);
-            }
-            
-            try {
-                console.log('[MESA-PARTES-DEBUG] Limpiando sessionStorage');
-                sessionStorage.clear();
-                console.log('[MESA-PARTES-DEBUG] sessionStorage limpiado');
-            } catch (e) {
-                console.warn('[MESA-PARTES-DEBUG] Error al limpiar sessionStorage:', e);
-            }
-            
-            // Limpiar cookies relevantes
-            console.log('[MESA-PARTES-DEBUG] Limpiando cookies');
-            deleteCookie('token');
-            deleteCookie('user');
-            deleteCookie('redirectionOccurred');
-            console.log('[MESA-PARTES-DEBUG] Cookies limpiadas');
-            console.log('[MESA-PARTES-DEBUG] ==================== FIN CLEAR STORAGE ====================');
-        }
-        
-        // Funciones de utilidad para cookies
-        function getCookie(name) {
-            try {
-                const nameEQ = name + "=";
-                const ca = document.cookie.split(';');
-                for (let i = 0; i < ca.length; i++) {
-                    let c = ca[i];
-                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                    if (c.indexOf(nameEQ) === 0) {
-                        return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            // Iniciar verificación de autenticación
+            sessionManager.initAuthentication(true)
+                .then(isAuthenticated => {
+                    if (isAuthenticated) {
+                        debugLog('Usuario autenticado correctamente');
+                        generateContent();
+                    } else {
+                        debugLog('Usuario no autenticado, redirigiendo al login');
                     }
-                }
-            } catch (e) {
-                console.error('[MESA-PARTES-DEBUG] Error al obtener cookie:', e);
-            }
-            return null;
-        }
-        
-        function deleteCookie(name) {
-            try {
-                document.cookie = name + '=; Max-Age=-99999999; path=/';
-            } catch (e) {
-                console.error('[MESA-PARTES-DEBUG] Error al eliminar cookie:', e);
-            }
-        }
-        
-        // Función de redirección segura
-        function safeRedirect(url) {
-            console.log('[MESA-PARTES-DEBUG] ==================== INICIO REDIRECT ====================');
-            console.log('[MESA-PARTES-DEBUG] Intentando redireccionar a:', url);
-            try {
-                console.log('[MESA-PARTES-DEBUG] Usando window.location.replace');
-                window.location.replace(url);
-            } catch (e) {
-                console.error('[MESA-PARTES-DEBUG] Error al redireccionar:', e);
-                console.error('[MESA-PARTES-DEBUG] Stack trace:', e.stack);
-                try {
-                    console.log('[MESA-PARTES-DEBUG] Usando window.location.href');
-                    window.location.href = url;
-                } catch (e2) {
-                    console.error('[MESA-PARTES-DEBUG] Error al redireccionar con href:', e2);
-                    try {
-                        console.log('[MESA-PARTES-DEBUG] Usando asignación directa');
-                        window.location = url;
-                    } catch (e3) {
-                        console.error('[MESA-PARTES-DEBUG] Error en redirección directa:', e3);
-                    }
-                }
-            }
-            console.log('[MESA-PARTES-DEBUG] ==================== FIN REDIRECT ====================');
-        }
-
-        // Añadir un pequeño retraso para evitar conflictos de verificación
-        console.log('[MESA-PARTES-DEBUG] Programando verificación con setTimeout (100ms)');
-        setTimeout(() => {
-            try {
-                console.log('[MESA-PARTES-DEBUG] Ejecutando verificación programada');
-                if (!checkAuth()) {
-                    console.error('[MESA-PARTES-DEBUG] Verificación fallida');
-                    throw new Error('No autenticado');
+                })
+                .catch(error => {
+                    debugLog(`Error en verificación de autenticación: ${error.message}`);
+                });
+                
+            // Guardar en window para acceso global
+            window.sessionManager = sessionManager;
+            
+            // Generar el contenido principal
+            function generateContent() {
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.innerHTML = `
+                        <h1 class="mb-4">Mesa de Partes Virtual</h1>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <i class="bi bi-file-earmark-plus me-2"></i> Documentos Recibidos
+                            </div>
+                            <div class="card-body">
+                                <p>No hay documentos recibidos pendientes.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <i class="bi bi-file-earmark-check me-2"></i> Documentos Procesados
+                            </div>
+                            <div class="card-body">
+                                <p>No hay documentos procesados para mostrar.</p>
+                            </div>
+                        </div>
+                    `;
+                    debugLog('Contenido principal generado correctamente');
                 } else {
-                    console.log('[MESA-PARTES-DEBUG] Usuario autenticado correctamente');
+                    debugLog('ERROR: No se encontró el elemento mainContent');
                 }
-            } catch (e) {
-                console.error('[MESA-PARTES-DEBUG] Error en verificación de autenticación:', e);
-                console.error('[MESA-PARTES-DEBUG] Stack trace:', e.stack);
-                safeRedirect('/');
-            }
-            console.log('[MESA-PARTES-DEBUG] ==================== FIN VERIFICACIÓN MESA PARTES ====================');
-        }, 100);
-    </script>
-
-    <!-- Anti-Cache Script -->
-    <script>
-        // Función para evitar caché en recursos
-        function addCacheBuster() {
-            // Solo ejecutar en entorno de desarrollo
-            if (!window.location.hostname.includes('localhost') && 
-                !window.location.hostname.includes('127.0.0.1')) {
-                return;
             }
             
-            console.log('[CACHE] Iniciando prevención de caché para recursos...');
-            
-            // Agregar parámetro de consulta a los scripts
-            document.querySelectorAll('script[src]').forEach(script => {
-                if (script.src && 
-                    !script.src.includes('cdn.jsdelivr.net') && 
-                    !script.src.includes('http')) {
-                    const originalSrc = script.getAttribute('src');
-                    if (!originalSrc.includes('?v=')) {
-                        const newSrc = `${originalSrc}?v=${new Date().getTime()}`;
-                        console.log(`[CACHE] Actualizando script: ${originalSrc} → ${newSrc}`);
-                        script.setAttribute('src', newSrc);
-                    }
-                }
-            });
-        }
-        
-        // Ejecutar al cargar la página
-        window.addEventListener('DOMContentLoaded', addCacheBuster);
+            debugLog('Inicialización completa de Mesa de Partes');
+        });
     </script>
-
-    <!-- Main JavaScript -->
-    <script type="module" src="/src/pages/mesaPartes/mesaPartes.js"></script>
 </body>
 </html> 

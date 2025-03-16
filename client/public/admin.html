@@ -3,370 +3,376 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OFICRI - Panel de Administración</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
+    <title>OFICRI - Administración</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="/src/styles/main.css" rel="stylesheet">
-    
-    <!-- Script de soporte para cerrar sesión - Versión con importación centralizada -->
-    <script type="module">
-        // Importar SessionManager para gestión centralizada de sesiones
-        import { cerrarSesion } from '/src/services/sessionManager.js';
-        
-        // Configurar interceptor de clics para el botón de cerrar sesión
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[ADMIN-HTML] Configurando interceptor de clic para cerrar sesión');
-            
-            document.addEventListener('click', function(e) {
-                // Verificar si el clic fue en el botón de cerrar sesión
-                if (e.target && 
-                    (e.target.id === 'logout-link' || 
-                     e.target.closest('#logout-link') || 
-                     (e.target.tagName === 'A' && e.target.textContent.includes('Cerrar Sesión')) || 
-                     (e.target.closest('a') && e.target.closest('a').textContent.includes('Cerrar Sesión')))) {
-                    
-                    console.log('[ADMIN-HTML] Botón de cerrar sesión interceptado');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Usar la función centralizada en sessionManager.js
-                    cerrarSesion(true, '/index.html');
-                    return false;
-                }
-            }, true);
-        });
-    </script>
+    <link href="/src/styles/components/buttons.css" rel="stylesheet">
+    <link href="/src/styles/components/forms.css" rel="stylesheet">
+    <link href="/src/styles/components/tables.css" rel="stylesheet">
+    <link href="/src/styles/layouts/admin.css" rel="stylesheet">
+    <link href="/src/styles/components/sidebar.css" rel="stylesheet">
+    <link href="/src/styles/pages/admin.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="spinner-border text-primary loading-spinner" role="status">
-                <span class="visually-hidden">Cargando...</span>
+    <!-- Header / Navbar -->
+    <header class="navbar navbar-dark sticky-top flex-md-nowrap p-0 shadow">
+        <!-- Botón hamburguesa independiente visible en todas las resoluciones -->
+        <button id="menuToggle" class="ms-2">
+            <i class="bi bi-list"></i>
+        </button>
+        
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">
+            <img src="assets/img/logoOficri2x2.png" alt="Logo OFICRI" width="30" height="30" class="d-inline-block align-top me-2">
+            Sistema de Gestión OFICRI
+        </a>
+        
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <span class="nav-link px-3" id="userDisplay"><i class="bi bi-person-circle me-1"></i> <span id="userName">Juan Perez</span></span>
             </div>
-            <h4 class="mt-3">Cargando panel de administración...</h4>
+        </div>
+    </header>
+
+    <div class="container-fluid p-0" style="overflow-x: hidden; max-width: 100%;">
+        <div class="row g-0 w-100 mx-0">
+            <!-- Sidebar / Menú principal -->
+            <nav id="sidebarMenu" class="col-sidebar d-md-block sidebar collapse">
+                <div class="p-3" style="padding-top: 25px !important;">
+                    <h5 class="mt-4">Menú Principal</h5>
+                </div>
+                <div class="sidebar-main mt-3">
+                    <ul class="menu-items">
+                        <li class="menu-item">
+                            <a href="#dashboard" class="nav-link active">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#usuarios" class="nav-link">
+                                <i class="bi bi-people me-2"></i>
+                                Gestión de Usuarios
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#roles" class="nav-link">
+                                <i class="bi bi-person-badge me-2"></i>
+                                Gestión de Roles
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#areas" class="nav-link">
+                                <i class="bi bi-grid me-2"></i>
+                                Gestión de Áreas
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#documentos" class="nav-link">
+                                <i class="bi bi-file-earmark-text me-2"></i>
+                                Gestión de Documentos
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#registros" class="nav-link">
+                                <i class="bi bi-journal-check me-2"></i>
+                                Registros / Auditoría
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="#exportar" class="nav-link">
+                                <i class="bi bi-download me-2"></i>
+                                Exportar
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="mt-auto p-3">
+                    <a href="#" class="nav-link-logout" id="btnLogout" onclick="logoutDirectly(event); return false;">
+                        <i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Contenido principal -->
+            <main class="px-4" style="width: 100%; flex-grow: 1;">
+                <div id="mainContent" class="mt-4">
+                    <!-- Tarjetas de estadísticas organizadas en fila como en la imagen -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card stat-card h-100">
+                                <div class="card-body text-center">
+                                    <h3>USUARIOS ACTIVOS</h3>
+                                    <div class="number">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card h-100">
+                                <div class="card-body text-center">
+                                    <h3>DOCUMENTOS PENDIENTES</h3>
+                                    <div class="number">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card h-100">
+                                <div class="card-body text-center">
+                                    <h3>ÁREAS ACTIVAS</h3>
+                                    <div class="number">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Control -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="admin-section-title">Panel de Control</h3>
+                        <button class="btn btn-actualizar">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="module-container">
+                                <h4>Actividad Reciente</h4>
+                                <p class="text-muted">Cargando actividad reciente...</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="module-container">
+                                <h4>Documentos Pendientes</h4>
+                                <p class="text-muted">Cargando documentos pendientes...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
-    <div class="admin-layout">
-        <header class="admin-header">
-            <div id="headerComponent"></div>
-        </header>
-        
-        <aside class="admin-sidebar">
-            <div id="sidebarComponent"></div>
-        </aside>
-        
-        <main class="admin-content">
-            <div class="stats-container">
-                <div class="stat-card">
-                    <div class="number" id="activeUsers">0</div>
-                    <h3>Usuarios Activos</h3>
-                </div>
-                <div class="stat-card">
-                    <div class="number" id="pendingDocs">0</div>
-                    <h3>Documentos Pendientes</h3>
-                </div>
-                <div class="stat-card">
-                    <div class="number" id="activeAreas">0</div>
-                    <h3>Áreas Activas</h3>
-                </div>
-            </div>
-            <div id="mainContent" class="flex-grow-1 w-100"></div>
-        </main>
-    </div>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- SweetAlert2 for nice alerts -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Auth Check -->
-    <script>
-        console.log('[ADMIN-DEBUG] ==================== INICIO VERIFICACIÓN ADMIN ====================');
-        console.log('[ADMIN-DEBUG] URL actual:', window.location.pathname);
-        console.log('[ADMIN-DEBUG] User Agent:', navigator.userAgent);
+    <!-- Importar el módulo sidebarToggle -->
+    <script type="module">
+        import sidebarToggle from '/src/utils/sidebarToggle.js';
         
-        // Función para detectar el navegador
-        function detectBrowser() {
-            const userAgent = navigator.userAgent;
-            let browserName = "Desconocido";
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar el módulo sidebarToggle
+            sidebarToggle.init({
+                sidebarSelector: '#sidebarMenu',
+                contentSelector: 'main',
+                buttonSelector: '#menuToggle'
+            });
             
-            if (userAgent.match(/chrome|chromium|crios/i)) {
-                browserName = "Chrome";
-                if (userAgent.indexOf("Edg") > -1) browserName = "Edge";
-                if (userAgent.indexOf("OPR") > -1) browserName = "Opera";
-                if (userAgent.indexOf("Brave") > -1 || typeof navigator.brave !== 'undefined') browserName = "Brave";
-            } else if (userAgent.match(/firefox|fxios/i)) {
-                browserName = "Firefox";
-            } else if (userAgent.match(/safari/i) && !userAgent.match(/chrome|chromium|crios/i)) {
-                browserName = "Safari";
-            } else if (userAgent.match(/opr\//i)) {
-                browserName = "Opera";
-            } else if (userAgent.match(/edg/i)) {
-                browserName = "Edge";
-            }
-            
-            return {
-                browser: browserName,
-                userAgent: userAgent,
-                cookiesEnabled: navigator.cookieEnabled,
-                localStorage: testStorage('localStorage'),
-                sessionStorage: testStorage('sessionStorage')
-            };
-        }
-        
-        // Función para probar almacenamiento
-        function testStorage(type) {
-            try {
-                const storage = window[type];
-                const testKey = `test_${Date.now()}`;
-                storage.setItem(testKey, "test");
-                const result = storage.getItem(testKey) === "test";
-                storage.removeItem(testKey);
-                return result;
-            } catch (e) {
-                console.error('[ADMIN-DEBUG] Error en ' + type + ':', e);
-                return false;
-            }
-        }
-        
-        const browserInfo = detectBrowser();
-        console.log('[ADMIN-DEBUG] Navegador detectado:', JSON.stringify(browserInfo));
-        
-        // Verificar autenticación antes de cargar cualquier módulo
-        function checkAuth() {
-            console.log('[ADMIN-DEBUG] ==================== INICIO CHECK AUTH ====================');
-            let token = null;
-            let userStr = null;
-            
-            // Intentar obtener datos de localStorage
-            try {
-                console.log('[ADMIN-DEBUG] Intentando obtener token de localStorage');
-                token = localStorage.getItem('token');
-                console.log('[ADMIN-DEBUG] Token de localStorage:', token ? 'EXISTE' : 'NULL');
-                
-                console.log('[ADMIN-DEBUG] Intentando obtener usuario de localStorage');
-                userStr = localStorage.getItem('user');
-                console.log('[ADMIN-DEBUG] Usuario de localStorage:', userStr ? 'EXISTE' : 'NULL');
-            } catch (e) {
-                console.warn('[ADMIN-DEBUG] Error al acceder a localStorage:', e);
-                console.warn('[ADMIN-DEBUG] Stack trace:', e.stack);
-            }
-            
-            // Si no hay en localStorage, intentar sessionStorage
-            if (!token || !userStr) {
-                console.log('[ADMIN-DEBUG] Datos no encontrados en localStorage, intentando sessionStorage');
-                try {
-                    token = sessionStorage.getItem('token');
-                    console.log('[ADMIN-DEBUG] Token de sessionStorage:', token ? 'EXISTE' : 'NULL');
-                    
-                    userStr = sessionStorage.getItem('user');
-                    console.log('[ADMIN-DEBUG] Usuario de sessionStorage:', userStr ? 'EXISTE' : 'NULL');
-                } catch (e) {
-                    console.warn('[ADMIN-DEBUG] Error al acceder a sessionStorage:', e);
-                    console.warn('[ADMIN-DEBUG] Stack trace:', e.stack);
-                }
-            }
-            
-            // Si no hay en sessionStorage, intentar cookies
-            if (!token || !userStr) {
-                console.log('[ADMIN-DEBUG] Datos no encontrados en sessionStorage, intentando cookies');
-                token = getCookie('token');
-                console.log('[ADMIN-DEBUG] Token de cookies:', token ? 'EXISTE' : 'NULL');
-                
-                userStr = getCookie('user');
-                console.log('[ADMIN-DEBUG] Usuario de cookies:', userStr ? 'EXISTE' : 'NULL');
-            }
-            
-            if (!token || !userStr) {
-                console.error('[ADMIN-DEBUG] No se encontraron credenciales de sesión en ningún almacenamiento');
-                console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (NO CREDENCIALES) ====================');
-                safeRedirect('/');
-                return false;
-            }
-            
-            try {
-                console.log('[ADMIN-DEBUG] Intentando parsear datos de usuario:', userStr ? userStr.substring(0, 50) + '...' : 'NULL');
-                const userData = JSON.parse(userStr);
-                console.log('[ADMIN-DEBUG] Datos parseados correctamente');
-                console.log('[ADMIN-DEBUG] IDUsuario:', userData.IDUsuario || 'NO EXISTE');
-                console.log('[ADMIN-DEBUG] IDRol:', userData.IDRol || 'NO EXISTE');
-                console.log('[ADMIN-DEBUG] Nombres:', userData.Nombres || 'NO EXISTE');
-                
-                // Usar las propiedades en mayúsculas según el formato normalizado en AuthService
-                if (!userData || !userData.IDUsuario || !userData.IDRol) {
-                    console.error('[ADMIN-DEBUG] Datos de usuario inválidos o incompletos');
-                    clearAllStorage();
-                    console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (DATOS INVÁLIDOS) ====================');
-                    safeRedirect('/');
-                    return false;
-                }
-                
-                // Verificar que es un administrador (rol 1)
-                if (userData.IDRol !== 1) {
-                    console.error('[ADMIN-DEBUG] Acceso denegado: rol no autorizado. IDRol:', userData.IDRol);
-                    clearAllStorage();
-                    console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (ROL INVÁLIDO) ====================');
-                    safeRedirect('/');
-                    return false;
-                }
-                
-                console.log('[ADMIN-DEBUG] Verificación exitosa. Usuario:', userData.Nombres);
-                console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (ÉXITO) ====================');
-                return true;
-            } catch (error) {
-                console.error('[ADMIN-DEBUG] Error al verificar autenticación:', error);
-                console.error('[ADMIN-DEBUG] Stack trace:', error.stack);
-                clearAllStorage();
-                console.log('[ADMIN-DEBUG] ==================== FIN CHECK AUTH (ERROR) ====================');
-                safeRedirect('/');
-                return false;
-            }
-        }
-        
-        // Función para limpiar todo el almacenamiento
-        function clearAllStorage() {
-            console.log('[ADMIN-DEBUG] ==================== INICIO CLEAR STORAGE ====================');
-            try {
-                console.log('[ADMIN-DEBUG] Limpiando localStorage');
-                localStorage.clear();
-                console.log('[ADMIN-DEBUG] localStorage limpiado');
-            } catch (e) {
-                console.warn('[ADMIN-DEBUG] Error al limpiar localStorage:', e);
-            }
-            
-            try {
-                console.log('[ADMIN-DEBUG] Limpiando sessionStorage');
-                sessionStorage.clear();
-                console.log('[ADMIN-DEBUG] sessionStorage limpiado');
-            } catch (e) {
-                console.warn('[ADMIN-DEBUG] Error al limpiar sessionStorage:', e);
-            }
-            
-            // Limpiar cookies relevantes
-            console.log('[ADMIN-DEBUG] Limpiando cookies');
-            deleteCookie('token');
-            deleteCookie('user');
-            deleteCookie('redirectionOccurred');
-            console.log('[ADMIN-DEBUG] Cookies limpiadas');
-            console.log('[ADMIN-DEBUG] ==================== FIN CLEAR STORAGE ====================');
-        }
-        
-        // Funciones de utilidad para cookies
-        function getCookie(name) {
-            try {
-                const nameEQ = name + "=";
-                const ca = document.cookie.split(';');
-                for (let i = 0; i < ca.length; i++) {
-                    let c = ca[i];
-                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                    if (c.indexOf(nameEQ) === 0) {
-                        return decodeURIComponent(c.substring(nameEQ.length, c.length));
-                    }
-                }
-            } catch (e) {
-                console.error('[ADMIN-DEBUG] Error al obtener cookie:', e);
-            }
-            return null;
-        }
-        
-        function deleteCookie(name) {
-            try {
-                document.cookie = name + '=; Max-Age=-99999999; path=/';
-            } catch (e) {
-                console.error('[ADMIN-DEBUG] Error al eliminar cookie:', e);
-            }
-        }
-        
-        // Función de redirección segura
-        function safeRedirect(url) {
-            console.log('[ADMIN-DEBUG] ==================== INICIO REDIRECT ====================');
-            console.log('[ADMIN-DEBUG] Intentando redireccionar a:', url);
-            try {
-                console.log('[ADMIN-DEBUG] Usando window.location.replace');
-                window.location.replace(url);
-            } catch (e) {
-                console.error('[ADMIN-DEBUG] Error al redireccionar:', e);
-                console.error('[ADMIN-DEBUG] Stack trace:', e.stack);
-                try {
-                    console.log('[ADMIN-DEBUG] Usando window.location.href');
-                    window.location.href = url;
-                } catch (e2) {
-                    console.error('[ADMIN-DEBUG] Error al redireccionar con href:', e2);
-                    try {
-                        console.log('[ADMIN-DEBUG] Usando asignación directa');
-                        window.location = url;
-                    } catch (e3) {
-                        console.error('[ADMIN-DEBUG] Error en redirección directa:', e3);
-                    }
-                }
-            }
-            console.log('[ADMIN-DEBUG] ==================== FIN REDIRECT ====================');
-        }
-
-        // Añadir un pequeño retraso para evitar conflictos de verificación
-        console.log('[ADMIN-DEBUG] Programando verificación con setTimeout (100ms)');
-        setTimeout(() => {
-            try {
-                console.log('[ADMIN-DEBUG] Ejecutando verificación programada');
-                if (!checkAuth()) {
-                    console.error('[ADMIN-DEBUG] Verificación fallida');
-                    throw new Error('No autenticado');
-                } else {
-                    console.log('[ADMIN-DEBUG] Usuario autenticado correctamente');
-                }
-            } catch (e) {
-                console.error('[ADMIN-DEBUG] Error en verificación de autenticación:', e);
-                console.error('[ADMIN-DEBUG] Stack trace:', e.stack);
-                safeRedirect('/');
-            }
-            console.log('[ADMIN-DEBUG] ==================== FIN VERIFICACIÓN ADMIN ====================');
-        }, 100);
+            console.log('Módulo sidebarToggle inicializado correctamente');
+        });
     </script>
-
-    <!-- Anti-Cache Script -->
-    <script>
-        // Función para evitar caché en recursos
-        function addCacheBuster() {
-            // Solo ejecutar en entorno de desarrollo
-            if (!window.location.hostname.includes('localhost') && 
-                !window.location.hostname.includes('127.0.0.1')) {
-                return;
+    
+    <!-- Script de administración simplificado -->
+    <script type="module">
+        import { initSessionUI } from '/src/utils/sessionUI.js';
+        
+        // Función para cerrar sesión directamente sin depender del módulo UI
+        window.logoutDirectly = async function(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
             }
             
-            console.log('[CACHE] Iniciando prevención de caché para recursos...');
+            console.log('Cierre de sesión directo iniciado');
             
-            // Agregar parámetro de consulta a los scripts
-            document.querySelectorAll('script[src]').forEach(script => {
-                if (script.src && 
-                    !script.src.includes('cdn.jsdelivr.net') && 
-                    !script.src.includes('http')) {
-                    const originalSrc = script.getAttribute('src');
-                    if (!originalSrc.includes('?v=')) {
-                        const newSrc = `${originalSrc}?v=${new Date().getTime()}`;
-                        console.log(`[CACHE] Actualizando script: ${originalSrc} → ${newSrc}`);
-                        script.setAttribute('src', newSrc);
+            // Obtener el botón que inició la acción
+            const button = event ? event.currentTarget : document.getElementById('btnLogout');
+            
+            if (button) {
+                // Cambiar el aspecto del botón
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-hourglass-split"></i> Cerrando sesión...';
+                button.style.pointerEvents = 'none';
+            }
+            
+            try {
+                // Detener verificador si existe
+                if (window.sessionManager && window.sessionManager.stopAuthChecker) {
+                    window.sessionManager.stopAuthChecker();
+                }
+                
+                // Limpiar localStorage y sessionStorage
+                const keysToRemove = ['token', 'user', 'redirectionOccurred', 'session', 'sessionExpiry'];
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    sessionStorage.removeItem(key);
+                });
+                
+                // Limpiar prefijos específicos
+                ['oficri_'].forEach(prefix => {
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(prefix)) localStorage.removeItem(key);
+                    });
+                    Object.keys(sessionStorage).forEach(key => {
+                        if (key.startsWith(prefix)) sessionStorage.removeItem(key);
+                    });
+                });
+                
+                // Limpiar cookies
+                document.cookie.split(';').forEach(cookie => {
+                    document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+                });
+                
+                console.log('Limpieza de sesión completa');
+                
+                // Intentar llamar al servicio de autenticación si está disponible
+                try {
+                    const authService = await import('/src/services/auth/authService.js');
+                    if (authService && authService.logout) {
+                        await authService.logout();
+                        console.log('Logout del servicio de autenticación exitoso');
                     }
+                } catch (serviceError) {
+                    console.warn('Error al usar servicio de autenticación:', serviceError);
+                }
+                
+                // Redirigir a la página de login
+                console.log('Redirigiendo a la página de login...');
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+            } finally {
+                // Siempre redirigir sin importar si hubo error
+                setTimeout(() => {
+                    window.location.href = '/index.html?nocache=' + Date.now();
+                }, 200);
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sistema de depuración modificado para ser menos intrusivo
+            console.log('🔍 DEBUG ADMIN: Página de administrador cargada');
+            
+            // Función para crear el contenedor de depuración
+            function createDebugContainer() {
+                const debugContainer = document.createElement('div');
+                debugContainer.id = 'debugContainer';
+                debugContainer.style.position = 'fixed';
+                debugContainer.style.bottom = '0';
+                debugContainer.style.left = '0';
+                debugContainer.style.right = '0';
+                debugContainer.style.height = '30px'; // Altura reducida
+                debugContainer.style.maxHeight = '30px';
+                debugContainer.style.overflowY = 'hidden';
+                debugContainer.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                debugContainer.style.color = '#22ff22';
+                debugContainer.style.padding = '5px 10px';
+                debugContainer.style.zIndex = '9999';
+                debugContainer.style.fontFamily = 'monospace';
+                debugContainer.style.fontSize = '10px';
+                debugContainer.style.transition = 'all 0.3s ease';
+                debugContainer.style.display = 'flex';
+                debugContainer.style.alignItems = 'center';
+                debugContainer.style.justifyContent = 'space-between';
+                
+                // Añadir botón para expandir
+                const expandButton = document.createElement('button');
+                expandButton.textContent = '▲';
+                expandButton.style.background = 'none';
+                expandButton.style.border = 'none';
+                expandButton.style.color = '#22ff22';
+                expandButton.style.cursor = 'pointer';
+                expandButton.style.marginLeft = 'auto';
+                
+                // Añadir contenedor de mensajes
+                const messagesContainer = document.createElement('div');
+                messagesContainer.id = 'debugMessages';
+                messagesContainer.style.flex = '1';
+                messagesContainer.style.overflow = 'hidden';
+                messagesContainer.style.whiteSpace = 'nowrap';
+                messagesContainer.style.textOverflow = 'ellipsis';
+                
+                debugContainer.appendChild(messagesContainer);
+                debugContainer.appendChild(expandButton);
+                
+                // Estado inicial
+                let expanded = false;
+                
+                // Función para alternar el estado
+                expandButton.addEventListener('click', () => {
+                    expanded = !expanded;
+                    if (expanded) {
+                        debugContainer.style.height = '300px';
+                        debugContainer.style.maxHeight = '300px';
+                        debugContainer.style.overflowY = 'auto';
+                        messagesContainer.style.whiteSpace = 'normal';
+                        messagesContainer.style.overflow = 'auto';
+                        expandButton.textContent = '▼';
+                    } else {
+                        debugContainer.style.height = '30px';
+                        debugContainer.style.maxHeight = '30px';
+                        debugContainer.style.overflowY = 'hidden';
+                        messagesContainer.style.whiteSpace = 'nowrap';
+                        messagesContainer.style.overflow = 'hidden';
+                        expandButton.textContent = '▲';
+                    }
+                });
+                
+                document.body.appendChild(debugContainer);
+                return {container: debugContainer, messages: messagesContainer};
+            }
+            
+            // Crear el contenedor de depuración
+            const {container: debugContainer, messages: debugMessages} = createDebugContainer();
+            
+            // Función para mostrar mensajes de depuración
+            function debugLog(message) {
+                console.log(`🔍 DEBUG ADMIN: ${message}`);
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+                logEntry.style.borderBottom = '1px solid #444';
+                logEntry.style.paddingBottom = '3px';
+                logEntry.style.marginBottom = '3px';
+                debugMessages.appendChild(logEntry);
+                
+                // Actualizar también el texto visible cuando está colapsado
+                if (debugMessages.childNodes.length === 1) {
+                    debugMessages.title = logEntry.textContent;
+                }
+            }
+            
+            debugLog('Iniciando verificación de autenticación');
+            
+            // Inicializar la gestión de sesión UI con el módulo centralizado
+            const sessionManager = initSessionUI({
+                logoutButtonSelector: '#btnLogout',
+                userNameSelector: '#userName',
+                authCheckInterval: 60000, // Verificar cada 1 minuto
+                debugLogger: debugLog,
+                onLogoutSuccess: () => {
+                    debugLog('Sesión cerrada exitosamente, redirigiendo...');
+                },
+                onLogoutError: (error) => {
+                    debugLog(`Error al cerrar sesión: ${error.message}`);
+                    window.location.href = '/index.html?nocache=' + Date.now();
                 }
             });
-        }
-        
-        // Ejecutar al cargar la página
-        window.addEventListener('DOMContentLoaded', addCacheBuster);
+            
+            // Iniciar verificación de autenticación
+            sessionManager.initAuthentication(true)
+                .then(isAuthenticated => {
+                    if (isAuthenticated) {
+                        debugLog('Usuario autenticado correctamente');
+                    } else {
+                        debugLog('Usuario no autenticado, redirigiendo...');
+                    }
+                })
+                .catch(error => {
+                    debugLog(`Error en verificación de autenticación: ${error.message}`);
+                });
+            
+            // Guardar en window para acceso global
+            window.sessionManager = sessionManager;
+            
+            debugLog('Inicialización completa de la página de administrador');
+        });
     </script>
-
-    <!-- Main JavaScript -->
-    <script type="module" src="/src/pages/admin/admin.js"></script>
 </body>
 </html> 

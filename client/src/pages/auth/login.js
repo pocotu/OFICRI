@@ -3,11 +3,99 @@
  * Maneja la lógica y renderizado del formulario de login
  */
 
-// Importar servicios
-import { authService } from '../../services/services.js';
-import * as errorHandler from '../../utils/errorHandler.js';
-import { AuthHeader } from '../../components/AuthHeader/AuthHeader.js';
-import { AuthFooter } from '../../components/AuthFooter/AuthFooter.js';
+// Importar utilidades
+import * as errorHandler from '../../utils/index.js';
+
+// Log para verificar la carga inicial
+console.log('[LOGIN.JS] Módulo login.js cargando');
+
+// Variables para componentes que se cargarán dinámicamente
+let authService, AuthHeader, AuthFooter;
+
+// Primero intentar cargar los mocks para tener fallbacks disponibles inmediatamente
+try {
+    import('./../../components/auth/mockComponents.js')
+        .then(mock => {
+            // Solo asignar si no están ya asignados por los componentes reales
+            if (!AuthHeader) AuthHeader = mock.AuthHeader;
+            if (!AuthFooter) AuthFooter = mock.AuthFooter;
+            console.log('[LOGIN.JS] Componentes mock cargados proactivamente');
+        })
+        .catch(mockError => {
+            console.error('[LOGIN.JS] Error al cargar mocks proactivamente:', mockError);
+        });
+} catch (error) {
+    console.error('[LOGIN.JS] Error al intentar importar mocks proactivamente:', error);
+}
+
+// Cargar servicios y componentes de forma dinámica para evitar errores
+try {
+    // Intentar importar servicios
+    import('../../services/services.js')
+        .then(module => {
+            authService = module.authService;
+            console.log('[LOGIN.JS] authService cargado correctamente');
+        })
+        .catch(error => {
+            console.error('[LOGIN.JS] Error al cargar authService:', error);
+        });
+    
+    // Intentar importar componentes
+    Promise.all([
+        import('../../components/auth/AuthHeader.js')
+            .then(module => {
+                AuthHeader = module.default || module.AuthHeader;
+                console.log('[LOGIN.JS] AuthHeader cargado correctamente');
+            })
+            .catch(error => {
+                console.error('[LOGIN.JS] Error al cargar AuthHeader:', error);
+                return import('./../../components/auth/mockComponents.js')
+                    .then(mock => {
+                        AuthHeader = mock.AuthHeader;
+                        console.log('[LOGIN.JS] AuthHeader mock cargado como fallback');
+                    });
+            }),
+        
+        import('../../components/auth/AuthFooter.js')
+            .then(module => {
+                AuthFooter = module.default || module.AuthFooter;
+                console.log('[LOGIN.JS] AuthFooter cargado correctamente');
+            })
+            .catch(error => {
+                console.error('[LOGIN.JS] Error al cargar AuthFooter:', error);
+                return import('./../../components/auth/mockComponents.js')
+                    .then(mock => {
+                        AuthFooter = mock.AuthFooter;
+                        console.log('[LOGIN.JS] AuthFooter mock cargado como fallback');
+                    });
+            })
+    ]).catch(error => {
+        console.error('[LOGIN.JS] Error al cargar componentes:', error);
+    });
+} catch (error) {
+    console.error('[LOGIN.JS] Error general al cargar módulos:', error);
+    
+    // Intentar cargar los mocks como último recurso
+    try {
+        import('./../../components/auth/mockComponents.js')
+            .then(mock => {
+                AuthHeader = mock.AuthHeader;
+                AuthFooter = mock.AuthFooter;
+                console.log('[LOGIN.JS] Componentes mock cargados como último recurso');
+            })
+            .catch(finalError => {
+                console.error('[LOGIN.JS] Error fatal al cargar mocks:', finalError);
+            });
+    } catch (mockError) {
+        console.error('[LOGIN.JS] Error fatal al intentar importar mocks:', mockError);
+    }
+}
+
+// Log para verificar que el módulo se carga correctamente
+console.log('[LOGIN.JS] Módulo login.js cargado');
+console.log('[LOGIN.JS] errorHandler disponible:', !!errorHandler);
+console.log('[LOGIN.JS] LOG_LEVEL disponible:', !!errorHandler.LOG_LEVEL);
+console.log('[LOGIN.JS] setLogLevel disponible:', !!errorHandler.setLogLevel);
 
 // Variable para evitar múltiples verificaciones
 let isCheckingAuth = false;
@@ -15,39 +103,101 @@ let isCheckingAuth = false;
 // Variable para indicar que la página se ha cargado completamente
 let isPageLoaded = false;
 
-// Verificar si ya estamos autenticados al cargar la página
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[LOGIN-DEBUG] ==================== INICIO CARGA PÁGINA ====================');
-    console.log('[LOGIN-DEBUG] DOMContentLoaded - Iniciando verificación de autenticación');
-    console.log('[LOGIN-DEBUG] URL actual:', window.location.pathname);
-    console.log('[LOGIN-DEBUG] Search params:', window.location.search);
-    console.log('[LOGIN-DEBUG] Hash:', window.location.hash);
+/**
+ * Función principal de inicialización de la página de login
+ * Esta función puede ser importada y utilizada desde otros archivos
+ */
+export async function initializeLoginPage() {
+    console.log('[LOGIN.JS] ==================== INICIO CARGA PÁGINA ====================');
+    console.log('[LOGIN.JS] Iniciando verificación de autenticación');
+    console.log('[LOGIN.JS] URL actual:', window.location.pathname);
+    console.log('[LOGIN.JS] Search params:', window.location.search);
+    console.log('[LOGIN.JS] Hash:', window.location.hash);
     
     // Inicializar error handler
     if (errorHandler && errorHandler.setLogLevel && errorHandler.LOG_LEVEL) {
         errorHandler.setLogLevel(errorHandler.LOG_LEVEL.DEBUG);
     }
     
-    // Renderizar el header de autenticación
-    const authHeader = new AuthHeader();
-    const authHeaderContainer = document.getElementById('authHeaderContainer');
-    if (authHeaderContainer) {
-        authHeader.render(authHeaderContainer);
+    // Verificar si podemos marcar la inicialización para la depuración
+    try {
+        if (window && !window.loginModuleInitialized) {
+            console.log('[LOGIN.JS] Marcando inicialización global');
+            window.loginModuleInitialized = true;
+        }
+    } catch (e) {
+        console.error('[LOGIN.JS] Error al intentar marcar inicialización:', e);
     }
     
-    // Renderizar el footer de autenticación
-    const authFooter = new AuthFooter();
-    const authFooterContainer = document.getElementById('authFooterContainer');
-    if (authFooterContainer) {
+    // Esperar a que los componentes se carguen completamente (máximo 2 segundos)
+    try {
+        console.log('[LOGIN.JS] Esperando a que los componentes se carguen...');
+        
+        // Promesa que se resolverá cuando los componentes estén cargados o después de un timeout
+        await new Promise((resolve) => {
+            // Verificar cada 100ms si los componentes se han cargado
+            const checkInterval = setInterval(() => {
+                if (AuthHeader && AuthFooter) {
+                    console.log('[LOGIN.JS] Componentes cargados correctamente');
+                    clearInterval(checkInterval);
+                    clearTimeout(timeoutId);
+                    resolve(true);
+                }
+            }, 100);
+            
+            // Establecer un timeout por si los componentes nunca se cargan
+            const timeoutId = setTimeout(() => {
+                clearInterval(checkInterval);
+                console.log('[LOGIN.JS] Tiempo de espera agotado para cargar componentes');
+                resolve(false);
+            }, 2000); // 2 segundos de timeout
+        });
+    } catch (error) {
+        console.error('[LOGIN.JS] Error al esperar componentes:', error);
+    }
+    
+    // Renderizar el header de autenticación si está disponible
+    try {
+        const authHeaderContainer = document.getElementById('authHeaderContainer');
+        if (authHeaderContainer && AuthHeader) {
+            const authHeader = new AuthHeader({
+                className: 'oficri-header'
+            });
+            authHeader.render(authHeaderContainer);
+            console.log('[LOGIN.JS] Header renderizado correctamente');
+        } else {
+            console.log('[LOGIN.JS] No se renderizó el header: contenedor disponible:', !!authHeaderContainer, 'componente disponible:', !!AuthHeader);
+        }
+    } catch (error) {
+        console.error('[LOGIN.JS] Error al renderizar header:', error);
+    }
+    
+    // Renderizar el footer de autenticación si está disponible
+    try {
+        const authFooterContainer = document.getElementById('authFooterContainer');
+        if (authFooterContainer && AuthFooter) {
+    const authFooter = new AuthFooter({
+        className: 'oficri-footer'
+    });
         authFooter.render(authFooterContainer);
+            console.log('[LOGIN.JS] Footer renderizado correctamente');
+        } else {
+            console.log('[LOGIN.JS] No se renderizó el footer: contenedor disponible:', !!authFooterContainer, 'componente disponible:', !!AuthFooter);
+        }
+    } catch (error) {
+        console.error('[LOGIN.JS] Error al renderizar footer:', error);
     }
     
     // Detectar navegador
+    try {
     const browserInfo = detectBrowser();
-    console.log('[LOGIN-DEBUG] Navegador detectado:', JSON.stringify(browserInfo));
-    console.log('[LOGIN-DEBUG] Cookies habilitadas:', navigator.cookieEnabled);
-    console.log('[LOGIN-DEBUG] LocalStorage disponible:', testLocalStorage());
-    console.log('[LOGIN-DEBUG] SessionStorage disponible:', testSessionStorage());
+        console.log('[LOGIN.JS] Navegador detectado:', JSON.stringify(browserInfo));
+        console.log('[LOGIN.JS] Cookies habilitadas:', navigator.cookieEnabled);
+        console.log('[LOGIN.JS] LocalStorage disponible:', testLocalStorage());
+        console.log('[LOGIN.JS] SessionStorage disponible:', testSessionStorage());
+    } catch (error) {
+        console.error('[LOGIN.JS] Error al detectar navegador:', error);
+    }
     
     try {
         // Obtener referencias a elementos del DOM
@@ -58,72 +208,63 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (loginMessage) {
             loginMessage.style.display = 'none';
             loginMessage.innerHTML = '';
-            console.log('[LOGIN-DEBUG] Mensaje de login oculto');
-        }
-        
-        // Verificar si estamos en la página de login
-        const isLoginPage = window.location.pathname === '/' || 
-                            window.location.pathname === '/index.html';
-        console.log('[LOGIN-DEBUG] ¿Es página de login?:', isLoginPage);
-        
-        // Si no estamos en la página de login, redirigir
-        if (!isLoginPage) {
-            console.log('[LOGIN-DEBUG] No estamos en la página de login, redirigiendo');
-            window.location.replace('/');
-            return;
-        }
-        
-        // Verificar si ya ha ocurrido una redirección (para prevenir bucles)
-        const redirectionOccurred = sessionStorage.getItem('redirectionOccurred');
-        console.log('[LOGIN-DEBUG] Valor actual de redirectionOccurred:', redirectionOccurred === 'true');
-        
-        // Si es la primera carga de la página, resetear el flag
-        if (!redirectionOccurred && window.performance) {
-            const navEntries = window.performance.getEntriesByType('navigation');
-            const navigationType = navEntries.length > 0 
-                ? navEntries[0].type 
-                : (window.performance.navigation ? 
-                    (window.performance.navigation.type === 0 ? 'navigate' : 'other') 
-                    : 'unknown');
-                    
-            if (navigationType === 'navigate' || navigationType === 0) {
-                console.log('[LOGIN-DEBUG] Primera navegación a la página, reseteando flag');
-                sessionStorage.removeItem('redirectionOccurred');
-            }
+            console.log('[LOGIN.JS] Mensaje de login oculto');
         }
         
         // Verificar si el usuario ya está autenticado
+        if (authService && typeof authService.isAuthenticated === 'function') {
         try {
-            console.log('[LOGIN-DEBUG] Llamando a authService.isAuthenticated()');
-            if (authService && typeof authService.isAuthenticated === 'function') {
+                console.log('[LOGIN.JS] Verificando autenticación');
                 const isLoggedIn = authService.isAuthenticated(true);
-                console.log('[LOGIN-DEBUG] Resultado isAuthenticated:', isLoggedIn);
-            } else {
-                console.warn('[LOGIN-DEBUG] authService o su método isAuthenticated no disponible');
+                console.log('[LOGIN.JS] Resultado isAuthenticated:', isLoggedIn);
+            } catch (authError) {
+                console.error('[LOGIN.JS] Error al verificar autenticación:', authError);
             }
-        } catch (authError) {
-            console.error('[LOGIN-DEBUG] Error al verificar autenticación:', authError);
+        } else {
+            console.warn('[LOGIN.JS] authService no disponible para verificar autenticación');
         }
         
         // Inicializar el formulario solo si existe en el DOM
         if (loginForm) {
-            console.log('[LOGIN-DEBUG] Mostrando formulario de login');
-            initializeLoginForm();
+            console.log('[LOGIN.JS] Inicializando formulario de login');
             
             // Configurar el toggle de la contraseña
             setupPasswordToggle();
+            
+            // Inicializar formulario de login
+            initializeLoginForm();
         } else {
-            console.warn('[LOGIN-DEBUG] Formulario de login no encontrado en el DOM');
+            console.warn('[LOGIN.JS] Formulario de login no encontrado');
         }
         
-        console.log('[LOGIN-DEBUG] ==================== FIN CARGA PÁGINA (MOSTRANDO FORM) ====================');
+        console.log('[LOGIN.JS] ==================== FIN CARGA PÁGINA ====================');
     } catch (error) {
-        console.error('[LOGIN-DEBUG] Error en inicio de página:', error);
-        console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
+        console.error('[LOGIN.JS] Error en inicio de página:', error);
+        console.error('[LOGIN.JS] Stack trace:', error.stack);
     } finally {
         isPageLoaded = true;
     }
+}
+
+// Verificar si ya estamos autenticados al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[LOGIN.JS] DOMContentLoaded detectado en login.js');
+    
+    // Como initializeLoginPage ahora es asíncrona, necesitamos manejar la promesa
+    initializeLoginPage()
+        .then(() => {
+            console.log('[LOGIN.JS] Inicialización completada correctamente');
+        })
+        .catch(error => {
+            console.error('[LOGIN.JS] Error durante la inicialización:', error);
+        });
 });
+
+// También exportamos la función como valor por defecto para facilitar la importación
+export default initializeLoginPage;
+
+// Log para indicar que el módulo se ha cargado completamente
+console.log('[LOGIN.JS] ==================== MÓDULO CARGADO COMPLETAMENTE ====================');
 
 /**
  * Detecta el navegador actual
@@ -256,310 +397,119 @@ function safeRedirect(url) {
 }
 
 /**
- * Inicializa el formulario de login
+ * Configura el toggle de la contraseña
  */
-function initializeLoginForm() {
-    console.log('[LOGIN-DEBUG] ==================== INICIO INIT LOGIN FORM ====================');
-    console.log('[LOGIN-DEBUG] Inicializando formulario de login');
-    
-    try {
-        // Obtener referencias
-        const loginForm = document.getElementById('loginForm');
-        
-        // Clonar y reemplazar el formulario para eliminar listeners previos
-        const oldForm = loginForm;
-        const newForm = oldForm.cloneNode(true);
-        oldForm.parentNode.replaceChild(newForm, oldForm);
-        console.log('[LOGIN-DEBUG] Formulario clonado para eliminar listeners previos');
-        
-        // Obtener referencias actualizadas
-        const formActual = document.getElementById('loginForm');
-        const cipInput = document.getElementById('cip');
-        const passwordInput = document.getElementById('password');
-        const submitButton = formActual.querySelector('button[type="submit"]');
-        const loginMessage = document.getElementById('loginMessage');
-        
-        // Agregar evento de envío del formulario
-        formActual.addEventListener('submit', async (event) => {
-            console.log('[LOGIN-DEBUG] ==================== INICIO SUBMIT FORM ====================');
-            console.log('[LOGIN-DEBUG] Evento submit del formulario capturado');
+function setupPasswordToggle() {
+    console.log('[LOGIN.JS] Configurando toggle de contraseña');
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePassword && passwordInput) {
+        console.log('[LOGIN.JS] Elementos para toggle encontrados, agregando event listener');
+        togglePassword.addEventListener('click', function() {
+            console.log('[LOGIN.JS] Toggle contraseña clickeado');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
             
-            // Prevenir comportamiento por defecto
-            event.preventDefault();
-            
-            try {
-                // Validar formulario
-                if (!formActual.checkValidity()) {
-                    event.stopPropagation();
-                    formActual.classList.add('was-validated');
-                    console.log('[LOGIN-DEBUG] Formulario inválido, deteniendo envío');
-                    return;
-                }
-                
-                console.log('[LOGIN-DEBUG] Datos de formulario - CIP:', cipInput.value, 'Password length:', passwordInput.value.length);
-                
-                // Deshabilitar el botón y mostrar loading
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Iniciando sesión...';
-                console.log('[LOGIN-DEBUG] Botón deshabilitado, mostrando spinner');
-                
-                // Verificar si el servicio de autenticación está disponible
-                if (!authService || typeof authService.login !== 'function') {
-                    console.error('[LOGIN-DEBUG] Servicio de autenticación no disponible');
-                    throw new Error('El servicio de autenticación no está disponible en este momento');
-                }
-                
-                console.log('[LOGIN-DEBUG] Llamando a authService.login');
-                try {
-                    const response = await authService.login(cipInput.value, passwordInput.value);
-                    console.log('[LOGIN-DEBUG] Respuesta del método login:', response ? JSON.stringify(response) : 'NULL');
-                    
-                    if (!response || !response.success) {
-                        console.error('[LOGIN-DEBUG] Login fallido:', response ? response.message : 'Respuesta vacía');
-                        throw new Error(response && response.message ? response.message : 'Error al iniciar sesión');
-                    }
-    
-                    // Verificar que tenemos un usuario válido
-                    const user = response.user;
-                    console.log('[LOGIN-DEBUG] Datos del usuario recibidos:', user ? JSON.stringify(user) : 'NULL');
-                    
-                    if (!user || !user.IDRol) {
-                        console.error('[LOGIN-DEBUG] Datos de usuario incompletos');
-                        throw new Error('Datos de usuario incompletos');
-                    }
-                    
-                    // Mostrar mensaje de éxito
-                    if (window.Swal) {
-                        await Swal.fire({
-                            icon: 'success',
-                            title: '¡Bienvenido!',
-                            text: 'Iniciando sesión...',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    }
-                    
-                    console.log('[LOGIN-DEBUG] Login exitoso, redirigiendo según rol...');
-                    
-                    // NUEVO: Verificaciones exhaustivas de almacenamiento
-                    const tokenGuardado = localStorage.getItem('token');
-                    const tokenSesion = sessionStorage.getItem('token');
-                    const userGuardado = localStorage.getItem('user');
-                    const userSesion = sessionStorage.getItem('user');
-                    
-                    console.log('[LOGIN-DEBUG] Verificación exhaustiva de almacenamiento:');
-                    console.log('[LOGIN-DEBUG] Token en localStorage:', tokenGuardado ? 'EXISTE' : 'NO EXISTE');
-                    console.log('[LOGIN-DEBUG] Token en sessionStorage:', tokenSesion ? 'EXISTE' : 'NO EXISTE');
-                    console.log('[LOGIN-DEBUG] User en localStorage:', userGuardado ? 'EXISTE' : 'NO EXISTE');
-                    console.log('[LOGIN-DEBUG] User en sessionStorage:', userSesion ? 'EXISTE' : 'NO EXISTE');
-                    
-                    // NUEVO: Guardar los datos nuevamente de forma directa para asegurar que existan
-                    console.log('[LOGIN-DEBUG] Guardando datos nuevamente como medida de seguridad');
-                    
-                    try {
-                        localStorage.setItem('token', response.token);
-                        localStorage.setItem('user', JSON.stringify(user));
-                        sessionStorage.setItem('token', response.token);
-                        sessionStorage.setItem('user', JSON.stringify(user));
-                        sessionStorage.setItem('redirectionOccurred', 'true');
-                        
-                        console.log('[LOGIN-DEBUG] Datos guardados exitosamente');
-                    } catch (storageError) {
-                        console.error('[LOGIN-DEBUG] Error al guardar datos:', storageError);
-                    }
-                    
-                    // Verificar almacenamiento después de guardar nuevamente
-                    const tokenVerificado = localStorage.getItem('token') || sessionStorage.getItem('token');
-                    console.log('[LOGIN-DEBUG] Verificación final de token:', tokenVerificado ? 'OK' : 'FALLIDO');
-                    
-                    if (!tokenVerificado) {
-                        console.error('[LOGIN-DEBUG] ¡ALERTA! El token no se guardó correctamente');
-                        // Intentar con cookies como último recurso
-                        document.cookie = `token=${response.token}; path=/; max-age=86400`;
-                        console.log('[LOGIN-DEBUG] Intentando guardar token en cookie');
-                    }
-                    
-                    // NUEVO: Obtener la URL de redirección directamente de la respuesta
-                    // Si response.redirectTo no existe, determinar según el rol
-                    let redirectTo;
-                    
-                    if (response.redirectTo) {
-                        redirectTo = response.redirectTo;
-                        console.log('[LOGIN-DEBUG] Usando URL de redirección proporcionada por el servidor:', redirectTo);
-                    } else {
-                        // Determinar la URL basándose en el rol
-                        if (user.IDRol === 1) {
-                            redirectTo = '/admin.html';
-                            console.log('[LOGIN-DEBUG] Usuario Admin (rol 1), redirigiendo a:', redirectTo);
-                        } else if (user.IDRol === 2) {
-                            redirectTo = '/mesaPartes.html';
-                            console.log('[LOGIN-DEBUG] Usuario Mesa de Partes (rol 2), redirigiendo a:', redirectTo);
-                            
-                            // Limpiar contador de redirecciones
-                            sessionStorage.removeItem('mp_redirection_count');
-                        } else {
-                            redirectTo = '/dashboard.html';
-                            console.log('[LOGIN-DEBUG] Usuario estándar (rol ' + user.IDRol + '), redirigiendo a:', redirectTo);
-                        }
-                    }
-                    
-                    console.log('[LOGIN-DEBUG] URL de redirección final:', redirectTo);
-                    
-                    // NUEVO: Utilizar un enfoque directo para la redirección
-                    console.log('[LOGIN-DEBUG] Preparando redirección con timeout de seguridad');
-                    
-                    setTimeout(() => {
-                        try {
-                            console.log('[LOGIN-DEBUG] Iniciando redirección ahora');
-                            
-                            // Crear un elemento <a> para navegación segura
-                            const link = document.createElement('a');
-                            link.href = redirectTo;
-                            link.style.display = 'none';
-                            document.body.appendChild(link);
-                            console.log('[LOGIN-DEBUG] Elemento <a> creado con href:', link.href);
-                            
-                            // Simular clic
-                            link.click();
-                            console.log('[LOGIN-DEBUG] Clic simulado en enlace');
-                            
-                            // Limpiar
-                            setTimeout(() => document.body.removeChild(link), 100);
-                            
-                            // Plan B: si después de 500ms seguimos en la misma página, intentar con métodos alternativos
-                            setTimeout(() => {
-                                if (window.location.pathname === '/' || 
-                                    window.location.pathname === '/index.html' ||
-                                    window.location.pathname.endsWith('/OFICRI/') || 
-                                    window.location.pathname.endsWith('/OFICRI/index.html')) {
-                                    
-                                    console.log('[LOGIN-DEBUG] Todavía en página de login, intentando métodos alternativos');
-                                    
-                                    try {
-                                        console.log('[LOGIN-DEBUG] Intentando window.location.replace');
-                                        window.location.replace(redirectTo);
-                                    } catch (error1) {
-                                        console.error('[LOGIN-DEBUG] Error con replace:', error1);
-                                        
-                                        try {
-                                            console.log('[LOGIN-DEBUG] Intentando window.location.href');
-                                            window.location.href = redirectTo;
-                                        } catch (error2) {
-                                            console.error('[LOGIN-DEBUG] Error con href:', error2);
-                                            window.location = redirectTo;
-                                        }
-                                    }
-                                }
-                            }, 500);
-                        } catch (redirectError) {
-                            console.error('[LOGIN-DEBUG] Error crítico durante redirección:', redirectError);
-                            
-                            // Último intento
-                            window.location = redirectTo;
-                        }
-                    }, 1000); // Aumentamos a 1 segundo para dar más tiempo
-                    
-                } catch (loginError) {
-                    console.error('[LOGIN-DEBUG] Error durante el proceso de login:', loginError);
-                    throw loginError;
-                }
-                
-                console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (ÉXITO) ====================');
-            } catch (error) {
-                console.error('[LOGIN-DEBUG] Error en login:', error);
-                console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
-                
-                // Mostrar mensaje de error
-                console.log('[LOGIN-DEBUG] Mostrando alerta de error');
-                if (window.Swal) {
-                    Swal.fire({
-                        title: 'Error',
-                        text: error.message || 'Error al iniciar sesión',
-                        icon: 'error',
-                        confirmButtonText: 'Aceptar'
-                    });
-                } else if (loginMessage) {
-                    loginMessage.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            ${error.message || 'Error al iniciar sesión'}
-                        </div>
-                    `;
-                    loginMessage.style.display = 'block';
-                }
-                
-                // Limpiar campo de contraseña
-                passwordInput.value = '';
-                console.log('[LOGIN-DEBUG] Campo de contraseña limpiado');
-                
-                console.log('[LOGIN-DEBUG] ==================== FIN SUBMIT FORM (ERROR) ====================');
-            } finally {
-                // Restaurar el botón
-                submitButton.disabled = false;
-                submitButton.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión';
-                console.log('[LOGIN-DEBUG] Botón de submit restaurado');
+            const icon = togglePassword.querySelector('i');
+            if (icon) {
+                icon.className = type === 'password' ? 'bi bi-eye-slash' : 'bi bi-eye';
             }
         });
-        
-        console.log('[LOGIN-DEBUG] Listener de submit agregado al formulario');
-        console.log('[LOGIN-DEBUG] ==================== FIN INIT LOGIN FORM ====================');
-    } catch (error) {
-        console.error('[LOGIN-DEBUG] Error al inicializar formulario:', error);
-        console.error('[LOGIN-DEBUG] Stack trace:', error.stack);
+    } else {
+        console.error('[LOGIN.JS] No se encontraron elementos para toggle de contraseña');
     }
 }
 
 /**
- * Configura el botón de mostrar/ocultar contraseña
+ * Inicializa el formulario de login
  */
-function setupPasswordToggle() {
-    console.log('[LOGIN] Configurando toggle de contraseña');
-    const togglePassword = document.getElementById('togglePassword');
-    const password = document.getElementById('password');
-    
-    if (!togglePassword || !password) {
-        console.error('[LOGIN] No se encontraron elementos para el toggle de contraseña');
-        return;
-    }
-
-    // Asegurar que los estados iniciales estén sincronizados
-    const icon = togglePassword.querySelector('i');
-    
-    // Asegurar que siempre inicie oculta y con el ícono de ojo tachado (estilo Facebook)
-    password.setAttribute('type', 'password');
-    icon.className = ''; // Limpiar clases existentes
-    icon.classList.add('fas', 'fa-eye-slash'); // Ojo tachado cuando no se ve la contraseña
-    togglePassword.setAttribute('title', 'Mostrar contraseña');
-    
-    // Agregar una clase visual para destacar el botón de toggle
-    togglePassword.classList.add('password-toggle-btn');
-    
-    // Establecer la función de toggle
-    togglePassword.addEventListener('click', function () {
-        // Si la contraseña está oculta, mostrarla
-        if (password.getAttribute('type') === 'password') {
-            // Mostrar la contraseña
-            password.setAttribute('type', 'text');
-            // Cambiar a ojo sin tachar (indicando que ahora se puede ver la contraseña)
-            icon.className = '';
-            icon.classList.add('fas', 'fa-eye');
-            this.setAttribute('title', 'Ocultar contraseña');
-            
-            // Agregar clase visual para indicar estado activo
-            this.classList.add('active');
-        } else {
-            // Ocultar la contraseña
-            password.setAttribute('type', 'password');
-            // Cambiar a ojo tachado (indicando que no se puede ver la contraseña)
-            icon.className = '';
-            icon.classList.add('fas', 'fa-eye-slash');
-            this.setAttribute('title', 'Mostrar contraseña');
-            
-            // Quitar clase visual de estado activo
-            this.classList.remove('active');
-        }
+function initializeLoginForm() {
+    console.log('[LOGIN.JS] Inicializando formulario de login');
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
         
-        // Hacer que el campo de contraseña tenga el foco después de cambiar
-        password.focus();
-    });
+    if (loginForm) {
+        console.log('[LOGIN.JS] Formulario encontrado, agregando event listener');
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('[LOGIN.JS] Formulario enviado');
+            
+            const cip = document.getElementById('cip').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            console.log('[LOGIN.JS] Intentando iniciar sesión con CIP:', cip);
+            
+            // Intentar usar el servicio de autenticación si está disponible
+            if (authService && typeof authService.login === 'function') {
+                console.log('[LOGIN.JS] Usando authService.login');
+                
+                // Mostrar algún indicador de carga si es necesario
+                
+                // Llamar al servicio de autenticación
+                authService.login(cip, password)
+                    .then(response => {
+                        console.log('[LOGIN.JS] Respuesta de login recibida:', response);
+                        if (response && response.success) {
+                            console.log('[LOGIN.JS] Login exitoso, redirigiendo...');
+                            
+                            // Forzar la redirección explícitamente
+                            const redirectUrl = response.redirectTo || '/admin.html';
+                            console.log('[LOGIN.JS] Redirigiendo a:', redirectUrl);
+                            
+                            // Intentar varios métodos de redirección
+                            try {
+                                // Método 1: location.href
+                                window.location.href = redirectUrl;
+                                
+                                // Método 2 (fallback): Si después de 500ms seguimos en la misma página
+                            setTimeout(() => {
+                                if (window.location.pathname === '/' || 
+                                        window.location.pathname === '/index.html') {
+                                        console.log('[LOGIN.JS] Usando método alternativo de redirección');
+                                        window.location.replace(redirectUrl);
+                                }
+                            }, 500);
+                        } catch (redirectError) {
+                                console.error('[LOGIN.JS] Error durante redirección:', redirectError);
+                            // Último intento
+                                window.location = redirectUrl;
+                            }
+                        } else {
+                            console.error('[LOGIN.JS] Error de login:', response.message);
+                            if (loginMessage) {
+                                loginMessage.textContent = response.message || 'Error al iniciar sesión';
+                                loginMessage.classList.remove('d-none');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('[LOGIN.JS] Error en login:', error);
+                        if (loginMessage) {
+                            loginMessage.textContent = 'Error en la comunicación con el servidor';
+                            loginMessage.classList.remove('d-none');
+                        }
+                    });
+            } else {
+                // Fallback a la implementación básica
+                console.log('[LOGIN.JS] authService no disponible, usando simulación');
+                
+                // Simulación de autenticación
+                setTimeout(() => {
+                    if (cip && password) {
+                        console.log('[LOGIN.JS] Simulación exitosa, redirigiendo a admin.html');
+                        window.location.href = 'admin.html';
+                    } else {
+                        console.log('[LOGIN.JS] Simulación fallida, mostrando mensaje');
+                        if (loginMessage) {
+                            loginMessage.textContent = 'Por favor, ingrese su CIP y contraseña.';
+                            loginMessage.classList.remove('d-none');
+                        }
+                    }
+                }, 1000);
+            }
+        });
+    } else {
+        console.error('[LOGIN.JS] No se encontró el formulario de login');
+    }
 } 

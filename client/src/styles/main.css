@@ -19,7 +19,7 @@
 
 /* Variables globales */
 :root {
-    --primary-color: #0f492e;
+    --primary-color: #0f492e; /* Verde OFICRI */
     --primary-color-rgb: 44, 62, 80; /* Valores RGB para primary-color */
     --secondary-color: #2dc76d;
     --success-color: #2ecc71;
@@ -49,15 +49,23 @@
     
     /* Variables de botones */
     --button-height: 38px;
+
+    /* Colores principales */
+    --oficri-green: #0f492e;
 }
 
 /* Estilos base */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+html, body {
+    height: 100%;
     margin: 0;
     padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
     background-color: var(--light-color);
     color: var(--dark-color);
+    line-height: 1.6;
 }
 
 a {
@@ -186,4 +194,128 @@ a:hover {
 .alert-success {
     background-color: var(--success-color);
     color: white;
+}
+
+/* Estilos principales de la aplicación */
+
+/* Estilos del sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar-sticky {
+    position: relative;
+    top: 0;
+    height: calc(100vh - 48px);
+    padding-top: .5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* Estilos de autenticación */
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--light-color);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Estilos de formularios */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(15, 73, 46, 0.25);
+}
+
+/* Estilos de botones */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #0a3522;
+    border-color: #08301e;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: #25a85b;
+    border-color: #219951;
+}
+
+/* Estilos de alertas */
+.alert {
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+/* Estilos de tablas */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.table th {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Estilos de navegación */
+.nav-link {
+    color: var(--dark-color);
+    transition: all 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--secondary-color);
+}
+
+.nav-link.active {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Márgenes */
+.mt-4 {
+    margin-top: 1.5rem !important;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Media queries */
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: static;
+        padding-top: 0;
+        height: auto;
+    }
+    
+    main {
+        padding-top: 16px;
+    }
 } 

@@ -39,23 +39,22 @@
 }
 */
 
-/*
+/* Estilos del sidebar - Se mantienen solo como referencia */
 .admin-sidebar {
-    grid-column: 1;
-    grid-row: 2;
-    background-color: var(--primary-color);
-    border-right: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 0;
     width: 250px;
+    background-color: var(--primary-color);
     color: white;
+    position: sticky;
+    top: 0;
+    height: 100vh;
     overflow-y: auto;
+    transition: all 0.3s ease;
 }
-*/
 
 .admin-sidebar .nav-link {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: rgba(255, 255, 255, 0.8);
     padding: 0.75rem 1rem;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     transition: all var(--transition-speed) ease;
     display: flex;
     align-items: center;
@@ -63,41 +62,31 @@
 }
 
 .admin-sidebar .nav-link:hover {
-    color: white !important;
+    color: white;
     background-color: rgba(255, 255, 255, 0.1);
 }
 
 .admin-sidebar .nav-link.active {
-    color: white !important;
-    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    background-color: var(--secondary-color);
 }
 
-/* Contenido principal */
-/*
-.admin-content {
-    grid-column: 2;
-    grid-row: 2;
-    padding: 2rem;
-    background-color: #f8f9fa;
-    overflow-y: auto;
-}
-*/
-
-/* Dashboard */
+/* Estilos para las estadísticas */
 .stats-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stat-card {
-    background-color: #fff;
+    background-color: white;
     border-radius: var(--border-radius);
     padding: 1.5rem;
-    box-shadow: var(--box-shadow);
-    text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .stat-card:hover {
@@ -106,22 +95,24 @@
 }
 
 .stat-card h3 {
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    color: var(--gray-color);
+    margin-bottom: 0.75rem;
+    font-weight: 500;
 }
 
 .stat-card .number {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: var(--secondary-color);
-    line-height: 1.2;
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
 }
 
 .stat-card .icon {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: var(--primary-color);
+    font-size: 1.5rem;
+    margin-top: auto;
+    color: var(--secondary-color);
+    align-self: flex-end;
 }
 
 /* Secciones de administración */
@@ -133,13 +124,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #dee2e6;
 }
 
 .admin-section-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
     color: var(--primary-color);
     margin: 0;
 }
@@ -152,69 +144,58 @@
 /* Tablas de administración */
 .admin-table {
     width: 100%;
-    margin-bottom: 2rem;
+    border-collapse: collapse;
 }
 
 .admin-table th {
-    background-color: #f8f9fa;
-    color: var(--primary-color);
-    font-weight: 600;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.75rem;
 }
 
 .admin-table .actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    width: 150px;
+    text-align: center;
 }
 
 .admin-table .btn-action {
     padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
+    margin: 0 0.125rem;
 }
 
 /* Formularios de administración */
 .admin-form {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 700px;
 }
 
 .admin-form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
 }
 
-/* Responsive */
+/* Media queries */
 @media (max-width: 992px) {
-    /*
-    .admin-layout {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr;
-    }
-    
-    .admin-header {
-        grid-column: 1;
-        grid-row: 1;
-    }
-    
     .admin-sidebar {
-        grid-column: 1;
-        grid-row: 2;
-        border-right: none;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        width: 100%;
+        width: 80px;
     }
     
-    .admin-content {
-        grid-column: 1;
-        grid-row: 3;
-        padding: 1.5rem;
+    .admin-sidebar .nav-text {
+        display: none;
     }
-    */
     
-    .admin-container {
-        flex-direction: column;
+    .admin-sidebar .nav-link {
+        padding: 0.75rem;
+        justify-content: center;
+    }
+    
+    .admin-sidebar .nav-link i {
+        margin-right: 0;
+    }
+    
+    .admin-main {
+        margin-left: 80px;
     }
 }
 
@@ -226,7 +207,10 @@
     .admin-section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+    }
+    
+    .admin-section-actions {
+        margin-top: 0.5rem;
     }
     
     .admin-table {
@@ -235,48 +219,345 @@
     }
     
     .admin-sidebar {
-        width: 100%;
+        position: absolute;
+        z-index: 1000;
+        transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .admin-main {
+        margin-left: 0;
     }
 }
 
-/* Contenedores de módulos específicos */
 .module-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
 }
 
-/* Específico para el módulo de usuarios */
 #usersContainer, 
 #rolesContainer, 
 #areasContainer, 
-#documentsContainer, 
-#auditContainer {
-    width: 100%;
-    min-height: 100%;
-    padding: 1rem;
-    box-sizing: border-box;
+#configContainer,
+#rulesContainer,
+#logsContainer {
+    display: none;
 }
 
-/* Mejoras para el dashboard */
+#usersContainer.active,
+#rolesContainer.active,
+#areasContainer.active,
+#configContainer.active,
+#rulesContainer.active,
+#logsContainer.active {
+    display: block;
+}
+
 .dashboard-container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    padding: 20px;
+    background-color: #f5f5f5;
+    min-height: calc(100vh - 64px);
 }
 
 .dashboard-row {
     display: flex;
-    width: 100%;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
 }
 
-/* Asegurar que las tablas ocupen todo el ancho disponible */
 .table-responsive {
-    width: 100%;
-    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Estilos migrados desde admin.html */
+
+/* Estilos globales para evitar overflow */
+html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #f5f7fa !important; /* Fondo gris claro para el body */
+}
+
+/* Estilos adicionales para hacer coincidir con la imagen */
+header.navbar {
+    background-color: #0f492e !important; /* Verde oscuro en lugar de azul */
+    width: 100% !important;
+    max-width: 100% !important;
+    border-bottom: none !important;
+}
+
+.sidebar {
+    background-color: #0f492e;
+    color: white;
+    width: 280px !important; /* Sidebar más ancho */
+}
+
+.sidebar-header h5 {
+    margin-left: 16px;
+}
+
+/* Sobreescribiendo algunos estilos de stat-card */
+.stat-card {
+    text-align: center;
+    padding: 20px;
+    border-top: 4px solid #0f492e;
+    height: 100%;
+    margin-bottom: 20px;
+}
+
+.stat-card h3 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #0f492e;
+    text-transform: uppercase;
+}
+
+.stat-card .number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #0f492e;
+    margin-bottom: 10px;
+}
+
+.admin-section-title {
+    margin-top: 20px;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.btn-actualizar {
+    background-color: #0f492e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+.module-container {
+    background-color: white;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.menu-items .nav-link {
+    border-radius: 0;
+    padding-left: 16px;
+    color: rgba(255,255,255,0.8) !important;
+}
+
+.menu-items .nav-link.active {
+    background-color: rgba(255,255,255,0.2);
+    color: white !important;
+}
+
+.menu-items .nav-link:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: white !important;
+}
+
+.nav-link-logout {
+    color: white !important;
+}
+
+.stats-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.activity-container {
+    margin-top: 30px;
+}
+
+.text-muted {
+    color: #666;
+}
+
+/* Estilo para líneas divisorias en tarjetas */
+.card-divider {
+    height: 4px;
+    background-color: #0f492e;
+    margin-bottom: 15px;
+}
+
+/* Estilos para el botón hamburguesa */
+#menuToggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+}
+
+/* Añadir un indicador visual para saber si el botón está activo */
+#menuToggle.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+/* CORRECCIÓN: Sobreescribir los estilos de Bootstrap para el sidebar */
+#sidebarMenu {
+    position: fixed !important;
+    top: 64px !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    height: calc(100vh - 64px) !important;
+    overflow-y: auto !important;
+    background-color: #0f492e !important;
+    z-index: 1000 !important;
+    transition: transform 0.3s ease !important;
+    transform: translateX(-280px) !important; /* Iniciar oculto */
+    border-top: none !important;
+}
+
+/* Cuando sidebar está visible */
+#sidebarMenu.show {
+    transform: translateX(0) !important;
+}
+
+/* Asegurar que el contenido principal ocupe todo el ancho cuando sidebar oculto */
+main {
+    width: 100% !important;
+    transition: all 0.3s ease !important;
+    background-color: #f5f7fa; /* Fondo para el contenido principal */
+    margin: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+/* Contenido principal y columnas */
+.container-fluid {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+.row {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Eliminar cualquier padding o margen que pueda causar el patrón púrpura */
+#mainContent {
+    max-width: 100% !important;
+    padding-right: 0 !important;
+}
+
+/* Asegurar que las tarjetas no excedan el ancho disponible */
+.row.mb-4 {
+    margin-right: 0 !important;
+    width: 100% !important;
+}
+
+/* Evitar que Bootstrap colapse el sidebar en desktop */
+@media (min-width: 769px) {
+    #sidebarMenu.collapse:not(.show) {
+        display: block !important;
+        transform: translateX(-280px) !important;
+    }
+    
+    #sidebarMenu.show {
+        transform: translateX(0) !important;
+    }
+    
+    /* Ajustar el contenido principal cuando sidebar visible */
+    body.sidebar-visible main {
+        width: calc(100% - 280px) !important;
+        margin-left: 280px !important;
+        min-width: unset !important;
+    }
+}
+
+/* Ajustar comportamiento en móvil */
+@media (max-width: 768px) {
+    #sidebarMenu {
+        width: 100% !important;
+        transform: translateX(-100%) !important;
+    }
+    
+    #sidebarMenu.show {
+        transform: translateX(0) !important;
+    }
+    
+    /* El contenido principal siempre ocupa todo el ancho en móvil */
+    main {
+        width: 100% !important;
+        margin-left: 0 !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+    
+    /* Ajustar tamaño de fuentes y espaciado en móvil */
+    .stat-card h3 {
+        font-size: 0.85rem !important;
+    }
+    
+    .stat-card .number {
+        font-size: 2.5rem !important;
+    }
+    
+    /* Reducir padding en contenedores */
+    .module-container {
+        padding: 15px !important;
+    }
+    
+    /* Ajustar espaciado en filas y columnas */
+    .row {
+        margin-left: -5px !important;
+        margin-right: -5px !important;
+    }
+    
+    .col-md-4, .col-md-6 {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+}
+
+/* Eliminar la barra naranja */
+header.navbar::after {
+    display: none !important;
+}
+
+.sidebar::before,
+.sidebar::after,
+#sidebarMenu::before,
+#sidebarMenu::after {
+    display: none !important;
+}
+
+/* Asegurar que el menú principal comience exactamente debajo del header */
+#sidebarMenu {
+    margin-top: 0 !important;
+    top: 64px !important;
+}
+
+/* Asegurar que el sidebar tenga el mismo color verde que el header sin bordes */
+#sidebarMenu, .sidebar {
+    background-color: #0f492e !important;
+    border: none !important;
+    box-shadow: none !important;
 } 

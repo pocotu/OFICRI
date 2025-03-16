@@ -1,67 +1,46 @@
 /**
- * Utilidades para el manejo centralizado de errores y logs
- * Este módulo proporciona funciones consistentes para el manejo de errores y logs en toda la aplicación
+ * Utilidades para el manejo centralizado de errores
+ * 
+ * Este módulo proporciona funciones consistentes para el manejo de errores
+ * en toda la aplicación, integrándose con el sistema de logging de seguridad.
  */
 
-// Niveles de log
-export const LOG_LEVEL = {
-    DEBUG: 0,
-    INFO: 1,
-    WARN: 2,
-    ERROR: 3
-};
+// Usar el mock de seguridad para evitar dependencias circulares durante la refactorización
+import { log, LOG_LEVEL, logSecurityEvent, SECURITY_EVENT } from './securityMock.js';
 
-// Nivel actual (puede cambiarse en tiempo de ejecución)
-let currentLogLevel = LOG_LEVEL.INFO;
-
-// Historial de errores para posible envío al servidor
-const errorHistory = [];
+// También exportamos estas constantes para que otros módulos puedan usarlas
+export { LOG_LEVEL, SECURITY_EVENT };
 
 /**
- * Establece el nivel de log actual
- * @param {number} level - Nivel de log (usar constantes LOG_LEVEL)
+ * Establece el nivel de log para depuración
+ * @param {string} level - Nivel de log a establecer
  */
-export const setLogLevel = (level) => {
-    currentLogLevel = level;
-};
+export function setLogLevel(level) {
+    console.log(`[ERROR-HANDLER] Estableciendo nivel de log: ${level}`);
+    // Esta función es un stub por ahora
+}
 
 /**
- * Función para generar logs con formato consistente
- * @param {string} module - Nombre del módulo que genera el log
- * @param {string} message - Mensaje a loggear
- * @param {Object} data - Datos adicionales (opcional)
- * @param {number} level - Nivel de log (usar constantes LOG_LEVEL)
+ * Función de log simplificada
+ * @param {string} module - Módulo que genera el log
+ * @param {string} message - Mensaje a registrar
+ * @param {Object} data - Datos adicionales
+ * @param {string} level - Nivel de log (opcional)
  */
-export const log = (module, message, data = null, level = LOG_LEVEL.INFO) => {
-    // Solo mostrar logs del nivel configurado o superior
-    if (level < currentLogLevel) return;
-    
-    const timestamp = new Date().toISOString();
-    const prefix = `[${timestamp}][${module}]`;
-    
-    switch (level) {
-        case LOG_LEVEL.DEBUG:
-            console.debug(`${prefix} ${message}`, data || '');
-            break;
-        case LOG_LEVEL.INFO:
-            console.info(`${prefix} ${message}`, data || '');
-            break;
-        case LOG_LEVEL.WARN:
-            console.warn(`${prefix} ${message}`, data || '');
-            break;
-        case LOG_LEVEL.ERROR:
-            console.error(`${prefix} ${message}`, data || '');
-            // Guardar en el historial para posible envío posterior
-            errorHistory.push({
-                timestamp,
-                module,
-                message,
-                data,
-                level: 'ERROR'
-            });
-            break;
-    }
-};
+export function logMessage(module, message, data = null, level = LOG_LEVEL.INFO) {
+    log(level, message, data, module);
+}
+
+// Alias más corto para logMessage
+export const logMsg = logMessage;
+
+// Otra forma de llamar al log para mantener compatibilidad
+export function logEvent(module, message, data = null, level = LOG_LEVEL.INFO) {
+    log(level, message, data, module);
+}
+
+// Permitir usar un alias más simple
+export { logMessage as log };
 
 /**
  * Maneja un error de forma consistente
@@ -69,77 +48,122 @@ export const log = (module, message, data = null, level = LOG_LEVEL.INFO) => {
  * @param {Error} error - Objeto de error
  * @param {string} context - Contexto donde ocurrió el error
  * @param {boolean} showToUser - Si se debe mostrar al usuario
+ * @returns {boolean} - false para facilitar el manejo en los llamadores
  */
 export const handleError = (module, error, context = '', showToUser = false) => {
-    // Loggear el error
-    log(
+  // Registrar error en el sistema de logging
+  log(
+    LOG_LEVEL.ERROR,
+    `Error en ${context}: ${error.message}`,
+    { stack: error.stack, originalError: error },
+    module
+  );
+  
+  // Registrar como evento de seguridad si parece ser un error relacionado con seguridad
+  if (
+    error.message.includes('permiso') ||
+    error.message.includes('autenticación') ||
+    error.message.includes('autorización') ||
+    error.message.includes('token') ||
+    error.status === 401 ||
+    error.status === 403
+  ) {
+    logSecurityEvent(
+      SECURITY_EVENT.PERMISSION_ERROR,
+      {
         module,
-        `Error en ${context}: ${error.message}`,
-        { stack: error.stack },
-        LOG_LEVEL.ERROR
+        context,
+        message: error.message,
+        status: error.status
+      }
     );
-    
-    // Mostrar al usuario si es necesario
-    if (showToUser) {
-        showErrorToUser(error.message);
-    }
-    
-    // Devolver false para facilitar el manejo en los llamadores
-    return false;
+  }
+  
+  // Mostrar al usuario si es necesario
+  if (showToUser) {
+    showErrorToUser(error.message);
+  }
+  
+  // Devolver false para facilitar el manejo en los llamadores
+  return false;
 };
 
 /**
- * Muestra un error al usuario (usando SweetAlert2 si está disponible)
+ * Muestra un error al usuario de manera amigable
  * @param {string} message - Mensaje de error
+ * @param {string} title - Título del error (opcional)
  */
-export const showErrorToUser = (message) => {
-    // Usar SweetAlert2 si está disponible, o fallback a alert
-    if (window.Swal) {
-        window.Swal.fire({
-            title: 'Error',
-            text: message,
-            icon: 'error',
-            confirmButtonText: 'Aceptar'
-        });
-    } else {
-        alert(`Error: ${message}`);
-    }
+export const showErrorToUser = (message, title = 'Error') => {
+  // Usar SweetAlert2 si está disponible, o fallback a alert
+  if (window.Swal) {
+    window.Swal.fire({
+      title: title,
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'Aceptar'
+    });
+  } else {
+    alert(`${title}: ${message}`);
+  }
 };
 
 /**
- * Envía los errores acumulados al servidor
- * @param {string} endpoint - Endpoint para enviar los errores
- * @returns {Promise<boolean>} - true si se enviaron con éxito
+ * Crea un manejador de errores para un módulo específico
+ * @param {string} moduleName - Nombre del módulo
+ * @returns {Object} - Objeto con funciones de manejo de errores
  */
-export const sendErrorsToServer = async (endpoint = '/api/logs') => {
-    if (errorHistory.length === 0) return true;
+export const createErrorHandler = (moduleName) => {
+  return {
+    /**
+     * Maneja un error para este módulo específico
+     * @param {Error} error - Error a manejar
+     * @param {string} context - Contexto adicional
+     * @param {boolean} showToUser - Si mostrar al usuario
+     * @returns {boolean} - false para facilitar el manejo
+     */
+    handle: (error, context = '', showToUser = false) => {
+      return handleError(moduleName, error, context, showToUser);
+    },
     
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(errorHistory)
-        });
-        
-        if (response.ok) {
-            // Limpiar errores enviados
-            errorHistory.length = 0;
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error al enviar logs al servidor:', error);
-        return false;
+    /**
+     * Registra un mensaje de error para este módulo
+     * @param {string} message - Mensaje a registrar
+     * @param {Object} data - Datos adicionales
+     */
+    logError: (message, data = {}) => {
+      log(LOG_LEVEL.ERROR, message, data, moduleName);
+    },
+    
+    /**
+     * Registra un mensaje de advertencia para este módulo
+     * @param {string} message - Mensaje a registrar
+     * @param {Object} data - Datos adicionales
+     */
+    logWarning: (message, data = {}) => {
+      log(LOG_LEVEL.WARN, message, data, moduleName);
+    },
+    
+    /**
+     * Registra un mensaje informativo para este módulo
+     * @param {string} message - Mensaje a registrar
+     * @param {Object} data - Datos adicionales
+     */
+    logInfo: (message, data = {}) => {
+      log(LOG_LEVEL.INFO, message, data, moduleName);
+    },
+    
+    /**
+     * Muestra un error al usuario
+     * @param {string} message - Mensaje de error
+     */
+    showError: (message) => {
+      showErrorToUser(message);
     }
+  };
 };
 
 export default {
-    LOG_LEVEL,
-    setLogLevel,
-    log,
-    handleError,
-    showErrorToUser,
-    sendErrorsToServer
+  handleError,
+  showErrorToUser,
+  createErrorHandler
 }; 

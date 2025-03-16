@@ -1,141 +1,145 @@
 /**
- * Módulo de navegación
- * Proporciona funciones para la navegación y redirección basada en roles y permisos
+ * Sistema de Navegación - OFICRI
+ * Maneja la navegación entre páginas y redirecciones basadas en permisos
  */
 
-import AuthService from '../services/auth.service.js';
-import * as sessionManager from '../services/sessionManager.js';
-import * as permissionUtils from './permissions.js';
+import { securityLogger } from '../services/security/logging.js';
+import { securityUtils } from '../services/security/securityUtils.js';
 
-/**
- * Verifica si el usuario está autenticado
- * @returns {Object|null} - Objeto de usuario si está autenticado, null en caso contrario
- */
-export const getAuthenticatedUser = () => {
-    if (!sessionManager.haySesionActiva()) {
-        return null;
-    }
-    return sessionManager.obtenerUsuarioActual();
-};
-
-/**
- * Verifica la autenticación y redirige si es necesario
- * @param {number|null} requiredRoleId - ID del rol requerido (opcional)
- * @returns {Object|null} - Objeto de usuario si está autenticado y tiene el rol requerido, null en caso contrario
- */
-export const checkAuth = (requiredRoleId = null) => {
-    const user = getAuthenticatedUser();
-    
-    if (!user) {
-        redirectToLogin();
-        return null;
-    }
-    
-    if (requiredRoleId !== null && user.IDRol !== requiredRoleId) {
-        redirectBasedOnRole(user);
-        return null;
-    }
-    
-    return user;
-};
-
-/**
- * Redirige al usuario a la página de login
- */
-export const redirectToLogin = () => {
-    window.location.href = '/';
-};
-
-/**
- * Redirige al usuario según su rol
- * @param {Object} user - Objeto de usuario
- */
-export const redirectBasedOnRole = (user) => {
-    if (!user) {
-        redirectToLogin();
-        return;
-    }
-    
-    window.location.href = permissionUtils.getRedirectPath(user);
-};
-
-/**
- * Carga un módulo dinámicamente
- * @param {string} modulePath - Ruta del módulo a cargar
- * @returns {Promise<any>} - Promesa que resuelve al módulo cargado
- */
-export const loadModule = async (modulePath) => {
-    try {
-        const module = await import(modulePath);
-        return module.default || module;
-    } catch (error) {
-        console.error(`Error al cargar el módulo ${modulePath}:`, error);
-        throw error;
+// Mapeo de rutas por rol
+const ROUTES = {
+    ADMIN: {
+        default: '/admin.html',
+        allowed: ['/admin.html', '/mesaPartes.html']
+    },
+    MESA_PARTES: {
+        default: '/mesaPartes.html',
+        allowed: ['/mesaPartes.html']
+    },
+    AREA: {
+        default: '/mesaPartes.html',
+        allowed: ['/mesaPartes.html']
     }
 };
 
 /**
- * Maneja la navegación entre páginas
- * @param {Event} event - Evento de clic
+ * Verifica si una ruta está permitida para el usuario actual
+ * @param {string} route - Ruta a verificar
+ * @param {number} userPermissions - Permisos del usuario
+ * @returns {boolean} - Si la ruta está permitida
  */
-export const handleNavigation = (event) => {
-    const target = event.target.closest('a[data-route]');
-    if (!target) return;
-    
-    event.preventDefault();
-    const route = target.getAttribute('data-route');
-    navigateTo(route);
-};
+export function isRouteAllowed(route, userPermissions) {
+    const role = getHighestRole(userPermissions);
+    return ROUTES[role]?.allowed.includes(route) || false;
+}
 
 /**
- * Navega a una ruta específica
- * @param {string} route - Ruta a la que navegar
+ * Obtiene el rol más alto del usuario basado en sus permisos
+ * @param {number} userPermissions - Permisos del usuario
+ * @returns {string} - Rol más alto del usuario
  */
-export const navigateTo = (route) => {
-    history.pushState(null, null, route);
-    handleRoute();
-};
+function getHighestRole(userPermissions) {
+    // Si tiene todos los permisos, es ADMIN
+    if (userPermissions === 255) return 'ADMIN';
+    
+    // Si tiene permisos de Mesa de Partes
+    if ((userPermissions & 89) === 89) return 'MESA_PARTES';
+    
+    // Si tiene permisos de Área
+    if ((userPermissions & 89) === 89) return 'AREA';
+    
+    return 'GUEST';
+}
 
 /**
- * Maneja la ruta actual
+ * Redirige al usuario a la página por defecto según su rol
+ * @param {number} userPermissions - Permisos del usuario
  */
-export const handleRoute = async () => {
-    const path = window.location.pathname;
-    const contentContainer = document.getElementById('content');
+export function redirectToDefault(userPermissions) {
+    const role = getHighestRole(userPermissions);
+    const defaultRoute = ROUTES[role]?.default || '/index.html';
     
-    if (!contentContainer) {
-        console.error('No se encontró el contenedor de contenido');
-        return;
-    }
+    securityLogger.logSecurityEvent('NAVIGATION', {
+        action: 'REDIRECT_TO_DEFAULT',
+        role,
+        route: defaultRoute
+    });
     
-    try {
-        // Aquí se cargaría el contenido según la ruta
-        // Este es un ejemplo simplificado
-        let moduleContent = '';
+    window.location.href = defaultRoute;
+}
+
+/**
+ * Navega a una ruta específica si está permitida
+ * @param {string} route - Ruta a navegar
+ * @param {number} userPermissions - Permisos del usuario
+ */
+export function navigateTo(route, userPermissions) {
+    if (!isRouteAllowed(route, userPermissions)) {
+        securityLogger.logSecurityEvent('SECURITY_VIOLATION', {
+            action: 'UNAUTHORIZED_NAVIGATION',
+            attemptedRoute: route,
+            userPermissions
+        });
         
-        if (path.includes('/admin')) {
-            const adminModule = await loadModule('../pages/admin/admin.js');
-            moduleContent = await adminModule.render();
-        } else if (path.includes('/mesaPartes')) {
-            const mesaPartesModule = await loadModule('../pages/mesaPartes/mesaPartes.js');
-            moduleContent = await mesaPartesModule.render();
-        } else if (path.includes('/area')) {
-            const areaModule = await loadModule('../pages/area/area.js');
-            moduleContent = await areaModule.render();
+        showError('No tiene permisos para acceder a esta página');
+        return;
+    }
+    
+    securityLogger.logSecurityEvent('NAVIGATION', {
+        action: 'NAVIGATE_TO',
+        route,
+        userPermissions
+    });
+    
+    window.location.href = route;
+}
+
+/**
+ * Verifica la sesión actual y redirige si es necesario
+ * @returns {Promise<boolean>} - Si la sesión es válida
+ */
+export async function checkSession() {
+    try {
+        const session = await securityUtils.getCurrentSession();
+        if (!session || !session.isValid) {
+            securityLogger.logSecurityEvent('SESSION_EXPIRED', {
+                action: 'CHECK_SESSION',
+                result: 'EXPIRED'
+            });
+            
+            window.location.href = '/index.html';
+            return false;
         }
         
-        contentContainer.innerHTML = moduleContent;
+        return true;
     } catch (error) {
-        console.error('Error al manejar la ruta:', error);
-        contentContainer.innerHTML = '<div class="alert alert-danger">Error al cargar el contenido</div>';
+        securityLogger.logSecurityEvent('ERROR', {
+            action: 'CHECK_SESSION',
+            error: error.message
+        });
+        
+        window.location.href = '/index.html';
+        return false;
     }
-};
+}
 
 /**
- * Inicializa los eventos de navegación
+ * Muestra un mensaje de error al usuario
+ * @param {string} message - Mensaje de error
  */
-export const initNavigation = () => {
-    window.addEventListener('popstate', handleRoute);
-    document.addEventListener('click', handleNavigation);
-    handleRoute();
-}; 
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+    errorDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const container = document.querySelector('.container') || document.body;
+    container.insertBefore(errorDiv, container.firstChild);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
+} 

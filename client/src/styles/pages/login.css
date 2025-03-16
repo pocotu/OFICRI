@@ -1,14 +1,36 @@
 /* login.css - Estilos para la página de login */
 
 /* Estilos para el AuthHeader */
-.auth-header {
-    background-color: var(--primary-color); /* Usar variable global en lugar de color directo */
-    padding: 10px 20px;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
+.auth-header, .oficri-header {
+    background-color: var(--oficri-green, #0f492e) !important;
+    color: white !important;
+    padding: 15px 20px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    min-height: 80px !important;
+    position: relative !important;
+    z-index: 1000 !important;
+}
+
+.oficri-logo {
+    height: 60px !important;
+    width: auto !important;
+    display: block !important;
+    margin: 0 !important;
+}
+
+.oficri-title {
+    font-size: 24px !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    flex-grow: 1 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1.5px !important;
+    color: white !important;
+    margin: 0 15px !important;
 }
 
 .auth-header-content {
@@ -70,15 +92,20 @@
 }
 
 /* Estilos para el AuthFooter */
-.auth-footer {
-    background-color: var(--primary-color); /* Usar variable global en lugar de color directo */
-    padding: 10px 20px;
-    width: 100%;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    z-index: 1000;
-    text-align: center;
+.auth-footer, .oficri-footer {
+    background-color: var(--oficri-green, #0f492e) !important;
+    color: white !important;
+    padding: 15px !important;
+    text-align: center !important;
+    font-size: 16px !important;
+    width: 100% !important;
+    box-shadow: 0 -4px 8px rgba(0,0,0,0.15) !important;
+    min-height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    z-index: 1000 !important;
 }
 
 .auth-footer-content {
@@ -368,4 +395,168 @@
     border-bottom-right-radius: var(--border-radius) !important;
     border-left: 0;
     border-color: #ced4da !important;
+}
+
+/* Estilos específicos para el formulario de login */
+body {
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f7fa;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+}
+
+.page-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    background-color: #f5f7fa;
+}
+
+.login-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    position: relative;
+}
+
+.login-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    text-align: center;
+    width: 100%;
+}
+
+.login-logo {
+    width: 100px;
+    height: auto;
+    margin-bottom: 15px;
+}
+
+.login-title-container {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.login-title {
+    color: var(--oficri-green);
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+}
+
+.login-form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.login-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.login-input-group {
+    position: relative;
+    display: flex;
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.input-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    background-color: white;
+    color: #333;
+}
+
+.login-input {
+    flex: 1;
+    height: 40px;
+    padding: 8px 12px;
+    border: none;
+    font-size: 14px;
+    background-color: white;
+}
+
+.login-input:focus {
+    outline: none;
+}
+
+.password-toggle {
+    background: none;
+    border: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    color: #666;
+    cursor: pointer;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-button {
+    background-color: var(--oficri-green);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    width: 100%;
+    font-weight: normal;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.login-button:hover {
+    background-color: #0a3420;
+}
+
+.login-button i {
+    margin-right: 8px;
+}
+
+/* Reglas adicionales para asegurar visibilidad */
+#authHeaderContainer, #authFooterContainer {
+    color: white !important;
+}
+
+#authHeaderContainer .oficri-title {
+    color: white !important;
+    display: block !important;
+    visibility: visible !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+}
+
+#authHeaderContainer .text-white {
+    color: white !important;
+    display: inline-block !important;
+    visibility: visible !important;
+}
+
+#authFooterContainer div {
+    color: white !important;
+    visibility: visible !important;
 } 

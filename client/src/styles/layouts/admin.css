@@ -168,4 +168,47 @@ body, html {
         width: 100%;
         padding: 1rem;
     }
+
+    #sidebarMenu {
+        position: fixed;
+        top: 64px;
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 64px);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 999;
+        overflow-y: auto;
+    }
+    
+    #sidebarMenu.show {
+        transform: translateX(0) !important;
+        display: block !important;
+    }
+    
+    .admin-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+@media (min-width: 769px) {
+    #sidebarMenu {
+        display: block !important;
+        position: fixed;
+        top: 64px;
+        left: 0;
+        width: 280px;
+        height: calc(100vh - 64px);
+        z-index: 999;
+        overflow-y: auto;
+    }
+    
+    #sidebarMenu:not(.show) {
+        display: block !important;
+    }
+    
+    #sidebarMenu.collapse:not(.show) {
+        display: block !important;
+    }
 } 
