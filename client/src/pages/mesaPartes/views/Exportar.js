@@ -38,140 +38,148 @@ export class Exportar {
 
             // Contenido principal
             container.innerHTML = `
-                <div class="container-fluid px-4">
-                    <h2 class="mt-4 mb-4">Exportar Reportes</h2>
+                <div class="main-wrapper" style="position:relative; width:100%; overflow:hidden;">
+                    <style>
+                        /* Estilos específicos para esta vista */
+                        .main-wrapper *[style*="color: #084298;"] { display: none !important; }
+                        .main-wrapper *[style*="background-color: #cfe2ff;"] { display: none !important; }
+                    </style>
+                
+                    <h1 class="text-center fw-bold my-4" style="color:#084298;">Exportar Reportes</h1>
                     
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-file-alt me-1"></i>
-                                    Tipo de Reporte
+                    <div class="container-fluid px-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-file-alt me-1"></i>
+                                        Tipo de Reporte
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="list-group" id="tiposReporte">
+                                            <a href="#" class="list-group-item list-group-item-action active" data-tipo="documentos">
+                                                <i class="fas fa-file-contract me-2"></i>
+                                                Documentos Recibidos
+                                                <small class="d-block text-muted">Listado de todos los documentos recibidos en un periodo</small>
+                                            </a>
+                                            <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-pendientes">
+                                                <i class="fas fa-clipboard-list me-2"></i>
+                                                Documentos Pendientes
+                                                <small class="d-block text-muted">Documentos en proceso de atención</small>
+                                            </a>
+                                            <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-completados">
+                                                <i class="fas fa-clipboard-check me-2"></i>
+                                                Documentos Completados
+                                                <small class="d-block text-muted">Documentos que han completado su procesamiento</small>
+                                            </a>
+                                            <a href="#" class="list-group-item list-group-item-action" data-tipo="derivaciones">
+                                                <i class="fas fa-exchange-alt me-2"></i>
+                                                Derivaciones
+                                                <small class="d-block text-muted">Movimientos de documentos entre áreas</small>
+                                            </a>
+                                            <a href="#" class="list-group-item list-group-item-action" data-tipo="estadisticas">
+                                                <i class="fas fa-chart-pie me-2"></i>
+                                                Estadísticas
+                                                <small class="d-block text-muted">Resumen estadístico de documentos</small>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="list-group" id="tiposReporte">
-                                        <a href="#" class="list-group-item list-group-item-action active" data-tipo="documentos">
-                                            <i class="fas fa-file-contract me-2"></i>
-                                            Documentos Recibidos
-                                            <small class="d-block text-muted">Listado de todos los documentos recibidos en un periodo</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-pendientes">
-                                            <i class="fas fa-clipboard-list me-2"></i>
-                                            Documentos Pendientes
-                                            <small class="d-block text-muted">Documentos en proceso de atención</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-completados">
-                                            <i class="fas fa-clipboard-check me-2"></i>
-                                            Documentos Completados
-                                            <small class="d-block text-muted">Documentos que han completado su procesamiento</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="derivaciones">
-                                            <i class="fas fa-exchange-alt me-2"></i>
-                                            Derivaciones
-                                            <small class="d-block text-muted">Movimientos de documentos entre áreas</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="estadisticas">
-                                            <i class="fas fa-chart-pie me-2"></i>
-                                            Estadísticas
-                                            <small class="d-block text-muted">Resumen estadístico de documentos</small>
-                                        </a>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-file-export me-1"></i>
+                                        Formato de Exportación
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoExcel" value="excel" checked>
+                                                    <label class="form-check-label" for="formatoExcel">
+                                                        <i class="fas fa-file-excel text-success me-1"></i> Excel
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoPdf" value="pdf">
+                                                    <label class="form-check-label" for="formatoPdf">
+                                                        <i class="fas fa-file-pdf text-danger me-1"></i> PDF
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-file-export me-1"></i>
-                                    Formato de Exportación
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoExcel" value="excel" checked>
-                                                <label class="form-check-label" for="formatoExcel">
-                                                    <i class="fas fa-file-excel text-success me-1"></i> Excel
-                                                </label>
+                            <div class="col-md-8">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-filter me-1"></i>
+                                        Filtros del Reporte
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="formFiltros" class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="fechaDesde" class="form-label">Fecha Desde</label>
+                                                <input type="date" class="form-control" id="fechaDesde" value="${this.filtros.fechaDesde}">
                                             </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoPdf" value="pdf">
-                                                <label class="form-check-label" for="formatoPdf">
-                                                    <i class="fas fa-file-pdf text-danger me-1"></i> PDF
-                                                </label>
+                                            <div class="col-md-6">
+                                                <label for="fechaHasta" class="form-label">Fecha Hasta</label>
+                                                <input type="date" class="form-control" id="fechaHasta" value="${this.filtros.fechaHasta}">
                                             </div>
-                                        </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label for="selectEstado" class="form-label">Estado</label>
+                                                <select class="form-select" id="selectEstado">
+                                                    <option value="">Todos</option>
+                                                    <option value="RECIBIDO">Recibido</option>
+                                                    <option value="EN_PROCESO">En Proceso</option>
+                                                    <option value="DERIVADO">Derivado</option>
+                                                    <option value="COMPLETADO">Completado</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label for="selectArea" class="form-label">Área</label>
+                                                <select class="form-select" id="selectArea">
+                                                    <option value="">Todas</option>
+                                                    <option value="MESA_PARTES">Mesa de Partes</option>
+                                                    <option value="BALISTICA">Departamento de Balística</option>
+                                                    <option value="LAB_ADN">Laboratorio de ADN</option>
+                                                    <option value="PERICIAS">Departamento de Pericias</option>
+                                                    <option value="DOCUMENTOSCOPIA">Departamento de Documentoscopía</option>
+                                                    <option value="LAB_QUIMICO">Laboratorio Químico</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div id="filtrosAdicionales">
+                                                <!-- Filtros adicionales según el tipo de reporte seleccionado -->
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-8">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-filter me-1"></i>
-                                    Filtros del Reporte
-                                </div>
-                                <div class="card-body">
-                                    <form id="formFiltros" class="row g-3">
-                                        <div class="col-md-6">
-                                            <label for="fechaDesde" class="form-label">Fecha Desde</label>
-                                            <input type="date" class="form-control" id="fechaDesde" value="${this.filtros.fechaDesde}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="fechaHasta" class="form-label">Fecha Hasta</label>
-                                            <input type="date" class="form-control" id="fechaHasta" value="${this.filtros.fechaHasta}">
-                                        </div>
-                                        
-                                        <div class="col-md-6">
-                                            <label for="selectEstado" class="form-label">Estado</label>
-                                            <select class="form-select" id="selectEstado">
-                                                <option value="">Todos</option>
-                                                <option value="RECIBIDO">Recibido</option>
-                                                <option value="EN_PROCESO">En Proceso</option>
-                                                <option value="DERIVADO">Derivado</option>
-                                                <option value="COMPLETADO">Completado</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div class="col-md-6">
-                                            <label for="selectArea" class="form-label">Área</label>
-                                            <select class="form-select" id="selectArea">
-                                                <option value="">Todas</option>
-                                                <option value="MESA_PARTES">Mesa de Partes</option>
-                                                <option value="BALISTICA">Departamento de Balística</option>
-                                                <option value="LAB_ADN">Laboratorio de ADN</option>
-                                                <option value="PERICIAS">Departamento de Pericias</option>
-                                                <option value="DOCUMENTOSCOPIA">Departamento de Documentoscopía</option>
-                                                <option value="LAB_QUIMICO">Laboratorio Químico</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div id="filtrosAdicionales">
-                                            <!-- Filtros adicionales según el tipo de reporte seleccionado -->
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-eye me-1"></i>
-                                    Vista Previa
-                                </div>
-                                <div class="card-body">
-                                    <div id="vistaPrevia" class="report-preview">
-                                        ${this.renderVistaPrevia()}
+                                
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-eye me-1"></i>
+                                        Vista Previa
                                     </div>
-                                </div>
-                                <div class="card-footer text-end">
-                                    <button type="button" class="btn btn-secondary me-2" id="btnActualizar">
-                                        <i class="fas fa-sync-alt me-1"></i>Actualizar Vista Previa
-                                    </button>
-                                    <button type="button" class="btn btn-primary" id="btnExportar">
-                                        <i class="fas fa-file-export me-1"></i>Exportar Reporte
-                                    </button>
+                                    <div class="card-body">
+                                        <div id="vistaPrevia" class="report-preview">
+                                            ${this.renderVistaPrevia()}
+                                        </div>
+                                    </div>
+                                    <div class="card-footer text-end">
+                                        <button type="button" class="btn btn-secondary me-2" id="btnActualizar">
+                                            <i class="fas fa-sync-alt me-1"></i>Actualizar Vista Previa
+                                        </button>
+                                        <button type="button" class="btn btn-primary" id="btnExportar">
+                                            <i class="fas fa-file-export me-1"></i>Exportar Reporte
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

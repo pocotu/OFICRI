@@ -44,128 +44,130 @@ export class ActualizacionExpediente {
 
             // Contenido principal
             container.innerHTML = `
-                <div class="container-fluid px-4">
-                    <h2 class="mt-4 mb-4">Actualización de Expediente</h2>
+                <div class="main-wrapper" style="position:relative;">
+                    <h1 class="text-center fw-bold my-4" style="color:#084298;">Actualización de Expediente</h1>
                     
-                    <div class="row">
-                        <div class="col-md-5">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-search me-1"></i>
-                                    Buscar Expediente
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="searchExpediente" class="form-label">Número de Expediente</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="searchExpediente" placeholder="Ingrese número de expediente">
-                                            <button class="btn btn-primary" id="btnBuscarExpediente">
-                                                <i class="fas fa-search"></i>
-                                            </button>
-                                        </div>
+                    <div class="container-fluid px-4">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-search me-1"></i>
+                                        Buscar Expediente
                                     </div>
-                                    
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Nº Expediente</th>
-                                                    <th>Asunto</th>
-                                                    <th>Fecha</th>
-                                                    <th>Acción</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="expedientesTable">
-                                                ${this.renderTablaExpedientes()}
-                                            </tbody>
-                                        </table>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="searchExpediente" class="form-label">Número de Expediente</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="searchExpediente" placeholder="Ingrese número de expediente">
+                                                <button class="btn btn-primary" id="btnBuscarExpediente">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Nº Expediente</th>
+                                                        <th>Asunto</th>
+                                                        <th>Fecha</th>
+                                                        <th>Acción</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="expedientesTable">
+                                                    ${this.renderTablaExpedientes()}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="col-md-7">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-edit me-1"></i>
-                                    Actualizar Datos del Expediente
-                                </div>
-                                <div class="card-body">
-                                    <form id="formActualizacion">
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="numeroExpediente" class="form-label">Número de Expediente</label>
-                                                <input type="text" class="form-control" id="numeroExpediente" disabled>
+                            
+                            <div class="col-md-7">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-edit me-1"></i>
+                                        Actualizar Datos del Expediente
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="formActualizacion">
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="numeroExpediente" class="form-label">Número de Expediente</label>
+                                                    <input type="text" class="form-control" id="numeroExpediente" disabled>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="fechaRecepcion" class="form-label">Fecha de Recepción</label>
+                                                    <input type="date" class="form-control" id="fechaRecepcion">
+                                                </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <label for="fechaRecepcion" class="form-label">Fecha de Recepción</label>
-                                                <input type="date" class="form-control" id="fechaRecepcion">
+                                            
+                                            <div class="mb-3">
+                                                <label for="remitente" class="form-label">Remitente</label>
+                                                <input type="text" class="form-control" id="remitente">
                                             </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="remitente" class="form-label">Remitente</label>
-                                            <input type="text" class="form-control" id="remitente">
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="asunto" class="form-label">Asunto</label>
-                                            <input type="text" class="form-control" id="asunto">
-                                        </div>
-                                        
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="tipoDocumento" class="form-label">Tipo de Documento</label>
-                                                <select class="form-select" id="tipoDocumento">
-                                                    <option value="">Seleccione...</option>
-                                                    <option value="OFICIO">Oficio</option>
-                                                    <option value="MEMORANDO">Memorando</option>
-                                                    <option value="INFORME">Informe</option>
-                                                    <option value="SOLICITUD">Solicitud</option>
-                                                    <option value="OTROS">Otros</option>
-                                                </select>
+                                            
+                                            <div class="mb-3">
+                                                <label for="asunto" class="form-label">Asunto</label>
+                                                <input type="text" class="form-control" id="asunto">
                                             </div>
-                                            <div class="col-md-6">
-                                                <label for="prioridad" class="form-label">Prioridad</label>
-                                                <select class="form-select" id="prioridad">
-                                                    <option value="NORMAL">Normal</option>
-                                                    <option value="URGENTE">Urgente</option>
-                                                    <option value="MUY_URGENTE">Muy Urgente</option>
-                                                </select>
+                                            
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="tipoDocumento" class="form-label">Tipo de Documento</label>
+                                                    <select class="form-select" id="tipoDocumento">
+                                                        <option value="">Seleccione...</option>
+                                                        <option value="OFICIO">Oficio</option>
+                                                        <option value="MEMORANDO">Memorando</option>
+                                                        <option value="INFORME">Informe</option>
+                                                        <option value="SOLICITUD">Solicitud</option>
+                                                        <option value="OTROS">Otros</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="prioridad" class="form-label">Prioridad</label>
+                                                    <select class="form-select" id="prioridad">
+                                                        <option value="NORMAL">Normal</option>
+                                                        <option value="URGENTE">Urgente</option>
+                                                        <option value="MUY_URGENTE">Muy Urgente</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="folios" class="form-label">Folios</label>
-                                                <input type="number" class="form-control" id="folios" min="1">
+                                            
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="folios" class="form-label">Folios</label>
+                                                    <input type="number" class="form-control" id="folios" min="1">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="estado" class="form-label">Estado</label>
+                                                    <select class="form-select" id="estado">
+                                                        <option value="RECIBIDO">Recibido</option>
+                                                        <option value="EN_PROCESO">En Proceso</option>
+                                                        <option value="DERIVADO">Derivado</option>
+                                                        <option value="COMPLETADO">Completado</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <label for="estado" class="form-label">Estado</label>
-                                                <select class="form-select" id="estado">
-                                                    <option value="RECIBIDO">Recibido</option>
-                                                    <option value="EN_PROCESO">En Proceso</option>
-                                                    <option value="DERIVADO">Derivado</option>
-                                                    <option value="COMPLETADO">Completado</option>
-                                                </select>
+                                            
+                                            <div class="mb-3">
+                                                <label for="observaciones" class="form-label">Observaciones</label>
+                                                <textarea class="form-control" id="observaciones" rows="3"></textarea>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="observaciones" class="form-label">Observaciones</label>
-                                            <textarea class="form-control" id="observaciones" rows="3"></textarea>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="archivoAdjunto" class="form-label">Adjuntar Archivo (opcional)</label>
-                                            <input class="form-control" type="file" id="archivoAdjunto">
-                                        </div>
-                                        
-                                        <div class="d-flex justify-content-end">
-                                            <button type="button" class="btn btn-secondary me-2" id="btnCancelar">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar Cambios</button>
-                                        </div>
-                                    </form>
+                                            
+                                            <div class="mb-3">
+                                                <label for="archivoAdjunto" class="form-label">Adjuntar Archivo (opcional)</label>
+                                                <input class="form-control" type="file" id="archivoAdjunto">
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-secondary me-2" id="btnCancelar">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar Cambios</button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>

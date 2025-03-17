@@ -34,62 +34,177 @@ export class Trazabilidad {
 
             // Contenido principal
             container.innerHTML = `
-                <div class="container-fluid px-4">
-                    <h2 class="mt-4 mb-4">Trazabilidad de Expedientes</h2>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-search me-1"></i>
-                                    Buscar Expediente
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="searchExpediente" class="form-label">Número de Expediente</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="searchExpediente" placeholder="Ingrese número de expediente">
-                                            <button class="btn btn-primary" id="btnBuscarExpediente">
-                                                <i class="fas fa-search"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Nº Expediente</th>
-                                                    <th>Fecha</th>
-                                                    <th>Acción</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="expedientesTable">
-                                                ${this.renderTablaExpedientes()}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="main-wrapper" style="position:relative; width:100%; overflow:hidden;">
+                    <style>
+                        /* Asegurar que todo el contenido principal ocupe el ancho total */
+                        .main-wrapper {
+                            width: 100% !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            max-width: 100% !important;
+                        }
                         
-                        <div class="col-md-8">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-route me-1"></i>
-                                    Historial del Expediente
-                                </div>
-                                <div class="card-body" id="historialContainer">
-                                    ${this.renderHistorialPlaceholder()}
-                                </div>
+                        /* Forzar a que todo div en el body que no sea parte de header, footer o nav se oculte */
+                        body > div:not(:has(header)):not(:has(footer)):not(:has(nav)):not(.main-wrapper):not(.main-wrapper *):not([role="alert"]) {
+                            display: none !important;
+                            width: 0 !important;
+                            height: 0 !important;
+                            visibility: hidden !important;
+                            opacity: 0 !important;
+                        }
+                        
+                        /* Eliminar todos los contenedores decorativos */
+                        body > div[class=""], 
+                        div:empty,
+                        div.container-fluid + div,
+                        div.container-fluid ~ div:not(.card),
+                        div[style*="background"],
+                        div[style*="background-image"],
+                        div[style*="background-color"],
+                        [style*="pattern"],
+                        [id*="pattern"],
+                        [class*="pattern"] {
+                            display: none !important;
+                            width: 0 !important;
+                            height: 0 !important;
+                            visibility: hidden !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            opacity: 0 !important;
+                        }
+                        
+                        /* Estilos específicos para elementos con fondos violeta/púrpura */
+                        div[style*="purple"], 
+                        div[style*="violet"],
+                        div[style*="#8a2be2"],
+                        div[style*="#a020f0"],
+                        div[style*="#9370db"],
+                        div[style*="#dda0dd"],
+                        div[style*="rgba(138"],
+                        div[style*="rgba(148"],
+                        div[style*="rgba(128"],
+                        div[style*="linear-gradient"],
+                        div[style*="radial-gradient"] { 
+                            display: none !important;
+                            width: 0 !important;
+                            height: 0 !important;
+                            visibility: hidden !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            opacity: 0 !important;
+                            max-width: 0 !important;
+                        }
+                        
+                        /* Asegurar que nuestro contenedor principal ocupe todo el ancho */
+                        .main-wrapper .container-fluid {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            margin: 0 auto !important;
+                            padding: 0 !important;
+                        }
+                        
+                        /* Hacer que la tarjeta ocupe todo el ancho disponible */
+                        .main-wrapper .card {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                        }
+                        
+                        /* Estilos para el historial */
+                        .timeline {
+                            margin-top: 20px;
+                        }
+                        
+                        .timeline-item {
+                            position: relative;
+                            padding-left: 40px;
+                            margin-bottom: 20px;
+                            border-left: 2px solid #dee2e6;
+                        }
+                        
+                        .timeline-badge {
+                            position: absolute;
+                            left: -10px;
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 50%;
+                            text-align: center;
+                            line-height: 20px;
+                            color: white;
+                        }
+                        
+                        .timeline-content {
+                            padding: 15px;
+                            background-color: #f8f9fa;
+                            border-radius: 5px;
+                        }
+                        
+                        .timeline-item-last {
+                            border-left-color: transparent;
+                        }
+                    </style>
+                
+                    <h1 class="text-center fw-bold my-4" style="color:#084298;">Trazabilidad de Expedientes</h1>
+                    
+                    <div class="container-fluid">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-route me-1"></i>
+                                Historial del Expediente
+                            </div>
+                            <div class="card-body" id="historialContainer">
+                                ${this.renderHistorialPlaceholder()}
                             </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            // Configurar eventos
-            this.setupEventListeners(container);
+            // Eliminar cualquier elemento "Trazabilidad de Expedientes" flotante después de renderizar
+            setTimeout(() => {
+                // Eliminar cualquier contenedor con fondo púrpura/violeta
+                this.limpiarElementosPurpura();
+                
+                // Crear un observador para eliminar elementos problemáticos que se añadan dinámicamente
+                const observer = new MutationObserver((mutations) => {
+                    for (const mutation of mutations) {
+                        if (mutation.addedNodes.length) {
+                            // Si se añaden nuevos nodos, buscar y eliminar elementos púrpura
+                            this.limpiarElementosPurpura();
+                        }
+                    }
+                });
+                
+                // Iniciar la observación del DOM
+                observer.observe(document.body, { 
+                    childList: true,
+                    subtree: true
+                });
+                
+                // También forzar que el contenedor ocupe todo el ancho
+                document.querySelectorAll('.main-wrapper, .main-wrapper .container-fluid, .main-wrapper .card').forEach(elem => {
+                    elem.style.width = '100%';
+                    elem.style.maxWidth = '100%';
+                });
+                
+                // Eliminar explícitamente cualquier div hermano de nuestro contenedor principal
+                const mainWrapper = document.querySelector('.main-wrapper');
+                if (mainWrapper && mainWrapper.parentElement) {
+                    const siblings = Array.from(mainWrapper.parentElement.children);
+                    siblings.forEach(sibling => {
+                        if (sibling !== mainWrapper && sibling.tagName === 'DIV') {
+                            console.log('Eliminando div hermano:', sibling);
+                            sibling.style.display = 'none';
+                            sibling.style.width = '0';
+                            sibling.style.height = '0';
+                        }
+                    });
+                }
+                
+                // Mostrar automáticamente el historial del primer expediente
+                if (this.expedientes.length > 0) {
+                    this.verHistorial(this.expedientes[0].id, container);
+                }
+            }, 200);
         } catch (error) {
             console.error('[Trazabilidad] Error al renderizar vista:', error);
             container.innerHTML = `
@@ -103,7 +218,7 @@ export class Trazabilidad {
     }
 
     /**
-     * Configura los listeners de eventos
+     * Configurar los listeners de eventos
      * @param {HTMLElement} container - Contenedor donde se encuentra la vista
      */
     setupEventListeners(container) {
@@ -120,6 +235,18 @@ export class Trazabilidad {
                 const btn = e.target.closest('.btn-ver');
                 if (btn) {
                     const expedienteId = btn.dataset.id;
+                    
+                    // Quitar la selección visual de todas las filas
+                    tabla.querySelectorAll('tr').forEach(tr => {
+                        tr.classList.remove('table-primary');
+                    });
+                    
+                    // Resaltar la fila seleccionada
+                    const selectedRow = btn.closest('tr');
+                    if (selectedRow) {
+                        selectedRow.classList.add('table-primary');
+                    }
+                    
                     this.verHistorial(expedienteId, container);
                 }
             });
@@ -265,20 +392,26 @@ export class Trazabilidad {
         
         // Renderizar historial
         historialContainer.innerHTML = `
-            <div class="mb-4 p-3 bg-light rounded">
-                <h5 class="mb-3">Expediente: ${this.expedienteSeleccionado.numeroExpediente}</h5>
+            <div class="mb-4 p-3 bg-light rounded border border-primary">
+                <h5 class="mb-3 text-primary">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Expediente: ${this.expedienteSeleccionado.numeroExpediente}
+                </h5>
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Asunto:</strong> ${this.expedienteSeleccionado.asunto}</p>
-                        <p><strong>Fecha Recepción:</strong> ${this.formatDate(this.expedienteSeleccionado.fechaRecepcion)}</p>
+                        <p><strong><i class="fas fa-info-circle me-1"></i> Asunto:</strong> ${this.expedienteSeleccionado.asunto}</p>
+                        <p><strong><i class="fas fa-calendar-alt me-1"></i> Fecha Recepción:</strong> ${this.formatDate(this.expedienteSeleccionado.fechaRecepcion)}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Estado:</strong> <span class="badge bg-${this.getStatusBadgeColor(this.expedienteSeleccionado.estado)}">${this.getStatusText(this.expedienteSeleccionado.estado)}</span></p>
+                        <p><strong><i class="fas fa-tag me-1"></i> Estado:</strong> <span class="badge bg-${this.getStatusBadgeColor(this.expedienteSeleccionado.estado)}">${this.getStatusText(this.expedienteSeleccionado.estado)}</span></p>
                     </div>
                 </div>
             </div>
             
             <div class="timeline">
+                <h6 class="text-primary mb-3">
+                    <i class="fas fa-history me-1"></i> Recorrido del expediente
+                </h6>
                 ${this.renderTimelineEvents()}
             </div>
             
@@ -516,6 +649,134 @@ export class Trazabilidad {
             return d.toLocaleDateString('es-PE');
         } catch (e) {
             return date;
+        }
+    }
+
+    /**
+     * Limpia cualquier elemento con fondo púrpura o violeta del DOM
+     */
+    limpiarElementosPurpura() {
+        // Selectores para elementos púrpura/violeta y decorativos
+        const selectores = [
+            '[style*="purple"]', 
+            '[style*="violet"]',
+            '[style*="#8a2be2"]',
+            '[style*="#a020f0"]',
+            '[style*="#9370db"]',
+            '[style*="#dda0dd"]',
+            '[style*="rgba(138"]',
+            '[style*="rgba(148"]',
+            '[style*="rgba(128"]',
+            '[style*="linear-gradient"]',
+            '[style*="radial-gradient"]',
+            '[style*="background-image"]',
+            '[style*="background-color"]',
+            '[style*="pattern"]',
+            '[class*="pattern"]',
+            '[id*="pattern"]',
+            '[class*="decoration"]',
+            '[id*="decoration"]',
+            'div:empty',
+            'div[class=""]'
+        ];
+        
+        // Encontrar el contenedor principal
+        const mainWrapper = document.querySelector('.main-wrapper');
+        
+        if (mainWrapper && mainWrapper.parentElement) {
+            // Eliminar cualquier div que sea hermano de nuestro contenedor principal
+            const siblings = Array.from(mainWrapper.parentElement.children);
+            siblings.forEach(sibling => {
+                if (sibling !== mainWrapper && sibling.tagName === 'DIV') {
+                    console.log('Eliminando div hermano:', sibling);
+                    sibling.style.display = 'none';
+                    sibling.style.visibility = 'hidden';
+                    sibling.style.width = '0';
+                    sibling.style.height = '0';
+                    sibling.style.padding = '0';
+                    sibling.style.margin = '0';
+                    sibling.style.opacity = '0';
+                    sibling.style.overflow = 'hidden';
+                    sibling.style.position = 'absolute';
+                    sibling.style.zIndex = '-9999';
+                    sibling.style.pointerEvents = 'none';
+                }
+            });
+            
+            // Establecer el ancho del contenedor principal
+            mainWrapper.style.width = '100%';
+            mainWrapper.style.maxWidth = '100%';
+            mainWrapper.style.flex = '1 1 auto';
+            
+            // Asegurar que el contenedor del historial también ocupe el ancho completo
+            const historialContainer = document.querySelector('#historialContainer');
+            if (historialContainer) {
+                historialContainer.style.width = '100%';
+                historialContainer.style.maxWidth = '100%';
+            }
+        }
+        
+        // Forzar que cualquier div/container/row/col directo en body sea máximo de 100% de ancho
+        document.querySelectorAll('body > div, body > div > div').forEach(div => {
+            div.style.maxWidth = '100%';
+            div.style.overflowX = 'hidden';
+        });
+        
+        // Eliminar elementos que correspondan a los selectores
+        for (const selector of selectores) {
+            const elementos = document.querySelectorAll(selector);
+            elementos.forEach(elem => {
+                // No eliminar si es parte del contenido principal
+                if (!mainWrapper || !mainWrapper.contains(elem)) {
+                    console.log('Eliminando elemento problemático:', elem);
+                    elem.style.display = 'none';
+                    elem.style.visibility = 'hidden';
+                    elem.style.width = '0';
+                    elem.style.height = '0';
+                    elem.style.padding = '0';
+                    elem.style.margin = '0';
+                    elem.style.opacity = '0';
+                    elem.style.overflow = 'hidden';
+                    elem.style.position = 'absolute';
+                    elem.style.zIndex = '-9999';
+                    elem.style.pointerEvents = 'none';
+                }
+            });
+        }
+        
+        // Eliminar específicamente el div.container-fluid.px-4 + div (el contenedor que aparece a la derecha)
+        document.querySelectorAll('.container-fluid + div, .container-fluid ~ div:not(.card)').forEach(elem => {
+            if (!mainWrapper || !mainWrapper.contains(elem)) {
+                console.log('Eliminando contenedor adyacente:', elem);
+                elem.style.display = 'none';
+                elem.style.visibility = 'hidden';
+                elem.style.width = '0';
+                elem.style.height = '0';
+                elem.style.padding = '0';
+                elem.style.margin = '0';
+                elem.style.opacity = '0';
+                elem.style.overflow = 'hidden';
+                elem.style.position = 'absolute';
+                elem.style.zIndex = '-9999';
+                elem.style.pointerEvents = 'none';
+            }
+        });
+        
+        // Eliminar elementos con posición absoluta que no estén en header, nav o footer
+        document.querySelectorAll('*[style*="position:absolute"], *[style*="position: absolute"]').forEach(elem => {
+            if (!elem.closest('header, nav, footer') && (!mainWrapper || !mainWrapper.contains(elem))) {
+                elem.style.display = 'none';
+                elem.style.visibility = 'hidden';
+                elem.style.opacity = '0';
+            }
+        });
+        
+        // Ajustar el ancho de todos los elementos dentro del contenedor principal
+        if (mainWrapper) {
+            mainWrapper.querySelectorAll('.container-fluid, .card, .card-body').forEach(elem => {
+                elem.style.maxWidth = '100%';
+                elem.style.width = '100%';
+            });
         }
     }
 } 

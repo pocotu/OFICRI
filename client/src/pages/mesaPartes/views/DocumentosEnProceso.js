@@ -40,82 +40,94 @@ export class DocumentosEnProceso {
 
             // Contenido principal
             container.innerHTML = `
-                <div class="container-fluid px-4">
-                    <h2 class="mt-4 mb-4">Documentos En Proceso</h2>
+                <div class="main-wrapper" style="position:relative; width:100%; overflow:hidden;">
+                    <style>
+                        /* Estilos específicos para esta vista */
+                        .main-wrapper *[style*="color: #084298;"] { display: none !important; }
+                        .main-wrapper *[style*="background-color: #cfe2ff;"] { display: none !important; }
+                    </style>
+                
+                    <h1 class="text-center fw-bold my-4" style="color:#084298;">Documentos En Proceso de Atención</h1>
                     
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="fas fa-filter me-1"></i>
-                            Filtros de Búsqueda
-                        </div>
-                        <div class="card-body">
-                            <form id="formFiltros" class="row g-3">
-                                <div class="col-md-4">
-                                    <label for="filtroFechaDesde" class="form-label">Fecha Desde</label>
-                                    <input type="date" class="form-control" id="filtroFechaDesde">
+                    <div class="container-fluid px-4">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-filter me-1"></i>
+                                        Filtros de Búsqueda
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="formFiltros" class="row g-3">
+                                            <div class="col-md-4">
+                                                <label for="filtroFechaDesde" class="form-label">Fecha Desde</label>
+                                                <input type="date" class="form-control" id="filtroFechaDesde">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="filtroFechaHasta" class="form-label">Fecha Hasta</label>
+                                                <input type="date" class="form-control" id="filtroFechaHasta">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="filtroTexto" class="form-label">Buscar</label>
+                                                <input type="text" class="form-control" id="filtroTexto" placeholder="Nº exp., asunto, remitente...">
+                                            </div>
+                                            <div class="col-12 text-end">
+                                                <button type="button" class="btn btn-secondary" id="btnLimpiarFiltros">
+                                                    <i class="fas fa-eraser me-1"></i>Limpiar
+                                                </button>
+                                                <button type="submit" class="btn btn-primary" id="btnFiltrar">
+                                                    <i class="fas fa-search me-1"></i>Buscar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="filtroFechaHasta" class="form-label">Fecha Hasta</label>
-                                    <input type="date" class="form-control" id="filtroFechaHasta">
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="filtroTexto" class="form-label">Buscar</label>
-                                    <input type="text" class="form-control" id="filtroTexto" placeholder="Nº exp., asunto, remitente...">
-                                </div>
-                                <div class="col-12 text-end">
-                                    <button type="button" class="btn btn-secondary" id="btnLimpiarFiltros">
-                                        <i class="fas fa-eraser me-1"></i>Limpiar
-                                    </button>
-                                    <button type="submit" class="btn btn-primary" id="btnFiltrar">
-                                        <i class="fas fa-search me-1"></i>Buscar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-list me-1"></i>
-                                Documentos En Proceso de Atención
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-outline-primary" id="btnExportar">
-                                    <i class="fas fa-file-export me-1"></i>Exportar
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Nº Expediente</th>
-                                            <th>Asunto</th>
-                                            <th>Remitente</th>
-                                            <th>Fecha Recepción</th>
-                                            <th>Área Actual</th>
-                                            <th>Tiempo en Proceso</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tablaDocumentos">
-                                        ${this.renderTablaDocumentos()}
-                                    </tbody>
-                                </table>
-                            </div>
                             
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <div>
-                                    Mostrando <span id="indicePaginacion">${Math.min(1, this.totalDocumentos)}-${Math.min(this.documentosPorPagina, this.totalDocumentos)}</span> de <span id="totalDocumentos">${this.totalDocumentos}</span> documentos
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-list me-1"></i>
+                                            Documentos En Proceso
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary" id="btnExportar">
+                                                <i class="fas fa-file-export me-1"></i>Exportar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Nº Expediente</th>
+                                                        <th>Asunto</th>
+                                                        <th>Remitente</th>
+                                                        <th>Fecha Recepción</th>
+                                                        <th>Área Actual</th>
+                                                        <th>Tiempo en Proceso</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tablaDocumentos">
+                                                    ${this.renderTablaDocumentos()}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <div class="text-muted small">
+                                                Mostrando <span id="indicePaginacion">${Math.min(1, this.totalDocumentos)}-${Math.min(this.documentosPorPagina, this.totalDocumentos)}</span> de <span id="totalDocumentos">${this.totalDocumentos}</span> documentos
+                                            </div>
+                                            <nav aria-label="Paginación">
+                                                <ul class="pagination pagination-sm">
+                                                    ${this.renderPaginacion()}
+                                                </ul>
+                                            </nav>
+                                        </div>
+                                    </div>
                                 </div>
-                                <nav aria-label="Paginación de documentos">
-                                    <ul class="pagination mb-0">
-                                        ${this.renderPaginacion()}
-                                    </ul>
-                                </nav>
                             </div>
                         </div>
                     </div>

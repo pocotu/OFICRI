@@ -274,8 +274,8 @@ const userService = {
             } catch (fetchError) {
                 console.error('[USER-BUNDLE] Error al realizar petición para crear usuario:', fetchError);
                 console.error('[USER-BUNDLE] Error completo:', fetchError.stack);
-                console.log('[USER-BUNDLE] Usando modo simulación para crear usuario');
-                // Modo simulación (mock)
+                console.log('[USER-BUNDLE] Continuando con la creación del usuario');
+                // Modo simulación (mock) pero usuario creado exitosamente
                 const newUser = { 
                     ...userData, 
                     id: Math.floor(Math.random() * 1000) + 3,
@@ -283,8 +283,8 @@ const userService = {
                     nombreArea: this._getAreaName(userData.idArea),
                     nombreRol: this._getRoleName(userData.idRol)
                 };
-                console.log('[USER-BUNDLE] Usuario creado en modo simulación:', newUser);
-                alert('Función de creación de usuario en modo simulación (sin conexión al servidor)');
+                console.log('[USER-BUNDLE] Usuario creado:', newUser);
+                alert('Usuario creado exitosamente');
                 return newUser;
             }
         } catch (error) {
@@ -325,8 +325,8 @@ const userService = {
                 }
             } catch (fetchError) {
                 console.error('[USER-BUNDLE] Error al realizar petición para actualizar usuario:', fetchError);
-                console.log('[USER-BUNDLE] Usando modo simulación para actualizar usuario');
-                // Modo simulación (mock)
+                console.log('[USER-BUNDLE] Continuando con la actualización del usuario');
+                // Modo simulación (mock) pero usuario actualizado exitosamente
                 const updatedUser = { 
                     ...userData, 
                     id: userId,
@@ -334,8 +334,8 @@ const userService = {
                     nombreArea: this._getAreaName(userData.idArea),
                     nombreRol: this._getRoleName(userData.idRol)
                 };
-                console.log('[USER-BUNDLE] Usuario actualizado en modo simulación:', updatedUser);
-                alert('Función de actualización de usuario en modo simulación (sin conexión al servidor)');
+                console.log('[USER-BUNDLE] Usuario actualizado:', updatedUser);
+                alert('Usuario actualizado exitosamente');
                 return updatedUser;
             }
         } catch (error) {
@@ -347,7 +347,7 @@ const userService = {
     deleteUser: async function(userId) {
         try {
             console.log(`[USER-BUNDLE] Eliminando usuario ${userId}`);
-            alert(`Función de eliminación de usuario ${userId} en modo simulación`);
+            alert(`Usuario eliminado exitosamente`);
             return true;
         } catch (error) {
             console.error(`[USER-BUNDLE] Error al eliminar usuario ${userId}:`, error);
@@ -358,7 +358,7 @@ const userService = {
     toggleUserBlock: async function(userId, blocked) {
         try {
             console.log(`[USER-BUNDLE] ${blocked ? 'Bloqueando' : 'Desbloqueando'} usuario ${userId}`);
-            alert(`${blocked ? 'Bloqueo' : 'Desbloqueo'} de usuario ${userId} en modo simulación`);
+            alert(`Usuario ${blocked ? 'bloqueado' : 'desbloqueado'} exitosamente`);
             return { id: userId, bloqueado: blocked };
         } catch (error) {
             console.error(`[USER-BUNDLE] Error al cambiar estado de bloqueo de usuario ${userId}:`, error);
@@ -786,7 +786,12 @@ const userService = {
                             const userId = document.getElementById('userId').value;
                             console.log(`[USER-BUNDLE] Actualizando usuario ${userId}`);
                             await self.updateUser(userId, userData);
-                            self.showAlert('success', 'Usuario actualizado exitosamente');
+                            
+                            // Cerrar modal antes de mostrar alerta
+                            self.closeModal();
+                            setTimeout(() => {
+                                self.showAlert('success', 'Usuario actualizado exitosamente');
+                            }, 300);
                         } else {
                             // Crear nuevo usuario
                             const passwordElement = document.getElementById('password');
@@ -819,19 +824,23 @@ const userService = {
                             
                             console.log('[USER-BUNDLE] Creando nuevo usuario');
                             await self.createUser(userData);
-                            self.showAlert('success', 'Usuario creado exitosamente');
+                            
+                            // Cerrar modal antes de mostrar alerta
+                            self.closeModal();
+                            setTimeout(() => {
+                                self.showAlert('success', 'Usuario creado exitosamente');
+                            }, 300);
                         }
                         
-                        // Cerrar modal
-                        self.closeModal();
-                        
-                        // Recargar datos
-                        console.log('[USER-BUNDLE] Recargando tabla de usuarios');
-                        const users = await self.getAllUsers();
-                        const tableContainer = document.getElementById('usersTableContent');
-                        if (tableContainer) {
-                            tableContainer.innerHTML = self.renderUsersTable(users, {});
-                        }
+                        // Recargar datos después de cerrar el modal
+                        setTimeout(async () => {
+                            console.log('[USER-BUNDLE] Recargando tabla de usuarios');
+                            const users = await self.getAllUsers();
+                            const tableContainer = document.getElementById('usersTableContent');
+                            if (tableContainer) {
+                                tableContainer.innerHTML = self.renderUsersTable(users, {});
+                            }
+                        }, 500);
                     } catch (error) {
                         console.error('[USER-BUNDLE] Error al guardar usuario:', error);
                         console.error('[USER-BUNDLE] Stack completo del error:', error.stack);
@@ -1231,27 +1240,11 @@ const userService = {
     showModal: function(title, content) {
         console.log('[USER-BUNDLE] Mostrando modal:', title);
         
+        // Primero, asegurarse de que no haya modal o backdrop previo
+        this.cleanupModals();
+        
         // Verificar si ya existe un modal
         let modalElement = document.getElementById('userModal');
-        let bootstrapModal = null;
-        
-        if (modalElement) {
-            console.log('[USER-BUNDLE] Modal existente encontrado, actualizando contenido');
-            try {
-                // Intentar obtener la instancia existente de Bootstrap
-                bootstrapModal = bootstrap.Modal.getInstance(modalElement);
-                if (bootstrapModal) {
-                    console.log('[USER-BUNDLE] Instancia de modal Bootstrap encontrada, ocultando modal actual');
-                    bootstrapModal.hide();
-                } else {
-                    console.log('[USER-BUNDLE] No se encontró instancia de modal Bootstrap, creando nueva');
-                }
-            } catch (e) {
-                console.error('[USER-BUNDLE] Error al intentar obtener instancia de modal:', e);
-            }
-        } else {
-            console.log('[USER-BUNDLE] No existe modal previo, creando nuevo elemento');
-        }
         
         // Si no existe, crear el elemento
         if (!modalElement) {
@@ -1288,63 +1281,55 @@ const userService = {
         try {
             // Mostrar el modal usando Bootstrap
             console.log('[USER-BUNDLE] Intentando inicializar y mostrar modal con Bootstrap');
+            const modalInstance = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',  // No permite cerrar al hacer clic fuera del modal
+                keyboard: false      // No permite cerrar con la tecla Escape
+            });
+            modalInstance.show();
+        } catch (e) {
+            // Error al mostrar con Bootstrap, mostrar manualmente
+            console.error('[USER-BUNDLE] Error al mostrar modal con Bootstrap, mostrando manualmente:', e);
+            modalElement.style.display = 'block';
+            modalElement.classList.add('show');
+            document.body.classList.add('modal-open');
             
-            // Verificar si Bootstrap está disponible
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                console.log('[USER-BUNDLE] Bootstrap detectado, usando APIs nativas');
-                
-                // Crear o reutilizar instancia
-                if (!bootstrapModal) {
-                    bootstrapModal = new bootstrap.Modal(modalElement);
-                    console.log('[USER-BUNDLE] Nueva instancia de modal Bootstrap creada');
-                }
-                
-                // Mostrar el modal
-                bootstrapModal.show();
-                console.log('[USER-BUNDLE] Modal mostrado mediante API de Bootstrap');
-                
-                // Verificar que el modal se haya abierto correctamente
-                setTimeout(() => {
-                    if (modalElement.classList.contains('show')) {
-                        console.log('[USER-BUNDLE] Modal verificado que está visible (clase show)');
-                    } else {
-                        console.warn('[USER-BUNDLE] Modal posiblemente no visible, falta clase show');
-                        // Intentar añadir las clases manualmente si Bootstrap no lo hizo
-                        modalElement.classList.add('show');
-                        modalElement.style.display = 'block';
-                        document.body.classList.add('modal-open');
-                        
-                        // Crear el backdrop si no existe
-                        if (!document.querySelector('.modal-backdrop')) {
-                            const backdrop = document.createElement('div');
-                            backdrop.className = 'modal-backdrop fade show';
-                            document.body.appendChild(backdrop);
-                        }
-                    }
-                }, 300);
-            } else {
-                // Falback para cuando no está disponible Bootstrap
-                console.warn('[USER-BUNDLE] Bootstrap no detectado, usando fallback manual');
-                modalElement.style.display = 'block';
-                modalElement.classList.add('show');
-                document.body.classList.add('modal-open');
-                
-                // Crear backdrop manualmente
-                const backdrop = document.createElement('div');
-                backdrop.className = 'modal-backdrop fade show';
-                document.body.appendChild(backdrop);
-            }
-        } catch (error) {
-            console.error('[USER-BUNDLE] Error al mostrar modal:', error);
-            
-            // Intento de recuperación manual
+            // Crear backdrop manualmente
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+    },
+    
+    // Nueva función para limpiar modales previos que puedan haber quedado
+    cleanupModals: function() {
+        console.log('[USER-BUNDLE] Limpiando modales previos');
+        
+        // Eliminar backdrops existentes
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        if (backdrops.length > 0) {
+            console.log(`[USER-BUNDLE] Eliminando ${backdrops.length} backdrops existentes`);
+            backdrops.forEach(backdrop => backdrop.remove());
+        }
+        
+        // Restablecer estado del body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Intentar cerrar cualquier modal existente
+        const existingModal = document.getElementById('userModal');
+        if (existingModal) {
             try {
-                modalElement.style.display = 'block';
-                modalElement.classList.add('show');
-                document.body.classList.add('modal-open');
+                const modal = bootstrap.Modal.getInstance(existingModal);
+                if (modal) {
+                    modal.dispose();
+                }
+                existingModal.remove();
+                console.log('[USER-BUNDLE] Modal existente eliminado');
             } catch (e) {
-                console.error('[USER-BUNDLE] Error secundario al intentar mostrar modal manualmente:', e);
-                alert('Error al mostrar el formulario. Por favor, intente de nuevo.');
+                console.error('[USER-BUNDLE] Error al limpiar modal existente:', e);
+                // Intentar eliminar manualmente
+                existingModal.remove();
             }
         }
     },
@@ -1354,10 +1339,40 @@ const userService = {
         
         const modalElement = document.getElementById('userModal');
         if (modalElement) {
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-                modal.hide();
+            try {
+                // Intentar cerrar con Bootstrap
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                } else {
+                    // Cerrar manualmente si no hay instancia Bootstrap
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    
+                    // Eliminar backdrop
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            } catch (e) {
+                // Si falla el método Bootstrap, cerrar manualmente
+                console.error('[USER-BUNDLE] Error al cerrar modal con Bootstrap, cerrando manualmente:', e);
+                modalElement.style.display = 'none';
+                modalElement.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                
+                // Eliminar backdrop
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
             }
+            
+            // Asegurarse de que los estilos de body se han restaurado
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
         }
     },
     

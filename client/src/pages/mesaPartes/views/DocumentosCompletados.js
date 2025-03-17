@@ -40,101 +40,113 @@ export class DocumentosCompletados {
 
             // Contenido principal
             container.innerHTML = `
-                <div class="container-fluid px-4">
-                    <h2 class="mt-4 mb-4">Documentos Completados</h2>
+                <div class="main-wrapper" style="position:relative; width:100%; overflow:hidden;">
+                    <style>
+                        /* Estilos específicos para esta vista */
+                        .main-wrapper *[style*="color: #084298;"] { display: none !important; }
+                        .main-wrapper *[style*="background-color: #cfe2ff;"] { display: none !important; }
+                    </style>
+                
+                    <h1 class="text-center fw-bold my-4" style="color:#084298;">Documentos Completados</h1>
                     
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="fas fa-filter me-1"></i>
-                            Filtros de Búsqueda
-                        </div>
-                        <div class="card-body">
-                            <form id="formFiltros" class="row g-3">
-                                <div class="col-md-3">
-                                    <label for="filtroFechaDesde" class="form-label">Fecha Desde</label>
-                                    <input type="date" class="form-control" id="filtroFechaDesde">
+                    <div class="container-fluid px-4">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-filter me-1"></i>
+                                        Filtros de Búsqueda
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="formFiltros" class="row g-3">
+                                            <div class="col-md-3">
+                                                <label for="filtroFechaDesde" class="form-label">Fecha Desde</label>
+                                                <input type="date" class="form-control" id="filtroFechaDesde">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="filtroFechaHasta" class="form-label">Fecha Hasta</label>
+                                                <input type="date" class="form-control" id="filtroFechaHasta">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="filtroTexto" class="form-label">Buscar</label>
+                                                <input type="text" class="form-control" id="filtroTexto" placeholder="Nº exp., asunto, remitente...">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="filtroTipoDocumento" class="form-label">Tipo Documento</label>
+                                                <select class="form-select" id="filtroTipoDocumento">
+                                                    <option value="">Todos</option>
+                                                    <option value="OFICIO">Oficio</option>
+                                                    <option value="MEMORANDO">Memorando</option>
+                                                    <option value="INFORME">Informe</option>
+                                                    <option value="SOLICITUD">Solicitud</option>
+                                                    <option value="OTROS">Otros</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 text-end">
+                                                <button type="button" class="btn btn-secondary" id="btnLimpiarFiltros">
+                                                    <i class="fas fa-eraser me-1"></i>Limpiar
+                                                </button>
+                                                <button type="submit" class="btn btn-primary" id="btnFiltrar">
+                                                    <i class="fas fa-search me-1"></i>Buscar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="filtroFechaHasta" class="form-label">Fecha Hasta</label>
-                                    <input type="date" class="form-control" id="filtroFechaHasta">
+                                
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Documentos Completados
+                                        </div>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-success" id="btnExportar">
+                                                <i class="fas fa-file-export me-1"></i>Exportar
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" id="btnArchivar">
+                                                <i class="fas fa-archive me-1"></i>Archivar Seleccionados
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                                            </div>
+                                                        </th>
+                                                        <th>#</th>
+                                                        <th>Nº Expediente</th>
+                                                        <th>Asunto</th>
+                                                        <th>Remitente</th>
+                                                        <th>Fecha Recepción</th>
+                                                        <th>Fecha Completado</th>
+                                                        <th>Duración</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tablaDocumentos">
+                                                    ${this.renderTablaDocumentos()}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <div>
+                                                Mostrando <span id="indicePaginacion">${Math.min(1, this.totalDocumentos)}-${Math.min(this.documentosPorPagina, this.totalDocumentos)}</span> de <span id="totalDocumentos">${this.totalDocumentos}</span> documentos
+                                            </div>
+                                            <nav aria-label="Paginación de documentos">
+                                                <ul class="pagination mb-0">
+                                                    ${this.renderPaginacion()}
+                                                </ul>
+                                            </nav>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="filtroTexto" class="form-label">Buscar</label>
-                                    <input type="text" class="form-control" id="filtroTexto" placeholder="Nº exp., asunto, remitente...">
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="filtroTipoDocumento" class="form-label">Tipo Documento</label>
-                                    <select class="form-select" id="filtroTipoDocumento">
-                                        <option value="">Todos</option>
-                                        <option value="OFICIO">Oficio</option>
-                                        <option value="MEMORANDO">Memorando</option>
-                                        <option value="INFORME">Informe</option>
-                                        <option value="SOLICITUD">Solicitud</option>
-                                        <option value="OTROS">Otros</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 text-end">
-                                    <button type="button" class="btn btn-secondary" id="btnLimpiarFiltros">
-                                        <i class="fas fa-eraser me-1"></i>Limpiar
-                                    </button>
-                                    <button type="submit" class="btn btn-primary" id="btnFiltrar">
-                                        <i class="fas fa-search me-1"></i>Buscar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-check-circle me-1"></i>
-                                Documentos Completados
-                            </div>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-success" id="btnExportar">
-                                    <i class="fas fa-file-export me-1"></i>Exportar
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary" id="btnArchivar">
-                                    <i class="fas fa-archive me-1"></i>Archivar Seleccionados
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="selectAll">
-                                                </div>
-                                            </th>
-                                            <th>#</th>
-                                            <th>Nº Expediente</th>
-                                            <th>Asunto</th>
-                                            <th>Remitente</th>
-                                            <th>Fecha Recepción</th>
-                                            <th>Fecha Completado</th>
-                                            <th>Duración</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tablaDocumentos">
-                                        ${this.renderTablaDocumentos()}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <div>
-                                    Mostrando <span id="indicePaginacion">${Math.min(1, this.totalDocumentos)}-${Math.min(this.documentosPorPagina, this.totalDocumentos)}</span> de <span id="totalDocumentos">${this.totalDocumentos}</span> documentos
-                                </div>
-                                <nav aria-label="Paginación de documentos">
-                                    <ul class="pagination mb-0">
-                                        ${this.renderPaginacion()}
-                                    </ul>
-                                </nav>
                             </div>
                         </div>
                     </div>
