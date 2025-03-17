@@ -13,6 +13,7 @@
     <link href="/src/styles/layouts/admin.css" rel="stylesheet">
     <link href="/src/styles/components/sidebar.css" rel="stylesheet">
     <link href="/src/styles/pages/admin.css" rel="stylesheet">
+    <link href="/src/styles/components/UserProfile.css" rel="stylesheet">
 </head>
 <body>
     <!-- Header / Navbar -->
@@ -373,6 +374,607 @@
             
             debugLog('Inicialización completa de la página de administrador');
         });
+    </script>
+
+    <!-- Scripts adicionales -->
+    <script>
+        // Función para cargar las estadísticas del dashboard
+        async function cargarEstadisticasDashboard() {
+            try {
+                console.log("🔍 DEBUG ADMIN: Cargando estadísticas del dashboard...");
+                
+                // Obtener token de autenticación de múltiples posibles ubicaciones
+                let token = localStorage.getItem('auth_token') || 
+                           localStorage.getItem('token') || 
+                           sessionStorage.getItem('auth_token') || 
+                           sessionStorage.getItem('token');
+                           
+                // Buscar también con el prefijo oficri_
+                if (!token) {
+                    token = localStorage.getItem('oficri_token') || 
+                            sessionStorage.getItem('oficri_token');
+                }
+                
+                console.log("🔍 DEBUG ADMIN: Token encontrado:", token ? "Sí" : "No");
+                
+                if (!token) {
+                    // Intentar obtener el token del módulo de autenticación
+                    try {
+                        const authModule = await import('/src/services/auth/authService.js');
+                        token = await authModule.getToken();
+                        console.log("🔍 DEBUG ADMIN: Token obtenido del servicio de autenticación:", token ? "Sí" : "No");
+                    } catch (authError) {
+                        console.log("🔍 DEBUG ADMIN: Error al obtener token del servicio:", authError);
+                    }
+                }
+                
+                // Intentar primero el endpoint público (sin autenticación)
+                try {
+                    console.log("🔍 DEBUG ADMIN: Intentando usar el endpoint público...");
+                    const publicResponse = await fetch('/api/dashboard/public-stats');
+                    
+                    if (publicResponse.ok) {
+                        console.log("🔍 DEBUG ADMIN: Endpoint público accesible");
+                        const data = await publicResponse.json();
+                        console.log("🔍 DEBUG ADMIN: Datos recibidos:", data);
+                        
+                        // Actualizar la interfaz con los datos recibidos
+                        updateDashboardStats(data);
+                        
+                        // Si hay estadísticas detalladas, mostrarlas
+                        if (data.estadisticasDetalladas) {
+                            mostrarEstadisticasDetalladas(data.estadisticasDetalladas);
+                        }
+                        
+                        return; // Salir de la función si el endpoint público funciona
+                    } else {
+                        console.log("🔍 DEBUG ADMIN: Endpoint público no accesible, código:", publicResponse.status);
+                    }
+                } catch (publicError) {
+                    console.log("🔍 DEBUG ADMIN: Error al acceder al endpoint público:", publicError);
+                }
+                
+                // Si el endpoint público falla y tenemos token, intentar con el endpoint autenticado
+                if (token) {
+                    console.log("🔍 DEBUG ADMIN: Intentando usar el endpoint autenticado...");
+                    
+                    // Verificar si el token ya tiene el prefijo Bearer
+                    if (!token.startsWith('Bearer ')) {
+                        token = 'Bearer ' + token;
+                    }
+                    
+                    // Hacer la solicitud a la API autenticada
+                    const response = await fetch('/api/dashboard/stats', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    console.log("🔍 DEBUG ADMIN: Respuesta de la API autenticada:", response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error al obtener estadísticas: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log("🔍 DEBUG ADMIN: Datos recibidos:", data);
+                    
+                    // Actualizar la interfaz con los datos recibidos
+                    updateDashboardStats(data);
+                } else {
+                    console.log("🔍 DEBUG ADMIN: Sin token, no se puede acceder al endpoint autenticado");
+                }
+                
+            } catch (error) {
+                console.error("🔍 DEBUG ADMIN: Error al cargar estadísticas:", error);
+            }
+        }
+        
+        // Función para actualizar las estadísticas en el dashboard
+        function updateDashboardStats(data) {
+            // Seleccionar correctamente las tarjetas por su contenido
+            const cards = document.querySelectorAll('.stat-card .card-body');
+            
+            // Actualizar áreas activas
+            const areaCard = Array.from(cards).find(card => card.querySelector('h3').textContent === 'ÁREAS ACTIVAS');
+            if (areaCard) {
+                const numberElement = areaCard.querySelector('.number');
+                if (numberElement) {
+                    numberElement.textContent = data.areasActivas || 0;
+                    console.log("🔍 DEBUG ADMIN: Áreas activas actualizadas:", data.areasActivas);
+                }
+            }
+            
+            // Actualizar usuarios activos
+            const usuariosCard = Array.from(cards).find(card => card.querySelector('h3').textContent === 'USUARIOS ACTIVOS');
+            if (usuariosCard) {
+                const numberElement = usuariosCard.querySelector('.number');
+                if (numberElement) {
+                    numberElement.textContent = data.usuariosActivos || 0;
+                    console.log("🔍 DEBUG ADMIN: Usuarios activos actualizados:", data.usuariosActivos);
+                }
+            }
+            
+            // Actualizar documentos pendientes
+            const documentosCard = Array.from(cards).find(card => card.querySelector('h3').textContent === 'DOCUMENTOS PENDIENTES');
+            if (documentosCard) {
+                const numberElement = documentosCard.querySelector('.number');
+                if (numberElement) {
+                    numberElement.textContent = data.documentosPendientes || 0;
+                    console.log("🔍 DEBUG ADMIN: Documentos pendientes actualizados:", data.documentosPendientes);
+                }
+            }
+        }
+        
+        // Función para mostrar estadísticas detalladas
+        function mostrarEstadisticasDetalladas(estadisticas) {
+            console.log("🔍 DEBUG ADMIN: Mostrando estadísticas detalladas");
+            
+            // Obtenemos los contenedores donde mostraremos los datos
+            const modulesContainer = document.querySelectorAll('.module-container');
+            
+            // Contenedor de actividad reciente
+            const actividadContainer = Array.from(modulesContainer).find(container => 
+                container.querySelector('h4').textContent === 'Actividad Reciente');
+                
+            // Contenedor de documentos pendientes
+            const documentosContainer = Array.from(modulesContainer).find(container => 
+                container.querySelector('h4').textContent === 'Documentos Pendientes');
+            
+            // Mostrar actividad reciente si tenemos datos
+            if (actividadContainer && estadisticas.actividadReciente && estadisticas.actividadReciente.length > 0) {
+                let actividadHTML = '<div class="list-group">';
+                
+                estadisticas.actividadReciente.forEach(actividad => {
+                    const fecha = new Date(actividad.fecha).toLocaleString();
+                    const estado = actividad.exitoso ? 
+                        '<span class="badge bg-success">Exitoso</span>' : 
+                        '<span class="badge bg-danger">Fallido</span>';
+                        
+                    actividadHTML += `
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">${actividad.Nombres} ${actividad.Apellidos}</h5>
+                                <small>${fecha}</small>
+                            </div>
+                            <p class="mb-1">Inicio de sesión desde ${actividad.ip || 'IP desconocida'}</p>
+                            <small>${actividad.info || 'Dispositivo desconocido'} ${estado}</small>
+                        </div>
+                    `;
+                });
+                
+                actividadHTML += '</div>';
+                actividadContainer.innerHTML = `<h4>Actividad Reciente</h4>${actividadHTML}`;
+                console.log("🔍 DEBUG ADMIN: Actividad reciente actualizada");
+            } else if (actividadContainer) {
+                actividadContainer.innerHTML = `
+                    <h4>Actividad Reciente</h4>
+                    <p class="text-muted">No hay actividad reciente disponible.</p>
+                `;
+            }
+            
+            // Mostrar documentos pendientes por área si tenemos datos
+            if (documentosContainer && estadisticas.documentosPorArea && estadisticas.documentosPorArea.length > 0) {
+                let documentosHTML = '<div class="list-group">';
+                
+                estadisticas.documentosPorArea.forEach(area => {
+                    documentosHTML += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">${area.NombreArea}</h5>
+                                <small>Documentos asignados</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">${area.cantidad}</span>
+                        </div>
+                    `;
+                });
+                
+                documentosHTML += '</div>';
+                documentosContainer.innerHTML = `<h4>Documentos Pendientes</h4>${documentosHTML}`;
+                console.log("🔍 DEBUG ADMIN: Documentos por área actualizados");
+            } else if (documentosContainer) {
+                documentosContainer.innerHTML = `
+                    <h4>Documentos Pendientes</h4>
+                    <p class="text-muted">No hay documentos pendientes disponibles.</p>
+                `;
+            }
+            
+            // Crear contenedor para áreas más activas si tenemos datos
+            if (estadisticas.areasActividad && estadisticas.areasActividad.length > 0) {
+                // Buscar primero si ya existe
+                let areasContainer = document.getElementById('areasActividadContainer');
+                
+                if (!areasContainer) {
+                    // Si no existe, crear un nuevo contenedor después de los módulos existentes
+                    const rowContainer = documentosContainer ? documentosContainer.closest('.row') : null;
+                    
+                    if (rowContainer) {
+                        areasContainer = document.createElement('div');
+                        areasContainer.id = 'areasActividadContainer';
+                        areasContainer.className = 'col-md-12 mt-4';
+                        
+                        // Crear el HTML para las áreas más activas
+                        let areasHTML = `
+                            <div class="module-container">
+                                <h4>Áreas Más Activas</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Área</th>
+                                                <th>Código</th>
+                                                <th>Tipo</th>
+                                                <th>Documentos</th>
+                                                <th>Usuarios</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+                        
+                        estadisticas.areasActividad.forEach(area => {
+                            areasHTML += `
+                                <tr>
+                                    <td>${area.NombreArea}</td>
+                                    <td>${area.CodigoIdentificacion || 'N/A'}</td>
+                                    <td>${area.TipoArea || 'N/A'}</td>
+                                    <td>${area.documentos}</td>
+                                    <td>${area.usuarios}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        areasHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                        
+                        areasContainer.innerHTML = areasHTML;
+                        rowContainer.parentNode.insertBefore(areasContainer, rowContainer.nextSibling);
+                        console.log("🔍 DEBUG ADMIN: Áreas más activas creadas");
+                    }
+                } else {
+                    // Si ya existe, actualizar su contenido
+                    let areasHTML = `
+                        <div class="module-container">
+                            <h4>Áreas Más Activas</h4>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Área</th>
+                                            <th>Código</th>
+                                            <th>Tipo</th>
+                                            <th>Documentos</th>
+                                            <th>Usuarios</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    estadisticas.areasActividad.forEach(area => {
+                        areasHTML += `
+                            <tr>
+                                <td>${area.NombreArea}</td>
+                                <td>${area.CodigoIdentificacion || 'N/A'}</td>
+                                <td>${area.TipoArea || 'N/A'}</td>
+                                <td>${area.documentos}</td>
+                                <td>${area.usuarios}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    areasHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    
+                    areasContainer.innerHTML = areasHTML;
+                    console.log("🔍 DEBUG ADMIN: Áreas más activas actualizadas");
+                }
+            }
+        }
+        
+        // Cargar estadísticas al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("🔍 DEBUG ADMIN: Inicializando carga de estadísticas");
+            cargarEstadisticasDashboard();
+            
+            // Configurar el botón de actualizar para recargar las estadísticas
+            const btnActualizar = document.querySelector('.btn-actualizar');
+            if (btnActualizar) {
+                btnActualizar.addEventListener('click', () => {
+                    console.log("🔍 DEBUG ADMIN: Actualizando estadísticas manualmente");
+                    cargarEstadisticasDashboard();
+                });
+            }
+        });
+    </script>
+
+    <script>
+        console.log("🔍 DEBUG ADMIN: Página de administrador cargada");
+        
+        // Código para manejar el clic en el perfil de usuario
+        document.addEventListener('DOMContentLoaded', () => {
+            const userDisplayElement = document.getElementById('userDisplay');
+            
+            if (userDisplayElement) {
+                console.log("🔍 DEBUG ADMIN: Elemento de perfil de usuario encontrado, agregando event listener");
+                
+                // Hacer que el cursor sea pointer para indicar que es clickeable
+                userDisplayElement.style.cursor = 'pointer';
+                
+                userDisplayElement.addEventListener('click', async () => {
+                    try {
+                        console.log("🔍 DEBUG ADMIN: Clic en perfil de usuario detectado");
+                        
+                        // Intentar obtener el CIP del usuario desde localStorage o sessionStorage
+                        const storedUser = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
+                        const userCIP = storedUser.codigoCIP || storedUser.CodigoCIP || '12345678'; // Fallback al admin
+                        
+                        console.log("🔍 DEBUG ADMIN: CIP de usuario encontrado:", userCIP);
+                        
+                        // Primero intentamos usar la API pública que creamos como alternativa
+                        try {
+                            console.log("🔍 DEBUG ADMIN: Obteniendo perfil usando API pública");
+                            const profileResponse = await fetch(`/api/usuarios/public-profile/${userCIP}`);
+                            
+                            if (profileResponse.ok) {
+                                const profileData = await profileResponse.json();
+                                console.log("🔍 DEBUG ADMIN: Datos de perfil recibidos:", profileData);
+                                
+                                if (profileData.success && profileData.user) {
+                                    renderProfileUI(profileData.user);
+                                    return; // Salir si se pudo usar la API alternativa
+                                } else {
+                                    // Si hay éxito pero no hay datos del usuario
+                                    showProfileError("No se pudieron cargar los datos del perfil", "La respuesta del servidor no contiene datos de usuario válidos.");
+                                }
+                            } else {
+                                // Mostrar un mensaje de error apropiado según el código de estado
+                                let errorMessage = "Error al cargar el perfil de usuario";
+                                let errorDetails = `El servidor respondió con el código de estado: ${profileResponse.status}`;
+                                
+                                // Intentar obtener más información del error
+                                try {
+                                    const errorData = await profileResponse.json();
+                                    console.log("🔍 DEBUG ADMIN: Error de la API pública (JSON):", errorData);
+                                    
+                                    if (errorData.message) {
+                                        errorDetails = errorData.message;
+                                    }
+                                    
+                                    if (errorData.errorDetails) {
+                                        errorDetails += ` (${errorData.errorDetails})`;
+                                    }
+                                } catch (parseError) {
+                                    console.log("🔍 DEBUG ADMIN: No se pudo parsear la respuesta de error como JSON");
+                                    try {
+                                        const textError = await profileResponse.text();
+                                        console.log("🔍 DEBUG ADMIN: Error de la API pública (texto):", textError);
+                                        if (textError) {
+                                            errorDetails = textError;
+                                        }
+                                    } catch (textError) {
+                                        console.log("🔍 DEBUG ADMIN: No se pudo leer la respuesta de error");
+                                    }
+                                }
+                                
+                                // Mostrar el error al usuario
+                                showProfileError(errorMessage, errorDetails);
+                            }
+                        } catch (publicApiError) {
+                            console.log("🔍 DEBUG ADMIN: Error al usar la API pública:", publicApiError);
+                            showProfileError("Error de conexión", "No se pudo conectar con el servidor para obtener los datos del perfil.");
+                        }
+                    } catch (error) {
+                        console.error("🔍 DEBUG ADMIN: Error al mostrar el perfil de usuario:", error);
+                        
+                        // Muestra un mensaje de error en la interfaz
+                        const mainContent = document.querySelector('#mainContent') || 
+                                           document.querySelector('main') || 
+                                           document.querySelector('.main-content');
+                        
+                        if (mainContent) {
+                            mainContent.innerHTML = `
+                                <div class="container mt-4">
+                                    <div class="alert alert-danger">
+                                        <h4><i class="bi bi-exclamation-triangle"></i> Error al cargar el perfil</h4>
+                                        <p>${error.message}</p>
+                                        <button class="btn btn-secondary mt-3" onclick="location.reload()">
+                                            <i class="bi bi-arrow-clockwise"></i> Reintentar
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+                
+                console.log("🔍 DEBUG ADMIN: Event listener agregado al elemento de perfil de usuario");
+            } else {
+                console.error("🔍 DEBUG ADMIN: No se encontró el elemento de perfil de usuario");
+            }
+        });
+
+        // Función para mostrar un error en la interfaz de perfil
+        function showProfileError(title, message) {
+            console.log(`🔍 DEBUG ADMIN: Mostrando error de perfil: ${title} - ${message}`);
+            
+            const mainContent = document.querySelector('#mainContent') || 
+                               document.querySelector('main') || 
+                               document.querySelector('.main-content');
+            
+            if (mainContent) {
+                // Guardar el contenido actual para poder restaurarlo
+                if (!mainContent.getAttribute('data-original-content')) {
+                    mainContent.setAttribute('data-original-content', mainContent.innerHTML);
+                }
+                
+                mainContent.innerHTML = `
+                    <div class="container mt-4">
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">${title}</h4>
+                            <p>${message}</p>
+                            <hr>
+                            <p class="mb-0">Por favor, inténtelo de nuevo más tarde o contacte al administrador del sistema.</p>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button class="btn btn-secondary" id="backToDashboard">
+                                <i class="bi bi-arrow-left me-2"></i>Volver al Dashboard
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Agregar evento al botón de volver
+                const backButton = document.getElementById('backToDashboard');
+                if (backButton) {
+                    backButton.addEventListener('click', () => {
+                        // Restaurar el contenido original
+                        if (mainContent.getAttribute('data-original-content')) {
+                            mainContent.innerHTML = mainContent.getAttribute('data-original-content');
+                            // Recargar las estadísticas
+                            cargarEstadisticasDashboard();
+                        }
+                    });
+                }
+            }
+        }
+
+        // Función para renderizar la UI del perfil
+        function renderProfileUI(userData) {
+            // Limpiar el contenido principal y preparar para mostrar el perfil
+            const mainContent = document.querySelector('#mainContent') || 
+                              document.querySelector('main') || 
+                              document.querySelector('.main-content');
+            
+            if (mainContent) {
+                // Guardar el contenido actual para poder restaurarlo
+                if (!mainContent.getAttribute('data-original-content')) {
+                    mainContent.setAttribute('data-original-content', mainContent.innerHTML);
+                }
+                
+                // Convertir fecha si es necesario
+                const lastAccessDate = typeof userData.UltimoAcceso === 'string' ? 
+                    new Date(userData.UltimoAcceso).toLocaleString() : 
+                    (userData.UltimoAcceso ? new Date(userData.UltimoAcceso).toLocaleString() : 'No disponible');
+                
+                // Preparar la sección de últimos accesos si existen
+                let accesosHTML = '';
+                if (userData.accesos && userData.accesos.length > 0) {
+                    let accesosList = '';
+                    userData.accesos.forEach(acceso => {
+                        const fecha = new Date(acceso.FechaEvento).toLocaleString();
+                        const exitoso = acceso.Exitoso ? 
+                            '<span class="badge bg-success">Exitoso</span>' : 
+                            '<span class="badge bg-danger">Fallido</span>';
+                            
+                        accesosList += `
+                            <tr>
+                                <td>${fecha}</td>
+                                <td>${acceso.IPOrigen || 'No registrada'}</td>
+                                <td>${acceso.DispositivoInfo || 'No disponible'}</td>
+                                <td>${exitoso}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    accesosHTML = `
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Últimos Accesos</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>IP</th>
+                                                <th>Dispositivo</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${accesosList}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                mainContent.innerHTML = `
+                    <div class="container mt-4 user-profile-container">
+                        <h2 class="profile-title"><i class="bi bi-person-circle"></i> Mi Perfil</h2>
+                        
+                        <div class="row mt-4">
+                            <!-- Tarjeta de información básica -->
+                            <div class="col-md-4">
+                                <div class="card mb-4 profile-card">
+                                    <div class="card-body text-center">
+                                        <div class="profile-avatar mb-3">
+                                            <i class="bi bi-person-circle"></i>
+                                        </div>
+                                        <h4 class="card-title profile-name">${userData.Nombres} ${userData.Apellidos}</h4>
+                                        <p class="text-muted profile-rank">${userData.Grado || 'Usuario'}</p>
+                                        <div class="profile-role-badge">${userData.NombreRol || 'Usuario'}</div>
+                                        <p class="text-muted profile-cip"><i class="bi bi-person-badge"></i> CIP: ${userData.CodigoCIP}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Información detallada -->
+                            <div class="col-md-8">
+                                <div class="card profile-details-card">
+                                    <div class="card-header profile-details-header">
+                                        <h5 class="card-title mb-0"><i class="bi bi-info-circle"></i> Información Detallada</h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-bordered profile-details-table m-0">
+                                            <tbody>
+                                                <tr>
+                                                    <th class="profile-detail-label">Nombre Completo</th>
+                                                    <td class="profile-detail-value">${userData.Nombres} ${userData.Apellidos}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="profile-detail-label">Grado</th>
+                                                    <td class="profile-detail-value">${userData.Grado || 'No especificado'}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="profile-detail-label">Área</th>
+                                                    <td class="profile-detail-value">${userData.NombreArea || 'No especificada'}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="profile-detail-label">Rol</th>
+                                                    <td class="profile-detail-value">
+                                                        ${userData.NombreRol || 'No especificado'}
+                                                        ${userData.NombreRol === 'Administrador' ? '<br><small class="text-muted role-description">Control total del sistema</small>' : ''}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="profile-detail-label">Último Acceso</th>
+                                                    <td class="profile-detail-value">${lastAccessDate}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                console.log("🔍 DEBUG ADMIN: Perfil renderizado correctamente con estilos de UserProfile.css");
+            }
+        }
     </script>
 </body>
 </html> 

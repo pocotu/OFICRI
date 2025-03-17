@@ -3,8 +3,37 @@
  * Maneja la visualización y edición del perfil de usuario
  */
 
-import { sessionService } from '../../services/sessionService.js';
-import { permissionUtils } from '../../utils/permissions.js';
+// Importaciones básicas - evitar dependencias circulares
+import sessionService from '../../services/sessionService.js';
+
+// Crear una versión lazy-loaded de userService para evitar errores de inicialización
+let _userService = null;
+async function getUserService() {
+    if (!_userService) {
+        try {
+            // Importación dinámica para evitar problemas de inicialización
+            const importedModule = await import('../../services/user.service.js');
+            _userService = importedModule.default || importedModule;
+            console.log('[UserProfile] userService cargado correctamente');
+        } catch (error) {
+            console.error('[UserProfile] Error cargando userService:', error);
+            // Proporcionar una implementación mock básica si hay error
+            _userService = {
+                updateProfile: async () => {
+                    console.warn('[UserProfile] Usando implementación mock de updateProfile');
+                    return { success: false, error: 'Servicio no disponible' };
+                },
+                changePassword: async () => {
+                    console.warn('[UserProfile] Usando implementación mock de changePassword');
+                    return { success: false, error: 'Servicio no disponible' };
+                }
+            };
+        }
+    }
+    return _userService;
+}
+
+// Importaciones de componentes de UI
 import { Button } from '../base/Button.js';
 import { Card } from '../base/Card.js';
 import { Modal } from '../base/Modal.js';
@@ -186,42 +215,76 @@ export class UserProfile {
 
     async handleSaveProfile() {
         try {
+            console.log('[DEBUG] Preparando actualización de perfil...');
             const updatedUser = {
                 ...this.user,
                 nombres: document.getElementById('nombres').value,
                 apellidos: document.getElementById('apellidos').value,
                 grado: document.getElementById('grado').value
             };
+            
+            console.log('[DEBUG] Datos a enviar:', JSON.stringify(updatedUser));
+            console.log('[DEBUG] Enviando solicitud mediante userService.updateProfile...');
 
-            // Aquí iría la llamada al servicio para actualizar el perfil
-            // await userService.updateProfile(updatedUser);
+            // Obtener la instancia del servicio y luego llamar al método
+            const userServiceInstance = await getUserService();
+            const result = await userServiceInstance.updateProfile(updatedUser);
+            console.log('[DEBUG] Perfil actualizado correctamente:', JSON.stringify(result));
 
             this.isEditing = false;
-            this.user = updatedUser;
+            this.user = result;
             this.render(document.querySelector(`.${this.options.className}`));
 
+            // Mostrar mensaje de éxito
+            this.showMessage('success', 'Perfil actualizado correctamente');
+
             if (this.options.onSave) {
-                this.options.onSave(updatedUser);
+                this.options.onSave(result);
             }
         } catch (error) {
             console.error('[USER-PROFILE] Error al guardar perfil:', error);
-            // Mostrar mensaje de error
+            console.log('[DEBUG] Error detallado:', error.stack || error.message || error);
+            this.showMessage('error', error.message || 'Error al actualizar el perfil');
         }
     }
 
     handleChangePassword() {
+        console.log('[DEBUG] Abriendo modal de cambio de contraseña...');
+        
         // Crear modal para cambiar contraseña
         const modal = new Modal({
             title: 'Cambiar Contraseña',
             content: this.renderChangePasswordForm(),
-            onSave: async (data) => {
+            onSave: async () => {
                 try {
-                    // Aquí iría la llamada al servicio para cambiar la contraseña
-                    // await userService.changePassword(data);
-                    modal.close();
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    console.log('[DEBUG] Validando contraseñas...');
+                    // Validar que las contraseñas coincidan
+                    if (newPassword !== confirmPassword) {
+                        throw new Error('Las contraseñas no coinciden');
+                    }
+                    
+                    console.log('[DEBUG] Enviando solicitud de cambio de contraseña...');
+                    // Obtener la instancia del servicio y luego llamar al método
+                    const userServiceInstance = await getUserService();
+                    const result = await userServiceInstance.changePassword({
+                        currentPassword, 
+                        newPassword
+                    });
+                    
+                    console.log('[DEBUG] Contraseña actualizada correctamente');
+                    modal.hide();
+                    
+                    // Mostrar mensaje de éxito
+                    this.showMessage('success', 'Contraseña actualizada correctamente');
                 } catch (error) {
                     console.error('[USER-PROFILE] Error al cambiar contraseña:', error);
-                    // Mostrar mensaje de error
+                    console.log('[DEBUG] Error detallado:', error.stack || error.message || error);
+                    document.getElementById('passwordError').textContent = error.message || 'Error al cambiar la contraseña';
+                    document.getElementById('passwordError').classList.remove('d-none');
                 }
             }
         });
@@ -244,8 +307,36 @@ export class UserProfile {
                     <label class="form-label">Confirmar Nueva Contraseña</label>
                     <input type="password" class="form-control" id="confirmPassword" required>
                 </div>
+                <div id="passwordError" class="alert alert-danger d-none"></div>
             </form>
         `;
+    }
+    
+    /**
+     * Muestra un mensaje de éxito o error
+     * @param {string} type - 'success' o 'error'
+     * @param {string} message - Mensaje a mostrar
+     */
+    showMessage(type, message) {
+        // Crear elemento para el mensaje
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show my-3`;
+        messageDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Buscar el contenedor para insertar el mensaje
+        const container = document.querySelector(`.${this.options.className}`);
+        if (container) {
+            container.prepend(messageDiv);
+            
+            // Autoremover después de 5 segundos
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 5000);
+        }
     }
 }
 

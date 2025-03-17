@@ -3,8 +3,8 @@
  * Proporciona funciones para obtener y gestionar información del usuario
  */
 
-// Importamos directamente del archivo services para evitar dependencias circulares
-import { sessionService } from './services.js';
+// Importar directamente desde sessionService.js en lugar de services.js para evitar dependencias circulares
+import * as sessionService from './sessionService.js';
 import * as errorHandler from '../utils/errorHandler.js';
 
 class UserService {
@@ -500,6 +500,147 @@ class UserService {
                 documentosProcesados: 0,
                 documentosPendientes: 0
             };
+        }
+    }
+
+    /**
+     * Actualiza el perfil del usuario actual
+     * @param {Object} userData - Datos del perfil a actualizar
+     * @returns {Promise<Object>} - Datos del usuario actualizados
+     */
+    async updateProfile(userData) {
+        try {
+            console.log('[DEBUG-SERVICE] Iniciando actualización de perfil');
+            const token = await sessionService.obtenerToken();
+            const user = await sessionService.obtenerUsuarioActual();
+            
+            console.log('[DEBUG-SERVICE] Token obtenido:', token ? 'Existe' : 'No existe');
+            console.log('[DEBUG-SERVICE] Usuario actual:', user ? JSON.stringify(user) : 'No existe');
+            
+            if (!token || !user) {
+                throw new Error('No hay usuario autenticado');
+            }
+
+            const userId = user.IDUsuario || user.id;
+            if (!userId) {
+                console.log('[DEBUG-SERVICE] Objeto de usuario completo:', JSON.stringify(user));
+                throw new Error('El ID del usuario no está definido en la sesión');
+            }
+            
+            // Usar la ruta correcta según el servidor
+            const url = `${this.baseUrl}/usuarios/${userId}`;
+            console.log('[DEBUG-SERVICE] URL de actualización:', url);
+            
+            console.log('[DEBUG-SERVICE] Datos de usuario a actualizar:', JSON.stringify(userData));
+            
+            const response = await fetch(url, { 
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify(userData)
+            });
+
+            console.log('[DEBUG-SERVICE] Respuesta status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('[DEBUG-SERVICE] Error respuesta:', errorText);
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(errorData.message || 'Error al actualizar el perfil');
+                } catch (e) {
+                    throw new Error(`Error al actualizar el perfil (${response.status}): ${errorText}`);
+                }
+            }
+
+            const respText = await response.text();
+            console.log('[DEBUG-SERVICE] Respuesta texto:', respText);
+            
+            let updatedUser;
+            try {
+                updatedUser = JSON.parse(respText);
+                console.log('[DEBUG-SERVICE] Usuario actualizado:', JSON.stringify(updatedUser));
+            } catch (e) {
+                console.log('[DEBUG-SERVICE] Error al parsear respuesta:', e.message);
+                throw new Error('Error al procesar la respuesta del servidor');
+            }
+            
+            // Actualizar información en sessionService
+            await sessionService.actualizarUsuarioSesion(updatedUser.data || updatedUser);
+            console.log('[DEBUG-SERVICE] Sesión actualizada correctamente');
+            
+            return updatedUser.data || updatedUser;
+        } catch (error) {
+            console.log('[DEBUG-SERVICE] Error en updateProfile:', error.message);
+            console.log('[DEBUG-SERVICE] Stack trace:', error.stack);
+            errorHandler.handleError('USER', error, 'actualizar perfil', true);
+            throw error;
+        }
+    }
+
+    /**
+     * Cambia la contraseña del usuario actual
+     * @param {Object} passwordData - Datos de cambio de contraseña { currentPassword, newPassword }
+     * @returns {Promise<boolean>} - true si se cambió correctamente
+     */
+    async changePassword(passwordData) {
+        try {
+            console.log('[DEBUG-SERVICE] Iniciando cambio de contraseña');
+            const token = await sessionService.obtenerToken();
+            const user = await sessionService.obtenerUsuarioActual();
+            
+            console.log('[DEBUG-SERVICE] Token obtenido:', token ? 'Existe' : 'No existe');
+            console.log('[DEBUG-SERVICE] Usuario actual:', user ? `ID: ${user.IDUsuario || user.id}` : 'No existe');
+            
+            if (!token || !user) {
+                throw new Error('No hay usuario autenticado');
+            }
+
+            const userId = user.IDUsuario || user.id;
+            if (!userId) {
+                throw new Error('El ID del usuario no está definido en la sesión');
+            }
+            
+            // Usar la ruta correcta según el servidor
+            const url = `${this.baseUrl}/usuarios/${userId}/change-password`;
+            console.log('[DEBUG-SERVICE] URL de cambio de contraseña:', url);
+            
+            const response = await fetch(url, { 
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+
+            console.log('[DEBUG-SERVICE] Respuesta status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('[DEBUG-SERVICE] Error respuesta:', errorText);
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(errorData.message || 'Error al cambiar la contraseña');
+                } catch (e) {
+                    throw new Error(`Error al cambiar la contraseña (${response.status}): ${errorText}`);
+                }
+            }
+
+            console.log('[DEBUG-SERVICE] Contraseña cambiada correctamente');
+            return true;
+        } catch (error) {
+            console.log('[DEBUG-SERVICE] Error en changePassword:', error.message);
+            console.log('[DEBUG-SERVICE] Stack trace:', error.stack);
+            errorHandler.handleError('USER', error, 'cambiar contraseña', true);
+            throw error;
         }
     }
 }
