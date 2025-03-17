@@ -4,7 +4,7 @@
  */
 
 import { adminService } from '../../services/admin.service.js';
-import { sessionManager } from '../../services/sessionManager.js';
+import { sessionService } from '../../services/sessionService.js';
 import { permissionUtils } from '../../utils/permissions.js';
 import { Button } from '../base/Button.js';
 import { Card } from '../base/Card.js';
@@ -97,7 +97,7 @@ export class AdminPanel {
     }
 
     renderQuickActions() {
-        const user = sessionManager.obtenerUsuarioActual();
+        const user = sessionService.obtenerUsuarioActual();
         const permissions = permissionUtils.getRolePermissions(user.IDRol);
 
         return `

@@ -4,7 +4,7 @@
  */
 
 import { documentService } from '../../services/document.service.js';
-import { sessionManager } from '../../services/sessionManager.js';
+import { sessionService } from '../../services/sessionService.js';
 import { permissionUtils } from '../../utils/permissions.js';
 import { Button } from '../base/Button.js';
 import { Card } from '../base/Card.js';
@@ -67,7 +67,7 @@ export class DocumentList {
     }
 
     renderActionButtons() {
-        const user = sessionManager.obtenerUsuarioActual();
+        const user = sessionService.obtenerUsuarioActual();
         const canCreate = permissionUtils.hasPermission(user, 'DOCUMENTOS_CREAR');
         const canExport = permissionUtils.hasPermission(user, 'DOCUMENTOS_EXPORTAR');
 
@@ -160,7 +160,7 @@ export class DocumentList {
     }
 
     renderDocumentRow(document) {
-        const user = sessionManager.obtenerUsuarioActual();
+        const user = sessionService.obtenerUsuarioActual();
         const canEdit = permissionUtils.hasPermission(user, 'DOCUMENTOS_EDITAR');
         const canDelete = permissionUtils.hasPermission(user, 'DOCUMENTOS_ELIMINAR');
         const canDerive = permissionUtils.hasPermission(user, 'DOCUMENTOS_DERIVAR');

@@ -4,7 +4,7 @@
  */
 
 // Importamos directamente del archivo services para evitar dependencias circulares
-import { sessionManager } from './services.js';
+import { sessionService } from './services.js';
 import * as errorHandler from '../utils/errorHandler.js';
 
 class UserService {
@@ -83,8 +83,8 @@ class UserService {
      */
     async getCurrentUserDetails() {
         try {
-            const token = await sessionManager.obtenerToken();
-            const user = await sessionManager.obtenerUsuarioActual();
+            const token = await sessionService.obtenerToken();
+            const user = await sessionService.obtenerUsuarioActual();
             
             if (!token || !user) {
                 throw new Error('No hay usuario autenticado');
@@ -163,7 +163,7 @@ class UserService {
             }
         } catch (error) {
             errorHandler.handleError('USER', error, 'obtener detalles del usuario', false);
-            return await sessionManager.obtenerUsuarioActual();
+            return await sessionService.obtenerUsuarioActual();
         }
     }
     
@@ -210,7 +210,7 @@ class UserService {
         try {
             errorHandler.log('USER', `==== INICIO OBTENCIÓN ÁREA (ID: ${areaId}) ====`, null, errorHandler.LOG_LEVEL.DEBUG);
             
-            const token = await sessionManager.obtenerToken();
+            const token = await sessionService.obtenerToken();
             errorHandler.log('USER', `Token obtenido: ${token ? 'EXISTE' : 'NO EXISTE'}`, null, errorHandler.LOG_LEVEL.DEBUG);
             
             if (!token) {
@@ -329,7 +329,7 @@ class UserService {
      */
     async getUserRoleDetails(rolId) {
         try {
-            const token = await sessionManager.obtenerToken();
+            const token = await sessionService.obtenerToken();
             
             if (!token) {
                 throw new Error('No hay usuario autenticado');
@@ -456,7 +456,7 @@ class UserService {
      */
     async getUserActivityStats(userId) {
         try {
-            const token = await sessionManager.obtenerToken();
+            const token = await sessionService.obtenerToken();
             
             if (!token) {
                 throw new Error('No hay usuario autenticado');

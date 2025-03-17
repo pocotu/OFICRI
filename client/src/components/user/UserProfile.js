@@ -3,7 +3,7 @@
  * Maneja la visualización y edición del perfil de usuario
  */
 
-import { sessionManager } from '../../services/sessionManager.js';
+import { sessionService } from '../../services/sessionService.js';
 import { permissionUtils } from '../../utils/permissions.js';
 import { Button } from '../base/Button.js';
 import { Card } from '../base/Card.js';
@@ -25,7 +25,7 @@ export class UserProfile {
     async render(container) {
         try {
             // Obtener datos del usuario actual
-            this.user = await sessionManager.obtenerUsuarioActual();
+            this.user = await sessionService.obtenerUsuarioActual();
             
             if (!this.user) {
                 throw new Error('No se pudo obtener la información del usuario');

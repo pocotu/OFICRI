@@ -3,7 +3,7 @@
  * Barra de navegación superior que incluye el logo, título y perfil de usuario
  */
 
-import { sessionManager } from '../../services/sessionManager.js';
+import { sessionService } from '../../services/sessionService.js';
 import { UserProfile } from '../user/UserProfile.js';
 import { sidebarToggle } from '../../utils/sidebarToggle.js';
 import { Button } from '../base/Button.js';
@@ -35,7 +35,7 @@ export class Header {
 
     async render(container) {
         try {
-            this.user = await sessionManager.obtenerUsuarioActual();
+            this.user = await sessionService.obtenerUsuarioActual();
         } catch (error) {
             console.error('[HEADER] Error al obtener usuario:', error);
             this.user = null;

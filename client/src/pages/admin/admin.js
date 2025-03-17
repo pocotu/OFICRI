@@ -184,7 +184,7 @@ async function loadModules() {
             dashboard: '../../modules/dashboardModule.js',
             users: '../../modules/userModule-compat.js',
             permissions: '../../utils/permissions.js',
-            header: '../../components/Header/Header.js',
+            header: '../../components/navigation/Header.js',
             sidebar: '../../components/Sidebar/Sidebar.js'
         };
         

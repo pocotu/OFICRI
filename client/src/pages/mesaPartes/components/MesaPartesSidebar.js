@@ -5,7 +5,7 @@
 
 // Importar módulos
 import { authService } from '../../../services/services.js';
-import * as sessionManager from '../../../services/sessionManager.js';
+import * as sessionService from '../../../services/sessionService.js';
 import * as permissionUtils from '../../../utils/permissions.js';
 import * as errorHandler from '../../../utils/errorHandler.js';
 
@@ -19,7 +19,7 @@ export class MesaPartesSidebar {
             
             // Intentar obtener usuario, pero como puede ser una Promise, 
             // la inicialización real se hará en el método render
-            const userResult = sessionManager.obtenerUsuarioActual();
+            const userResult = sessionService.obtenerUsuarioActual();
             console.log('[MESA-PARTES-SIDEBAR] Resultado de obtenerUsuarioActual:', userResult);
             
             // Verificar si es una Promise o un objeto directo

@@ -183,7 +183,7 @@ async function loadModules() {
 
     try {
         // Cargar los componentes de interfaz
-        const { Header } = await import('../../components/Header/Header.js');
+        const { Header } = await import('../../components/navigation/Header.js');
         const { MesaPartesSidebar } = await import('./components/MesaPartesSidebar.js');
         
         // Cargar páginas/vistas

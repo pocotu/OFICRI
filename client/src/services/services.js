@@ -16,8 +16,8 @@ import authService from './auth.service.js';
 export { authService };
 
 // Finalmente importamos y exportamos los módulos que dependen de los anteriores
-import * as sessionManager from './sessionManager.js';
-export { sessionManager };
+import * as sessionService from './sessionService.js';
+export { sessionService };
 
 import userService from './user.service.js';
 export { userService };
@@ -26,6 +26,6 @@ export { userService };
 export default {
     apiService,
     authService,
-    sessionManager,
+    sessionService,
     userService
 }; 

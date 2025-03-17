@@ -1,5 +1,5 @@
 import { TEST_CONFIG } from '../config/testConfig';
-import { Header } from '../../components/Header/Header';
+import { Header } from '../../components/navigation/Header';
 import { Sidebar } from '../../components/Sidebar/Sidebar';
 import { getCurrentSession } from '../../services/session/sessionManager';
 import { hasPermission } from '../../utils/permission';

@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './apiClient.js';
-import { sessionManager } from './sessionManager.js';
+import { sessionService } from './sessionService.js';
 import { errorHandler } from '../utils/errorHandler.js';
 
 export class AdminService {
