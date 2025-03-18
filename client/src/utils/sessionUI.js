@@ -220,90 +220,147 @@ export function initSessionUI(options = {}) {
         
         debug('Buscando botón de logout con selector: ' + config.logoutButtonSelector);
         
-        // Intentar primero con el selector proporcionado
-        let logoutButton = document.querySelector(config.logoutButtonSelector);
-        
-        if (!logoutButton) {
-            debug('Botón de logout no encontrado con selector estándar, probando alternativas');
-            
-            // Buscar usando diferentes selectores por ID
-            const possibleIds = ['btnLogout', 'logout', 'btn-logout', 'logoutButton', 'cerrarSesion'];
-            for (const id of possibleIds) {
-                logoutButton = document.getElementById(id);
-                if (logoutButton) {
-                    debug(`Botón de logout encontrado por ID: ${id}`);
-                    break;
-                }
-            }
-            
-            // Si aún no se encuentra, buscar por texto o clase
-            if (!logoutButton) {
-                debug('Botón de logout no encontrado por ID, buscando por texto o clase');
-                
-                // Buscar links con texto "Cerrar Sesión" o similar
-                const allLinks = document.querySelectorAll('a');
-                const possibleLogoutButtons = Array.from(allLinks).filter(link => {
-                    return link.textContent.toLowerCase().includes('cerrar') || 
-                           link.textContent.toLowerCase().includes('logout') ||
-                           link.id === 'btnLogout' ||
-                           link.id === 'logout' ||
-                           link.classList.contains('logout') ||
-                           link.classList.contains('nav-link-logout');
-                });
-                
-                if (possibleLogoutButtons.length > 0) {
-                    logoutButton = possibleLogoutButtons[0];
-                    debug(`Encontrado posible botón de logout por texto/clase: ${logoutButton}`);
-                } else {
-                    // Último intento: buscar botones genéricos
-                    const buttons = document.querySelectorAll('button, a, .btn');
-                    const logoutBtns = Array.from(buttons).filter(btn => {
-                        const text = btn.textContent.toLowerCase();
-                        return text.includes('cerrar') || text.includes('logout') || text.includes('salir');
-                    });
-                    
-                    if (logoutBtns.length > 0) {
-                        logoutButton = logoutBtns[0];
-                        debug('Encontrado botón de logout por texto genérico: ' + logoutButton);
-                    }
-                }
-            }
-        } else {
-            debug('Botón de logout encontrado con selector estándar: ' + logoutButton);
-        }
+        // Intentar encontrar el botón de logout con diferentes estrategias
+        const logoutButton = findLogoutButton();
         
         // Si se encontró el botón, adjuntar evento
         if (logoutButton) {
             attachLogoutEvent(logoutButton);
         } else {
-            debug('No se encontró ningún botón de logout. Programando búsqueda retardada.');
-            
-            // Programar búsqueda retardada
-            setTimeout(() => {
-                debug('Ejecutando búsqueda retardada de botón de logout');
-                const delayedLogoutButton = document.querySelector(config.logoutButtonSelector);
-                
-                if (delayedLogoutButton) {
-                    debug('Botón de logout encontrado en búsqueda retardada');
-                    attachLogoutEvent(delayedLogoutButton);
-                } else {
-                    debug('Búsqueda retardada fallida. Estableciendo listener global');
-                    
-                    // Establecer listener global para capturar cualquier clic en elementos de cierre de sesión
-                    document.addEventListener('click', (e) => {
-                        const target = e.target.closest('a, button');
-                        if (target && (
-                            target.id === 'btnLogout' || 
-                            target.classList.contains('nav-link-logout') ||
-                            target.textContent.toLowerCase().includes('cerrar sesión')
-                        )) {
-                            debug('Interceptado clic en posible botón de logout: ' + target);
-                            handleLogoutClick(e);
-                        }
-                    });
-                }
-            }, 1000);
+            setupDelayedLogoutButtonSearch();
         }
+    };
+    
+    /**
+     * Busca el botón de logout utilizando diferentes estrategias
+     * @returns {HTMLElement|null} - El botón de logout encontrado o null
+     */
+    const findLogoutButton = () => {
+        // Intentar primero con el selector proporcionado
+        let logoutButton = document.querySelector(config.logoutButtonSelector);
+        
+        if (logoutButton) {
+            debug('Botón de logout encontrado con selector estándar: ' + logoutButton);
+            return logoutButton;
+        }
+        
+        debug('Botón de logout no encontrado con selector estándar, probando alternativas');
+        
+        // Probar con búsqueda por ID
+        logoutButton = findLogoutButtonById();
+        if (logoutButton) return logoutButton;
+        
+        // Probar con búsqueda por texto o clase
+        logoutButton = findLogoutButtonByTextOrClass();
+        if (logoutButton) return logoutButton;
+        
+        // Probar con búsqueda genérica si todo lo anterior falla
+        return findLogoutButtonGeneric();
+    };
+    
+    /**
+     * Busca el botón de logout por ID
+     * @returns {HTMLElement|null} - El botón de logout encontrado o null
+     */
+    const findLogoutButtonById = () => {
+        // Buscar usando diferentes selectores por ID
+        const possibleIds = ['btnLogout', 'logout', 'btn-logout', 'logoutButton', 'cerrarSesion'];
+        for (const id of possibleIds) {
+            const button = document.getElementById(id);
+            if (button) {
+                debug(`Botón de logout encontrado por ID: ${id}`);
+                return button;
+            }
+        }
+        return null;
+    };
+    
+    /**
+     * Busca el botón de logout por texto o clase
+     * @returns {HTMLElement|null} - El botón de logout encontrado o null
+     */
+    const findLogoutButtonByTextOrClass = () => {
+        debug('Botón de logout no encontrado por ID, buscando por texto o clase');
+        
+        // Buscar links con texto "Cerrar Sesión" o similar
+        const allLinks = document.querySelectorAll('a');
+        const possibleLogoutButtons = Array.from(allLinks).filter(link => {
+            return link.textContent.toLowerCase().includes('cerrar') || 
+                   link.textContent.toLowerCase().includes('logout') ||
+                   link.id === 'btnLogout' ||
+                   link.id === 'logout' ||
+                   link.classList.contains('logout') ||
+                   link.classList.contains('nav-link-logout');
+        });
+        
+        if (possibleLogoutButtons.length > 0) {
+            const button = possibleLogoutButtons[0];
+            debug(`Encontrado posible botón de logout por texto/clase: ${button}`);
+            return button;
+        }
+        
+        return null;
+    };
+    
+    /**
+     * Busca el botón de logout de forma genérica
+     * @returns {HTMLElement|null} - El botón de logout encontrado o null
+     */
+    const findLogoutButtonGeneric = () => {
+        // Último intento: buscar botones genéricos
+        const buttons = document.querySelectorAll('button, a, .btn');
+        const logoutBtns = Array.from(buttons).filter(btn => {
+            const text = btn.textContent.toLowerCase();
+            return text.includes('cerrar') || text.includes('logout') || text.includes('salir');
+        });
+        
+        if (logoutBtns.length > 0) {
+            const button = logoutBtns[0];
+            debug('Encontrado botón de logout por texto genérico: ' + button);
+            return button;
+        }
+        
+        return null;
+    };
+    
+    /**
+     * Configura una búsqueda retardada para el botón de logout
+     */
+    const setupDelayedLogoutButtonSearch = () => {
+        debug('No se encontró ningún botón de logout. Programando búsqueda retardada.');
+        
+        // Programar búsqueda retardada
+        setTimeout(() => {
+            debug('Ejecutando búsqueda retardada de botón de logout');
+            const delayedLogoutButton = document.querySelector(config.logoutButtonSelector);
+            
+            if (delayedLogoutButton) {
+                debug('Botón de logout encontrado en búsqueda retardada');
+                attachLogoutEvent(delayedLogoutButton);
+            } else {
+                setupGlobalLogoutListener();
+            }
+        }, 1000);
+    };
+    
+    /**
+     * Configura un listener global para capturar clics en posibles botones de logout
+     */
+    const setupGlobalLogoutListener = () => {
+        debug('Búsqueda retardada fallida. Estableciendo listener global');
+        
+        // Establecer listener global para capturar cualquier clic en elementos de cierre de sesión
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('a, button');
+            if (target && (
+                target.id === 'btnLogout' || 
+                target.classList.contains('nav-link-logout') ||
+                target.textContent.toLowerCase().includes('cerrar sesión')
+            )) {
+                debug('Interceptado clic en posible botón de logout: ' + target);
+                handleLogoutClick(e);
+            }
+        });
     };
     
     /**

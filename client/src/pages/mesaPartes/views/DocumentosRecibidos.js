@@ -31,7 +31,26 @@ export class DocumentosRecibidos {
     async render(container) {
         console.log('[DOCUMENTOS-RECIBIDOS] Iniciando renderizado');
         
-        // Mostrar indicador de carga
+        this.mostrarCargando(container);
+        
+        try {
+            this.isLoading = true;
+            await this.fetchDocuments();
+            container.innerHTML = this.renderContenidoPrincipal();
+            this.setupEventListeners(container);
+            console.log('[DOCUMENTOS-RECIBIDOS] Renderizado completado');
+        } catch (error) {
+            console.error('[DOCUMENTOS-RECIBIDOS] Error en renderizado:', error);
+            errorHandler.showErrorMessage('Error al cargar documentos', 'No se pudieron cargar los documentos recibidos. Por favor, intente nuevamente más tarde.');
+            container.innerHTML = this.renderError();
+        }
+    }
+    
+    /**
+     * Muestra el indicador de carga
+     * @param {HTMLElement} container - El contenedor donde se mostrará
+     */
+    mostrarCargando(container) {
         container.innerHTML = `
             <div class="d-flex justify-content-center my-5">
                 <div class="spinner-border text-primary" role="status">
@@ -39,137 +58,199 @@ export class DocumentosRecibidos {
                 </div>
             </div>
         `;
-        
-        try {
-            this.isLoading = true;
-            
-            // Simular carga de datos (esto sería reemplazado por una llamada real a la API)
-            await this.fetchDocuments();
-            
-            // Construir la interfaz
-            const html = `
-                <div class="documents-received-page">
-                    <div class="page-header">
-                        <h2>Documentos Recibidos</h2>
-                        <p>Gestione los documentos que han sido recibidos en Mesa de Partes</p>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-body">
-                            <!-- Filtros -->
-                            <div class="filters-section mb-4">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="searchInput">Buscar</label>
-                                            <input type="text" class="form-control" id="searchInput" 
-                                                placeholder="Buscar por expediente, remitente..." value="${this.searchTerm}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="statusFilter">Estado</label>
-                                            <select class="form-select" id="statusFilter">
-                                                <option value="">Todos</option>
-                                                <option value="pendiente" ${this.filters.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                                                <option value="en_proceso" ${this.filters.estado === 'en_proceso' ? 'selected' : ''}>En Proceso</option>
-                                                <option value="derivado" ${this.filters.estado === 'derivado' ? 'selected' : ''}>Derivado</option>
-                                                <option value="completado" ${this.filters.estado === 'completado' ? 'selected' : ''}>Completado</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="dateFrom">Desde</label>
-                                            <input type="date" class="form-control" id="dateFrom" value="${this.filters.fechaInicio}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="dateTo">Hasta</label>
-                                            <input type="date" class="form-control" id="dateTo" value="${this.filters.fechaFin}">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mt-3">
-                                    <div class="col-md-12 text-end">
-                                        <button id="filterBtn" class="btn btn-primary">
-                                            <i class="fas fa-filter"></i> Filtrar
-                                        </button>
-                                        <button id="resetFilterBtn" class="btn btn-secondary">
-                                            <i class="fas fa-sync"></i> Restablecer
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Tabla de documentos -->
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead class="table-primary">
-                                        <tr>
-                                            <th class="sortable" data-field="numeroExpediente">
-                                                N° Expediente
-                                                ${this.getSortIcon('numeroExpediente')}
-                                            </th>
-                                            <th class="sortable" data-field="fechaRecepcion">
-                                                Fecha Recepción
-                                                ${this.getSortIcon('fechaRecepcion')}
-                                            </th>
-                                            <th class="sortable" data-field="remitente">
-                                                Remitente
-                                                ${this.getSortIcon('remitente')}
-                                            </th>
-                                            <th class="sortable" data-field="asunto">
-                                                Asunto
-                                                ${this.getSortIcon('asunto')}
-                                            </th>
-                                            <th class="sortable" data-field="estado">
-                                                Estado
-                                                ${this.getSortIcon('estado')}
-                                            </th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${this.renderDocumentsRows()}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <!-- Paginación -->
-                            ${this.renderPagination()}
-                        </div>
+    }
+    
+    /**
+     * Renderiza un mensaje de error
+     * @returns {string} HTML del mensaje de error
+     */
+    renderError() {
+        return `
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">Error al cargar documentos</h4>
+                <p>No se pudieron cargar los documentos recibidos. Por favor, intente nuevamente más tarde.</p>
+                <hr>
+                <p class="mb-0">Verifique su conexión a internet e intente nuevamente.</p>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza el contenido principal de la página
+     * @returns {string} HTML del contenido
+     */
+    renderContenidoPrincipal() {
+        return `
+            <div class="documents-received-page">
+                ${this.renderEncabezado()}
+                
+                <div class="card">
+                    <div class="card-body">
+                        ${this.renderSeccionFiltros()}
+                        ${this.renderTablaDocumentos()}
+                        ${this.renderPagination()}
                     </div>
                 </div>
-            `;
-            
-            container.innerHTML = html;
-            
-            // Configurar eventos
-            this.setupEventListeners(container);
-            
-            console.log('[DOCUMENTOS-RECIBIDOS] Renderizado completado');
-        } catch (error) {
-            console.error('[DOCUMENTOS-RECIBIDOS] Error en renderizado:', error);
-            errorHandler.showErrorMessage('Error al cargar documentos', 'No se pudieron cargar los documentos recibidos. Por favor, intente nuevamente más tarde.');
-            
-            container.innerHTML = `
-                <div class="alert alert-danger" role="alert">
-                    <h4 class="alert-heading">Error al cargar documentos</h4>
-                    <p>No se pudieron cargar los documentos recibidos. Por favor, intente nuevamente más tarde.</p>
-                    <button id="retryBtn" class="btn btn-danger">Reintentar</button>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza el encabezado de la página
+     * @returns {string} HTML del encabezado
+     */
+    renderEncabezado() {
+        return `
+            <div class="page-header">
+                <h2>Documentos Recibidos</h2>
+                <p>Gestione los documentos que han sido recibidos en Mesa de Partes</p>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza la sección de filtros
+     * @returns {string} HTML de los filtros
+     */
+    renderSeccionFiltros() {
+        return `
+            <div class="filters-section mb-4">
+                <div class="row">
+                    ${this.renderFiltroBusqueda()}
+                    ${this.renderFiltroEstado()}
+                    ${this.renderFiltrosFecha()}
                 </div>
-            `;
-            
-            // Configurar botón de reintento
-            const retryBtn = container.querySelector('#retryBtn');
-            if (retryBtn) {
-                retryBtn.addEventListener('click', () => this.render(container));
-            }
-        } finally {
-            this.isLoading = false;
-        }
+                ${this.renderBotonesFiltro()}
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza el filtro de búsqueda
+     * @returns {string} HTML del filtro de búsqueda
+     */
+    renderFiltroBusqueda() {
+        return `
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="searchInput">Buscar</label>
+                    <input type="text" class="form-control" id="searchInput" 
+                        placeholder="Buscar por expediente, remitente..." value="${this.searchTerm}">
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza el filtro de estado
+     * @returns {string} HTML del filtro de estado
+     */
+    renderFiltroEstado() {
+        return `
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="statusFilter">Estado</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Todos</option>
+                        <option value="pendiente" ${this.filters.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="en_proceso" ${this.filters.estado === 'en_proceso' ? 'selected' : ''}>En Proceso</option>
+                        <option value="derivado" ${this.filters.estado === 'derivado' ? 'selected' : ''}>Derivado</option>
+                        <option value="completado" ${this.filters.estado === 'completado' ? 'selected' : ''}>Completado</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza los filtros de fecha
+     * @returns {string} HTML de los filtros de fecha
+     */
+    renderFiltrosFecha() {
+        return `
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="dateFrom">Desde</label>
+                    <input type="date" class="form-control" id="dateFrom" value="${this.filters.fechaInicio}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="dateTo">Hasta</label>
+                    <input type="date" class="form-control" id="dateTo" value="${this.filters.fechaFin}">
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza los botones de filtro
+     * @returns {string} HTML de los botones
+     */
+    renderBotonesFiltro() {
+        return `
+            <div class="row mt-3">
+                <div class="col-md-12 text-end">
+                    <button id="filterBtn" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <button id="resetFilterBtn" class="btn btn-secondary">
+                        <i class="fas fa-sync"></i> Restablecer
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza la tabla de documentos
+     * @returns {string} HTML de la tabla
+     */
+    renderTablaDocumentos() {
+        return `
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    ${this.renderEncabezadoTabla()}
+                    <tbody>
+                        ${this.renderDocumentsRows()}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    /**
+     * Renderiza el encabezado de la tabla
+     * @returns {string} HTML del encabezado de tabla
+     */
+    renderEncabezadoTabla() {
+        return `
+            <thead class="table-primary">
+                <tr>
+                    <th class="sortable" data-field="numeroExpediente">
+                        N° Expediente
+                        ${this.getSortIcon('numeroExpediente')}
+                    </th>
+                    <th class="sortable" data-field="fechaRecepcion">
+                        Fecha Recepción
+                        ${this.getSortIcon('fechaRecepcion')}
+                    </th>
+                    <th class="sortable" data-field="remitente">
+                        Remitente
+                        ${this.getSortIcon('remitente')}
+                    </th>
+                    <th class="sortable" data-field="asunto">
+                        Asunto
+                        ${this.getSortIcon('asunto')}
+                    </th>
+                    <th class="sortable" data-field="estado">
+                        Estado
+                        ${this.getSortIcon('estado')}
+                    </th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+        `;
     }
 
     /**

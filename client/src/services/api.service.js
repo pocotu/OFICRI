@@ -141,96 +141,169 @@ class ApiService {
      */
     async handleResponse(response) {
         // Agregar log con información de la respuesta
+        this.logResponseInfo(response);
+        
+        // Obtener texto y datos parseados de la respuesta
+        const { text, data } = await this.parseResponseText(response);
+        
+        // Procesar respuesta de login si es necesario
+        if (response.url.includes('/auth/login') && response.ok) {
+            return this.processLoginResponse(data);
+        }
+        
+        return data;
+    }
+    
+    /**
+     * Registra información básica de la respuesta
+     * @param {Response} response - Respuesta de fetch
+     */
+    logResponseInfo(response) {
         errorHandler.log('API', `Respuesta recibida: ${response.status} ${response.statusText}`, {
             url: response.url,
             ok: response.ok,
             contentType: response.headers.get('Content-Type')
         }, errorHandler.LOG_LEVEL.DEBUG);
-        
+    }
+    
+    /**
+     * Parsea el texto de la respuesta a un objeto de datos
+     * @param {Response} response - Respuesta de fetch
+     * @returns {Promise<Object>} - Texto original y datos parseados
+     */
+    async parseResponseText(response) {
         // Obtener texto de la respuesta
         const text = await response.text();
         
         // Log de respuesta en formato texto (limitado para evitar logs enormes)
-        const previewLength = Math.min(text.length, 150);
-        errorHandler.log('API', `Respuesta en texto: ${text.substring(0, previewLength)}${text.length > previewLength ? '...' : ''}`, null, errorHandler.LOG_LEVEL.DEBUG);
+        this.logResponseText(text);
         
         // Intentar parsear como JSON
+        const data = this.parseJsonData(text, response);
+        
+        return { text, data };
+    }
+    
+    /**
+     * Registra un extracto del texto de respuesta
+     * @param {string} text - Texto de la respuesta
+     */
+    logResponseText(text) {
+        const previewLength = Math.min(text.length, 150);
+        errorHandler.log(
+            'API', 
+            `Respuesta en texto: ${text.substring(0, previewLength)}${text.length > previewLength ? '...' : ''}`, 
+            null, 
+            errorHandler.LOG_LEVEL.DEBUG
+        );
+    }
+    
+    /**
+     * Parsea el texto como JSON
+     * @param {string} text - Texto a parsear
+     * @param {Response} response - Respuesta original
+     * @returns {Object} - Datos parseados
+     */
+    parseJsonData(text, response) {
         let data;
         try {
             data = text ? JSON.parse(text) : {};
             errorHandler.log('API', 'Respuesta parseada como JSON correctamente', { keys: Object.keys(data) }, errorHandler.LOG_LEVEL.DEBUG);
         } catch (e) {
-            errorHandler.log('API', 'Error al parsear JSON', { error: e.message, text: text.substring(0, 100) }, errorHandler.LOG_LEVEL.WARN);
-            
-            // Si no es JSON y la respuesta es exitosa, devolver un objeto simple
-            if (response.ok) {
-                return { success: true, message: text };
-            }
-            throw new Error(`Respuesta no válida: ${text.substring(0, 100)}`);
+            return this.handleParseError(e, text, response);
         }
-        
-        // Si la respuesta es de un login, asegurarnos que tiene la estructura esperada
-        if (response.url.includes('/auth/login') && response.ok) {
-            errorHandler.log('API', 'Procesando respuesta de login', { dataKeys: Object.keys(data) }, errorHandler.LOG_LEVEL.DEBUG);
-            
-            // Si la respuesta es exitosa pero no tiene el formato exacto que espera el cliente, adaptarla
-            if (!data.token || !data.user) {
-                errorHandler.log('API', 'Formato de respuesta incompleto, adaptando estructura', null, errorHandler.LOG_LEVEL.INFO);
-                
-                // Diversos casos de formato que podemos encontrar
-                let token = data.token;
-                let user = data.user;
-                
-                // Caso 1: Datos anidados en data
-                if (data.data) {
-                    if (!token && data.data.token) token = data.data.token;
-                    if (!user && data.data.user) user = data.data.user;
-                }
-                
-                // Caso 2: Usuario en data directamente
-                if (!user && data.data && typeof data.data === 'object' && data.data.IDUsuario) {
-                    user = data.data;
-                }
-                
-                // Caso 3: El objeto principal es el usuario y el token está en una propiedad
-                if (!user && data.IDUsuario) {
-                    user = data;
-                    if (!token && data.token) token = data.token;
-                }
-                
-                // Si encontramos token y usuario, crear estructura estandarizada
-                if (token && user) {
-                    errorHandler.log('API', 'Estructura adaptada exitosamente', {
-                        tieneToken: !!token,
-                        tieneUser: !!user
-                    }, errorHandler.LOG_LEVEL.INFO);
-                    
-                    return {
-                        success: true,
-                        token: token,
-                        user: user
-                    };
-                }
-            }
-        }
-        
-        // Si la respuesta no es exitosa, lanzar error
-        if (!response.ok) {
-            const errorMsg = data.message || `Error: ${response.status} ${response.statusText}`;
-            errorHandler.log('API', 'Respuesta con error', { status: response.status, mensaje: errorMsg }, errorHandler.LOG_LEVEL.ERROR);
-            
-            const error = new Error(errorMsg);
-            error.status = response.status;
-            error.data = data;
-            throw error;
-        }
-        
-        // Asegurar que todas las respuestas tengan un campo success
-        if (data && typeof data === 'object' && data.success === undefined) {
-            data.success = true;
-        }
-        
         return data;
+    }
+    
+    /**
+     * Maneja errores al parsear JSON
+     * @param {Error} error - Error de parsing
+     * @param {string} text - Texto original
+     * @param {Response} response - Respuesta original
+     * @returns {Object} - Objeto de respuesta alternativo
+     */
+    handleParseError(error, text, response) {
+        errorHandler.log('API', 'Error al parsear JSON', { error: error.message, text: text.substring(0, 100) }, errorHandler.LOG_LEVEL.WARN);
+        
+        // Si no es JSON y la respuesta es exitosa, devolver un objeto simple
+        if (response.ok) {
+            return { success: true, message: text };
+        }
+        throw new Error(`Respuesta no válida: ${text.substring(0, 100)}`);
+    }
+    
+    /**
+     * Procesa específicamente las respuestas de login
+     * @param {Object} data - Datos de la respuesta
+     * @returns {Object} - Datos de login estandarizados
+     */
+    processLoginResponse(data) {
+        errorHandler.log('API', 'Procesando respuesta de login', { dataKeys: Object.keys(data) }, errorHandler.LOG_LEVEL.DEBUG);
+        
+        // Si ya tiene el formato esperado, devolver directamente
+        if (data.token && data.user) {
+            return data;
+        }
+        
+        return this.standardizeLoginResponse(data);
+    }
+    
+    /**
+     * Estandariza el formato de respuesta de login
+     * @param {Object} data - Datos originales
+     * @returns {Object} - Datos estandarizados
+     */
+    standardizeLoginResponse(data) {
+        errorHandler.log('API', 'Formato de respuesta incompleto, adaptando estructura', null, errorHandler.LOG_LEVEL.INFO);
+        
+        // Diversos casos de formato que podemos encontrar
+        const { token, user } = this.extractLoginData(data);
+        
+        // Si encontramos token y usuario, crear estructura estandarizada
+        if (token && user) {
+            errorHandler.log('API', 'Estructura adaptada exitosamente', {
+                tieneToken: !!token,
+                tieneUser: !!user
+            }, errorHandler.LOG_LEVEL.INFO);
+            
+            return {
+                success: true,
+                token: token,
+                user: user
+            };
+        }
+        
+        // Mantener estructura original si no podemos adaptarla
+        return data;
+    }
+    
+    /**
+     * Extrae token y datos de usuario de diferentes estructuras de respuesta
+     * @param {Object} data - Datos originales
+     * @returns {Object} - Token y usuario extraídos
+     */
+    extractLoginData(data) {
+        let token = data.token;
+        let user = data.user;
+        
+        // Caso 1: Datos anidados en data
+        if (data.data) {
+            if (!token && data.data.token) token = data.data.token;
+            if (!user && data.data.user) user = data.data.user;
+        }
+        
+        // Caso 2: Usuario en data directamente
+        if (!user && data.data && typeof data.data === 'object' && data.data.IDUsuario) {
+            user = data.data;
+        }
+        
+        // Caso 3: El objeto principal es el usuario y el token está en una propiedad
+        if (!user && data.IDUsuario) {
+            user = data;
+            if (!token && data.token) token = data.token;
+        }
+        
+        return { token, user };
     }
 
     /**

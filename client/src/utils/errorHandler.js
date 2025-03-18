@@ -21,7 +21,7 @@ export function setLogLevel(level) {
 }
 
 /**
- * Función de log simplificada
+ * Función de log centralizada
  * @param {string} module - Módulo que genera el log
  * @param {string} message - Mensaje a registrar
  * @param {Object} data - Datos adicionales
@@ -31,16 +31,8 @@ export function logMessage(module, message, data = null, level = LOG_LEVEL.INFO)
     log(level, message, data, module);
 }
 
-// Alias más corto para logMessage
-export const logMsg = logMessage;
-
-// Otra forma de llamar al log para mantener compatibilidad
-export function logEvent(module, message, data = null, level = LOG_LEVEL.INFO) {
-    log(level, message, data, module);
-}
-
-// Permitir usar un alias más simple
-export { logMessage as log };
+// Mantener compatibilidad con código existente usando un alias
+export const logEvent = logMessage;
 
 /**
  * Maneja un error de forma consistente

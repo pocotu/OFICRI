@@ -166,8 +166,6 @@
                 contentSelector: 'main',
                 buttonSelector: '#menuToggle'
             });
-            
-            console.log('Módulo sidebarToggle inicializado correctamente');
         });
     </script>
     
@@ -175,21 +173,18 @@
     <script type="module">
         import { initSessionUI } from '/src/utils/sessionUI.js';
         
-        // Función para cerrar sesión directamente sin depender del módulo UI
+        // Función para cerrar sesión directamente
         window.logoutDirectly = async function(event) {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
             
-            console.log('Cierre de sesión directo iniciado');
-            
             // Obtener el botón que inició la acción
             const button = event ? event.currentTarget : document.getElementById('btnLogout');
             
             if (button) {
                 // Cambiar el aspecto del botón
-                const originalHTML = button.innerHTML;
                 button.innerHTML = '<i class="bi bi-hourglass-split"></i> Cerrando sesión...';
                 button.style.pointerEvents = 'none';
             }
@@ -222,21 +217,15 @@
                     document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
                 });
                 
-                console.log('Limpieza de sesión completa');
-                
                 // Intentar llamar al servicio de autenticación si está disponible
                 try {
                     const authService = await import('/src/services/auth/authService.js');
                     if (authService && authService.logout) {
                         await authService.logout();
-                        console.log('Logout del servicio de autenticación exitoso');
                     }
                 } catch (serviceError) {
                     console.warn('Error al usar servicio de autenticación:', serviceError);
                 }
-                
-                // Redirigir a la página de login
-                console.log('Redirigiendo a la página de login...');
             } catch (error) {
                 console.error('Error al cerrar sesión:', error);
             } finally {
@@ -248,196 +237,73 @@
         };
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Sistema de depuración modificado para ser menos intrusivo
-            console.log('🔍 DEBUG ADMIN: Página de administrador cargada');
-            
-            // Función para crear el contenedor de depuración
-            function createDebugContainer() {
-                const debugContainer = document.createElement('div');
-                debugContainer.id = 'debugContainer';
-                debugContainer.style.position = 'fixed';
-                debugContainer.style.bottom = '0';
-                debugContainer.style.left = '0';
-                debugContainer.style.right = '0';
-                debugContainer.style.height = '30px'; // Altura reducida
-                debugContainer.style.maxHeight = '30px';
-                debugContainer.style.overflowY = 'hidden';
-                debugContainer.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                debugContainer.style.color = '#22ff22';
-                debugContainer.style.padding = '5px 10px';
-                debugContainer.style.zIndex = '9999';
-                debugContainer.style.fontFamily = 'monospace';
-                debugContainer.style.fontSize = '10px';
-                debugContainer.style.transition = 'all 0.3s ease';
-                debugContainer.style.display = 'flex';
-                debugContainer.style.alignItems = 'center';
-                debugContainer.style.justifyContent = 'space-between';
-                
-                // Añadir botón para expandir
-                const expandButton = document.createElement('button');
-                expandButton.textContent = '▲';
-                expandButton.style.background = 'none';
-                expandButton.style.border = 'none';
-                expandButton.style.color = '#22ff22';
-                expandButton.style.cursor = 'pointer';
-                expandButton.style.marginLeft = 'auto';
-                
-                // Añadir contenedor de mensajes
-                const messagesContainer = document.createElement('div');
-                messagesContainer.id = 'debugMessages';
-                messagesContainer.style.flex = '1';
-                messagesContainer.style.overflow = 'hidden';
-                messagesContainer.style.whiteSpace = 'nowrap';
-                messagesContainer.style.textOverflow = 'ellipsis';
-                
-                debugContainer.appendChild(messagesContainer);
-                debugContainer.appendChild(expandButton);
-                
-                // Estado inicial
-                let expanded = false;
-                
-                // Función para alternar el estado
-                expandButton.addEventListener('click', () => {
-                    expanded = !expanded;
-                    if (expanded) {
-                        debugContainer.style.height = '300px';
-                        debugContainer.style.maxHeight = '300px';
-                        debugContainer.style.overflowY = 'auto';
-                        messagesContainer.style.whiteSpace = 'normal';
-                        messagesContainer.style.overflow = 'auto';
-                        expandButton.textContent = '▼';
-                    } else {
-                        debugContainer.style.height = '30px';
-                        debugContainer.style.maxHeight = '30px';
-                        debugContainer.style.overflowY = 'hidden';
-                        messagesContainer.style.whiteSpace = 'nowrap';
-                        messagesContainer.style.overflow = 'hidden';
-                        expandButton.textContent = '▲';
-                    }
-                });
-                
-                document.body.appendChild(debugContainer);
-                return {container: debugContainer, messages: messagesContainer};
-            }
-            
-            // Crear el contenedor de depuración
-            const {container: debugContainer, messages: debugMessages} = createDebugContainer();
-            
-            // Función para mostrar mensajes de depuración
-            function debugLog(message) {
-                console.log(`🔍 DEBUG ADMIN: ${message}`);
-                const logEntry = document.createElement('div');
-                logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
-                logEntry.style.borderBottom = '1px solid #444';
-                logEntry.style.paddingBottom = '3px';
-                logEntry.style.marginBottom = '3px';
-                debugMessages.appendChild(logEntry);
-                
-                // Actualizar también el texto visible cuando está colapsado
-                if (debugMessages.childNodes.length === 1) {
-                    debugMessages.title = logEntry.textContent;
-                }
-            }
-            
-            debugLog('Iniciando verificación de autenticación');
-            
             // Inicializar la gestión de sesión UI con el módulo centralizado
             const sessionManager = initSessionUI({
                 logoutButtonSelector: '#btnLogout',
                 userNameSelector: '#userName',
                 authCheckInterval: 60000, // Verificar cada 1 minuto
-                debugLogger: debugLog,
                 onLogoutSuccess: () => {
-                    debugLog('Sesión cerrada exitosamente, redirigiendo...');
+                    console.log('Sesión cerrada exitosamente, redirigiendo...');
                 },
-                onLogoutError: (error) => {
-                    debugLog(`Error al cerrar sesión: ${error.message}`);
+                onLogoutError: () => {
                     window.location.href = '/index.html?nocache=' + Date.now();
                 }
             });
             
             // Iniciar verificación de autenticación
             sessionManager.initAuthentication(true)
-                .then(isAuthenticated => {
-                    if (isAuthenticated) {
-                        debugLog('Usuario autenticado correctamente');
-                    } else {
-                        debugLog('Usuario no autenticado, redirigiendo...');
-                    }
-                })
                 .catch(error => {
-                    debugLog(`Error en verificación de autenticación: ${error.message}`);
+                    console.error('Error en verificación de autenticación:', error);
                 });
             
             // Guardar en window para acceso global
             window.sessionManager = sessionManager;
-            
-            debugLog('Inicialización completa de la página de administrador');
         });
     </script>
 
-    <!-- Scripts adicionales -->
+    <!-- Scripts para el dashboard -->
     <script>
         // Función para cargar las estadísticas del dashboard
         async function cargarEstadisticasDashboard() {
             try {
-                console.log("🔍 DEBUG ADMIN: Cargando estadísticas del dashboard...");
-                
-                // Obtener token de autenticación de múltiples posibles ubicaciones
+                // Obtener token de autenticación
                 let token = localStorage.getItem('auth_token') || 
                            localStorage.getItem('token') || 
                            sessionStorage.getItem('auth_token') || 
-                           sessionStorage.getItem('token');
-                           
-                // Buscar también con el prefijo oficri_
-                if (!token) {
-                    token = localStorage.getItem('oficri_token') || 
-                            sessionStorage.getItem('oficri_token');
-                }
+                           sessionStorage.getItem('token') ||
+                           localStorage.getItem('oficri_token') || 
+                           sessionStorage.getItem('oficri_token');
                 
-                console.log("🔍 DEBUG ADMIN: Token encontrado:", token ? "Sí" : "No");
-                
+                // Intentar obtener el token del módulo de autenticación si no se encontró
                 if (!token) {
-                    // Intentar obtener el token del módulo de autenticación
                     try {
                         const authModule = await import('/src/services/auth/authService.js');
                         token = await authModule.getToken();
-                        console.log("🔍 DEBUG ADMIN: Token obtenido del servicio de autenticación:", token ? "Sí" : "No");
                     } catch (authError) {
-                        console.log("🔍 DEBUG ADMIN: Error al obtener token del servicio:", authError);
+                        console.error('Error al obtener token:', authError);
                     }
                 }
                 
-                // Intentar primero el endpoint público (sin autenticación)
+                // Intentar primero el endpoint público
                 try {
-                    console.log("🔍 DEBUG ADMIN: Intentando usar el endpoint público...");
                     const publicResponse = await fetch('/api/dashboard/public-stats');
                     
                     if (publicResponse.ok) {
-                        console.log("🔍 DEBUG ADMIN: Endpoint público accesible");
                         const data = await publicResponse.json();
-                        console.log("🔍 DEBUG ADMIN: Datos recibidos:", data);
-                        
-                        // Actualizar la interfaz con los datos recibidos
                         updateDashboardStats(data);
                         
                         // Si hay estadísticas detalladas, mostrarlas
                         if (data.estadisticasDetalladas) {
                             mostrarEstadisticasDetalladas(data.estadisticasDetalladas);
                         }
-                        
-                        return; // Salir de la función si el endpoint público funciona
-                    } else {
-                        console.log("🔍 DEBUG ADMIN: Endpoint público no accesible, código:", publicResponse.status);
+                        return;
                     }
                 } catch (publicError) {
-                    console.log("🔍 DEBUG ADMIN: Error al acceder al endpoint público:", publicError);
+                    console.error('Error al acceder al endpoint público:', publicError);
                 }
                 
                 // Si el endpoint público falla y tenemos token, intentar con el endpoint autenticado
                 if (token) {
-                    console.log("🔍 DEBUG ADMIN: Intentando usar el endpoint autenticado...");
-                    
                     // Verificar si el token ya tiene el prefijo Bearer
                     if (!token.startsWith('Bearer ')) {
                         token = 'Bearer ' + token;
@@ -452,23 +318,15 @@
                         }
                     });
                     
-                    console.log("🔍 DEBUG ADMIN: Respuesta de la API autenticada:", response.status);
-                    
                     if (!response.ok) {
                         throw new Error(`Error al obtener estadísticas: ${response.status}`);
                     }
                     
                     const data = await response.json();
-                    console.log("🔍 DEBUG ADMIN: Datos recibidos:", data);
-                    
-                    // Actualizar la interfaz con los datos recibidos
                     updateDashboardStats(data);
-                } else {
-                    console.log("🔍 DEBUG ADMIN: Sin token, no se puede acceder al endpoint autenticado");
                 }
-                
             } catch (error) {
-                console.error("🔍 DEBUG ADMIN: Error al cargar estadísticas:", error);
+                console.error('Error al cargar estadísticas:', error);
             }
         }
         
@@ -483,7 +341,6 @@
                 const numberElement = areaCard.querySelector('.number');
                 if (numberElement) {
                     numberElement.textContent = data.areasActivas || 0;
-                    console.log("🔍 DEBUG ADMIN: Áreas activas actualizadas:", data.areasActivas);
                 }
             }
             
@@ -493,7 +350,6 @@
                 const numberElement = usuariosCard.querySelector('.number');
                 if (numberElement) {
                     numberElement.textContent = data.usuariosActivos || 0;
-                    console.log("🔍 DEBUG ADMIN: Usuarios activos actualizados:", data.usuariosActivos);
                 }
             }
             
@@ -503,15 +359,12 @@
                 const numberElement = documentosCard.querySelector('.number');
                 if (numberElement) {
                     numberElement.textContent = data.documentosPendientes || 0;
-                    console.log("🔍 DEBUG ADMIN: Documentos pendientes actualizados:", data.documentosPendientes);
                 }
             }
         }
         
         // Función para mostrar estadísticas detalladas
         function mostrarEstadisticasDetalladas(estadisticas) {
-            console.log("🔍 DEBUG ADMIN: Mostrando estadísticas detalladas");
-            
             // Obtenemos los contenedores donde mostraremos los datos
             const modulesContainer = document.querySelectorAll('.module-container');
             
@@ -547,7 +400,6 @@
                 
                 actividadHTML += '</div>';
                 actividadContainer.innerHTML = `<h4>Actividad Reciente</h4>${actividadHTML}`;
-                console.log("🔍 DEBUG ADMIN: Actividad reciente actualizada");
             } else if (actividadContainer) {
                 actividadContainer.innerHTML = `
                     <h4>Actividad Reciente</h4>
@@ -573,7 +425,6 @@
                 
                 documentosHTML += '</div>';
                 documentosContainer.innerHTML = `<h4>Documentos Pendientes</h4>${documentosHTML}`;
-                console.log("🔍 DEBUG ADMIN: Documentos por área actualizados");
             } else if (documentosContainer) {
                 documentosContainer.innerHTML = `
                     <h4>Documentos Pendientes</h4>
@@ -634,7 +485,6 @@
                         
                         areasContainer.innerHTML = areasHTML;
                         rowContainer.parentNode.insertBefore(areasContainer, rowContainer.nextSibling);
-                        console.log("🔍 DEBUG ADMIN: Áreas más activas creadas");
                     }
                 } else {
                     // Si ya existe, actualizar su contenido
@@ -675,21 +525,18 @@
                     `;
                     
                     areasContainer.innerHTML = areasHTML;
-                    console.log("🔍 DEBUG ADMIN: Áreas más activas actualizadas");
                 }
             }
         }
         
         // Cargar estadísticas al cargar la página
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("🔍 DEBUG ADMIN: Inicializando carga de estadísticas");
             cargarEstadisticasDashboard();
             
             // Configurar el botón de actualizar para recargar las estadísticas
             const btnActualizar = document.querySelector('.btn-actualizar');
             if (btnActualizar) {
                 btnActualizar.addEventListener('click', () => {
-                    console.log("🔍 DEBUG ADMIN: Actualizando estadísticas manualmente");
                     cargarEstadisticasDashboard();
                 });
             }
@@ -697,53 +544,39 @@
     </script>
 
     <script>
-        console.log("🔍 DEBUG ADMIN: Página de administrador cargada");
-        
         // Código para manejar el clic en el perfil de usuario
         document.addEventListener('DOMContentLoaded', () => {
             const userDisplayElement = document.getElementById('userDisplay');
             
             if (userDisplayElement) {
-                console.log("🔍 DEBUG ADMIN: Elemento de perfil de usuario encontrado, agregando event listener");
-                
                 // Hacer que el cursor sea pointer para indicar que es clickeable
                 userDisplayElement.style.cursor = 'pointer';
                 
                 userDisplayElement.addEventListener('click', async () => {
                     try {
-                        console.log("🔍 DEBUG ADMIN: Clic en perfil de usuario detectado");
-                        
                         // Intentar obtener el CIP del usuario desde localStorage o sessionStorage
                         const storedUser = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
                         const userCIP = storedUser.codigoCIP || storedUser.CodigoCIP || '12345678'; // Fallback al admin
                         
-                        console.log("🔍 DEBUG ADMIN: CIP de usuario encontrado:", userCIP);
-                        
-                        // Primero intentamos usar la API pública que creamos como alternativa
+                        // Intentamos usar la API pública
                         try {
-                            console.log("🔍 DEBUG ADMIN: Obteniendo perfil usando API pública");
                             const profileResponse = await fetch(`/api/usuarios/public-profile/${userCIP}`);
                             
                             if (profileResponse.ok) {
                                 const profileData = await profileResponse.json();
-                                console.log("🔍 DEBUG ADMIN: Datos de perfil recibidos:", profileData);
                                 
                                 if (profileData.success && profileData.user) {
                                     renderProfileUI(profileData.user);
-                                    return; // Salir si se pudo usar la API alternativa
+                                    return;
                                 } else {
-                                    // Si hay éxito pero no hay datos del usuario
                                     showProfileError("No se pudieron cargar los datos del perfil", "La respuesta del servidor no contiene datos de usuario válidos.");
                                 }
                             } else {
-                                // Mostrar un mensaje de error apropiado según el código de estado
                                 let errorMessage = "Error al cargar el perfil de usuario";
                                 let errorDetails = `El servidor respondió con el código de estado: ${profileResponse.status}`;
                                 
-                                // Intentar obtener más información del error
                                 try {
                                     const errorData = await profileResponse.json();
-                                    console.log("🔍 DEBUG ADMIN: Error de la API pública (JSON):", errorData);
                                     
                                     if (errorData.message) {
                                         errorDetails = errorData.message;
@@ -753,29 +586,24 @@
                                         errorDetails += ` (${errorData.errorDetails})`;
                                     }
                                 } catch (parseError) {
-                                    console.log("🔍 DEBUG ADMIN: No se pudo parsear la respuesta de error como JSON");
                                     try {
                                         const textError = await profileResponse.text();
-                                        console.log("🔍 DEBUG ADMIN: Error de la API pública (texto):", textError);
                                         if (textError) {
                                             errorDetails = textError;
                                         }
                                     } catch (textError) {
-                                        console.log("🔍 DEBUG ADMIN: No se pudo leer la respuesta de error");
+                                        console.error('No se pudo leer la respuesta de error');
                                     }
                                 }
                                 
-                                // Mostrar el error al usuario
                                 showProfileError(errorMessage, errorDetails);
                             }
                         } catch (publicApiError) {
-                            console.log("🔍 DEBUG ADMIN: Error al usar la API pública:", publicApiError);
                             showProfileError("Error de conexión", "No se pudo conectar con el servidor para obtener los datos del perfil.");
                         }
                     } catch (error) {
-                        console.error("🔍 DEBUG ADMIN: Error al mostrar el perfil de usuario:", error);
+                        console.error("Error al mostrar el perfil de usuario:", error);
                         
-                        // Muestra un mensaje de error en la interfaz
                         const mainContent = document.querySelector('#mainContent') || 
                                            document.querySelector('main') || 
                                            document.querySelector('.main-content');
@@ -795,17 +623,11 @@
                         }
                     }
                 });
-                
-                console.log("🔍 DEBUG ADMIN: Event listener agregado al elemento de perfil de usuario");
-            } else {
-                console.error("🔍 DEBUG ADMIN: No se encontró el elemento de perfil de usuario");
             }
         });
 
         // Función para mostrar un error en la interfaz de perfil
         function showProfileError(title, message) {
-            console.log(`🔍 DEBUG ADMIN: Mostrando error de perfil: ${title} - ${message}`);
-            
             const mainContent = document.querySelector('#mainContent') || 
                                document.querySelector('main') || 
                                document.querySelector('.main-content');
@@ -971,8 +793,6 @@
                         </div>
                     </div>
                 `;
-                
-                console.log("🔍 DEBUG ADMIN: Perfil renderizado correctamente con estilos de UserProfile.css");
             }
         }
     </script>

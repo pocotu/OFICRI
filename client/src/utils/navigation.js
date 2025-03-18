@@ -5,6 +5,7 @@
 
 import { securityLogger } from '../services/security/logging.js';
 import { securityUtils } from '../services/security/securityUtils.js';
+import { getHighestRole } from './permission.js';
 
 // Mapeo de rutas por rol
 const ROUTES = {
@@ -34,21 +35,13 @@ export function isRouteAllowed(route, userPermissions) {
 }
 
 /**
- * Obtiene el rol más alto del usuario basado en sus permisos
+ * Función obsoleta, mantenida para compatibilidad.
+ * @deprecated Use getHighestRole de permission.js
  * @param {number} userPermissions - Permisos del usuario
  * @returns {string} - Rol más alto del usuario
  */
-function getHighestRole(userPermissions) {
-    // Si tiene todos los permisos, es ADMIN
-    if (userPermissions === 255) return 'ADMIN';
-    
-    // Si tiene permisos de Mesa de Partes
-    if ((userPermissions & 89) === 89) return 'MESA_PARTES';
-    
-    // Si tiene permisos de Área
-    if ((userPermissions & 89) === 89) return 'AREA';
-    
-    return 'GUEST';
+function _legacyGetHighestRole(userPermissions) {
+    return getHighestRole(userPermissions);
 }
 
 /**

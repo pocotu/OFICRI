@@ -23,174 +23,248 @@ export class Exportar {
      */
     async render(container) {
         try {
-            // Mostrar spinner mientras se carga
-            container.innerHTML = `
-                <div class="text-center my-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                    <p class="mt-3">Cargando módulo de exportación...</p>
-                </div>
-            `;
-
-            // Cargar opciones (simulado)
+            this.mostrarSpinner(container);
             await this.cargarOpciones();
-
-            // Contenido principal
-            container.innerHTML = `
-                <div class="container-fluid px-4">
-                    <h2 class="mt-4 mb-4">Exportar Reportes</h2>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-file-alt me-1"></i>
-                                    Tipo de Reporte
-                                </div>
-                                <div class="card-body">
-                                    <div class="list-group" id="tiposReporte">
-                                        <a href="#" class="list-group-item list-group-item-action active" data-tipo="documentos">
-                                            <i class="fas fa-file-contract me-2"></i>
-                                            Documentos Recibidos
-                                            <small class="d-block text-muted">Listado de todos los documentos recibidos en un periodo</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-pendientes">
-                                            <i class="fas fa-clipboard-list me-2"></i>
-                                            Documentos Pendientes
-                                            <small class="d-block text-muted">Documentos en proceso de atención</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-completados">
-                                            <i class="fas fa-clipboard-check me-2"></i>
-                                            Documentos Completados
-                                            <small class="d-block text-muted">Documentos que han completado su procesamiento</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="derivaciones">
-                                            <i class="fas fa-exchange-alt me-2"></i>
-                                            Derivaciones
-                                            <small class="d-block text-muted">Movimientos de documentos entre áreas</small>
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action" data-tipo="estadisticas">
-                                            <i class="fas fa-chart-pie me-2"></i>
-                                            Estadísticas
-                                            <small class="d-block text-muted">Resumen estadístico de documentos</small>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-file-export me-1"></i>
-                                    Formato de Exportación
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoExcel" value="excel" checked>
-                                                <label class="form-check-label" for="formatoExcel">
-                                                    <i class="fas fa-file-excel text-success me-1"></i> Excel
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoPdf" value="pdf">
-                                                <label class="form-check-label" for="formatoPdf">
-                                                    <i class="fas fa-file-pdf text-danger me-1"></i> PDF
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-8">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-filter me-1"></i>
-                                    Filtros del Reporte
-                                </div>
-                                <div class="card-body">
-                                    <form id="formFiltros" class="row g-3">
-                                        <div class="col-md-6">
-                                            <label for="fechaDesde" class="form-label">Fecha Desde</label>
-                                            <input type="date" class="form-control" id="fechaDesde" value="${this.filtros.fechaDesde}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="fechaHasta" class="form-label">Fecha Hasta</label>
-                                            <input type="date" class="form-control" id="fechaHasta" value="${this.filtros.fechaHasta}">
-                                        </div>
-                                        
-                                        <div class="col-md-6">
-                                            <label for="selectEstado" class="form-label">Estado</label>
-                                            <select class="form-select" id="selectEstado">
-                                                <option value="">Todos</option>
-                                                <option value="RECIBIDO">Recibido</option>
-                                                <option value="EN_PROCESO">En Proceso</option>
-                                                <option value="DERIVADO">Derivado</option>
-                                                <option value="COMPLETADO">Completado</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div class="col-md-6">
-                                            <label for="selectArea" class="form-label">Área</label>
-                                            <select class="form-select" id="selectArea">
-                                                <option value="">Todas</option>
-                                                <option value="MESA_PARTES">Mesa de Partes</option>
-                                                <option value="BALISTICA">Departamento de Balística</option>
-                                                <option value="LAB_ADN">Laboratorio de ADN</option>
-                                                <option value="PERICIAS">Departamento de Pericias</option>
-                                                <option value="DOCUMENTOSCOPIA">Departamento de Documentoscopía</option>
-                                                <option value="LAB_QUIMICO">Laboratorio Químico</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div id="filtrosAdicionales">
-                                            <!-- Filtros adicionales según el tipo de reporte seleccionado -->
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <i class="fas fa-eye me-1"></i>
-                                    Vista Previa
-                                </div>
-                                <div class="card-body">
-                                    <div id="vistaPrevia" class="report-preview">
-                                        ${this.renderVistaPrevia()}
-                                    </div>
-                                </div>
-                                <div class="card-footer text-end">
-                                    <button type="button" class="btn btn-secondary me-2" id="btnActualizar">
-                                        <i class="fas fa-sync-alt me-1"></i>Actualizar Vista Previa
-                                    </button>
-                                    <button type="button" class="btn btn-primary" id="btnExportar">
-                                        <i class="fas fa-file-export me-1"></i>Exportar Reporte
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Configurar eventos
+            container.innerHTML = this.renderContenidoPrincipal();
             this.setupEventListeners(container);
         } catch (error) {
             console.error('[Exportar] Error al renderizar vista:', error);
-            container.innerHTML = `
-                <div class="alert alert-danger">
-                    <h4>Error al cargar la vista</h4>
-                    <p>${error.message || 'Ocurrió un error inesperado'}</p>
-                    <button class="btn btn-outline-danger" onclick="window.location.reload()">Reintentar</button>
-                </div>
-            `;
+            container.innerHTML = this.renderError(error);
         }
+    }
+
+    /**
+     * Muestra un spinner de carga
+     * @param {HTMLElement} container - Contenedor donde mostrar el spinner
+     */
+    mostrarSpinner(container) {
+        container.innerHTML = `
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3">Cargando módulo de exportación...</p>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza un mensaje de error
+     * @param {Error} error - Error ocurrido
+     * @returns {string} HTML del mensaje de error
+     */
+    renderError(error) {
+        return `
+            <div class="alert alert-danger">
+                <h4>Error al cargar la vista</h4>
+                <p>${error.message || 'Ocurrió un error inesperado'}</p>
+                <button class="btn btn-outline-danger" onclick="window.location.reload()">Reintentar</button>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza el contenido principal de la página
+     * @returns {string} HTML del contenido principal
+     */
+    renderContenidoPrincipal() {
+        return `
+            <div class="container-fluid px-4">
+                <h2 class="mt-4 mb-4">Exportar Reportes</h2>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        ${this.renderSeccionTiposReporte()}
+                        ${this.renderSeccionFormatoExportacion()}
+                    </div>
+                    
+                    <div class="col-md-8">
+                        ${this.renderSeccionFiltros()}
+                        ${this.renderSeccionVistaPrevia()}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza la sección de tipos de reporte
+     * @returns {string} HTML de la sección
+     */
+    renderSeccionTiposReporte() {
+        return `
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-file-alt me-1"></i>
+                    Tipo de Reporte
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="tiposReporte">
+                        <a href="#" class="list-group-item list-group-item-action active" data-tipo="documentos">
+                            <i class="fas fa-file-contract me-2"></i>
+                            Documentos Recibidos
+                            <small class="d-block text-muted">Listado de todos los documentos recibidos en un periodo</small>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-pendientes">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            Documentos Pendientes
+                            <small class="d-block text-muted">Documentos en proceso de atención</small>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-tipo="documentos-completados">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            Documentos Completados
+                            <small class="d-block text-muted">Documentos que han completado su procesamiento</small>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-tipo="derivaciones">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            Derivaciones
+                            <small class="d-block text-muted">Movimientos de documentos entre áreas</small>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-tipo="estadisticas">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Estadísticas
+                            <small class="d-block text-muted">Resumen estadístico de documentos</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza la sección de formato de exportación
+     * @returns {string} HTML de la sección
+     */
+    renderSeccionFormatoExportacion() {
+        return `
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-file-export me-1"></i>
+                    Formato de Exportación
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoExcel" value="excel" checked>
+                                <label class="form-check-label" for="formatoExcel">
+                                    <i class="fas fa-file-excel text-success me-1"></i> Excel
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="formatoExportacion" id="formatoPdf" value="pdf">
+                                <label class="form-check-label" for="formatoPdf">
+                                    <i class="fas fa-file-pdf text-danger me-1"></i> PDF
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza la sección de filtros del reporte
+     * @returns {string} HTML de la sección
+     */
+    renderSeccionFiltros() {
+        return `
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-filter me-1"></i>
+                    Filtros del Reporte
+                </div>
+                <div class="card-body">
+                    <form id="formFiltros" class="row g-3">
+                        ${this.renderFiltrosFecha()}
+                        ${this.renderFiltrosEstadoArea()}
+                        <div id="filtrosAdicionales">
+                            <!-- Filtros adicionales según el tipo de reporte seleccionado -->
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza los filtros de fecha
+     * @returns {string} HTML de los filtros de fecha
+     */
+    renderFiltrosFecha() {
+        return `
+            <div class="col-md-6">
+                <label for="fechaDesde" class="form-label">Fecha Desde</label>
+                <input type="date" class="form-control" id="fechaDesde" value="${this.filtros.fechaDesde}">
+            </div>
+            <div class="col-md-6">
+                <label for="fechaHasta" class="form-label">Fecha Hasta</label>
+                <input type="date" class="form-control" id="fechaHasta" value="${this.filtros.fechaHasta}">
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza los filtros de estado y área
+     * @returns {string} HTML de los filtros de estado y área
+     */
+    renderFiltrosEstadoArea() {
+        return `
+            <div class="col-md-6">
+                <label for="selectEstado" class="form-label">Estado</label>
+                <select class="form-select" id="selectEstado">
+                    <option value="">Todos</option>
+                    <option value="RECIBIDO">Recibido</option>
+                    <option value="EN_PROCESO">En Proceso</option>
+                    <option value="DERIVADO">Derivado</option>
+                    <option value="COMPLETADO">Completado</option>
+                </select>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="selectArea" class="form-label">Área</label>
+                <select class="form-select" id="selectArea">
+                    <option value="">Todas</option>
+                    <option value="MESA_PARTES">Mesa de Partes</option>
+                    <option value="BALISTICA">Departamento de Balística</option>
+                    <option value="LAB_ADN">Laboratorio de ADN</option>
+                    <option value="PERICIAS">Departamento de Pericias</option>
+                    <option value="DOCUMENTOSCOPIA">Departamento de Documentoscopía</option>
+                    <option value="LAB_QUIMICO">Laboratorio Químico</option>
+                </select>
+            </div>
+        `;
+    }
+
+    /**
+     * Renderiza la sección de vista previa
+     * @returns {string} HTML de la sección
+     */
+    renderSeccionVistaPrevia() {
+        return `
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-eye me-1"></i>
+                    Vista Previa
+                </div>
+                <div class="card-body">
+                    <div id="vistaPrevia" class="report-preview">
+                        ${this.renderVistaPrevia()}
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <button type="button" class="btn btn-secondary me-2" id="btnActualizar">
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar Vista Previa
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnExportar">
+                        <i class="fas fa-file-export me-1"></i>Exportar Reporte
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
     /**

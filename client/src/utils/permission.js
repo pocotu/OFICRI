@@ -248,20 +248,44 @@ export function getFilteredMenu(userPermissions) {
 
 /**
  * Obtiene el rol más alto del usuario basado en sus permisos
+ * Esta es la implementación canónica unificada que combina los enfoques
+ * de permission.js y navigation.js
  * @param {number} userPermissions - Permisos del usuario
  * @returns {string|null} - Nombre del rol más alto o null si no coincide
  */
 export function getHighestRole(userPermissions) {
+    // Si no hay permisos, devolver GUEST
+    if (!userPermissions) return 'GUEST';
+    
+    // Si tiene todos los permisos (255), es administrador
+    if (userPermissions === 255) return 'ADMIN';
+    
     // Roles en orden de jerarquía (de mayor a menor)
     const roleHierarchy = ['ADMIN', 'MESA_PARTES', 'AREA_RESPONSABLE'];
     
+    // Verificar cada rol según su máscara de bits
+    const roleMasks = {
+        'ADMIN': 255,         // Todos los permisos
+        'MESA_PARTES': 89,    // Crear, Ver, Derivar, Exportar
+        'AREA_RESPONSABLE': 25 // Editar, Ver, Derivar
+    };
+    
+    // Verificar cada rol en orden de jerarquía
     for (const roleName of roleHierarchy) {
-        if (hasRole(userPermissions, roleName)) {
+        const mask = roleMasks[roleName];
+        // Verificar si todos los bits del rol están presentes en los permisos del usuario
+        if ((userPermissions & mask) === mask) {
             return roleName;
         }
     }
     
-    return null;
+    // Si no coincide con ningún rol específico, pero tiene algún permiso
+    if (userPermissions > 0) {
+        return 'USER';
+    }
+    
+    // Sin permisos
+    return 'GUEST';
 }
 
 /**

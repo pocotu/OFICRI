@@ -26,24 +26,35 @@ const SECURITY_CONFIG = {
  */
 const apiClient = {
   /**
-   * Realiza una petición HTTP genérica
-   * @param {string} method - Método HTTP (GET, POST, PUT, DELETE)
-   * @param {string} endpoint - Endpoint de la API
-   * @param {Object} data - Datos para enviar (para POST, PUT)
-   * @param {boolean} auth - Si requiere autenticación
-   * @param {boolean} cache - Si debe usar caché (solo para GET)
-   * @returns {Promise<Object>} - Datos de la respuesta
+   * Valida que el endpoint sea seguro
+   * @param {string} endpoint - Endpoint a validar
+   * @throws {Error} Si el endpoint es inválido
    */
-  async request(method, endpoint, data = null, auth = true, cache = false) {
-    // Validar el endpoint (prevenir path traversal)
+  validateEndpoint(endpoint) {
     if (endpoint.includes('..') || !endpoint.startsWith('/')) {
       throw new Error('Endpoint inválido: ' + endpoint);
     }
-    
-    // Construir URL completa
-    const url = `${APP_CONFIG.apiBaseUrl}${endpoint}`;
-    
-    // Crear opciones de la petición
+    return true;
+  },
+
+  /**
+   * Construye la URL completa para la petición
+   * @param {string} endpoint - Endpoint de la API
+   * @returns {string} - URL completa
+   */
+  buildUrl(endpoint) {
+    return `${APP_CONFIG.apiBaseUrl}${endpoint}`;
+  },
+
+  /**
+   * Construye las opciones para la petición fetch
+   * @param {string} method - Método HTTP 
+   * @param {boolean} auth - Si requiere autenticación
+   * @param {Object} data - Datos para enviar
+   * @returns {Object} - Opciones de fetch
+   */
+  buildRequestOptions(method, auth, data) {
+    // Opciones básicas
     const options = {
       method: method.toUpperCase(),
       headers: {
@@ -53,89 +64,278 @@ const apiClient = {
       credentials: 'same-origin'
     };
     
-    // Agregar token de autenticación si es necesario
+    // Autenticación
     if (auth) {
-      const token = this.getAuthToken();
-      if (token) {
-        options.headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        // Manejar caso sin token cuando es requerido
-        console.warn('API: Petición autenticada sin token disponible');
-      }
+      this.addAuthHeader(options);
     }
     
-    // Agregar CSRF token para peticiones de modificación si está habilitado
+    // CSRF para métodos de modificación
     if (SECURITY_CONFIG.csrf.enabled && 
         (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
-      const csrfToken = this.getCsrfToken();
-      if (csrfToken) {
-        options.headers['X-CSRF-Token'] = csrfToken;
-      }
+      this.addCsrfToken(options);
     }
     
-    // Agregar datos para métodos POST/PUT
+    // Datos para métodos con body
     if (data && (method === 'POST' || method === 'PUT')) {
       options.body = JSON.stringify(data);
     }
     
-    // Para peticiones GET, verificar caché si está habilitado
-    const cacheKey = `${method}:${url}:${JSON.stringify(options)}`;
-    if (method === 'GET' && cache && requestCache.has(cacheKey)) {
-      return requestCache.get(cacheKey);
+    return options;
+  },
+  
+  /**
+   * Agrega el header de autenticación
+   * @param {Object} options - Opciones de fetch
+   */
+  addAuthHeader(options) {
+    const token = this.getAuthToken();
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      // Manejar caso sin token cuando es requerido
+      console.warn('API: Petición autenticada sin token disponible');
+    }
+  },
+  
+  /**
+   * Agrega el token CSRF
+   * @param {Object} options - Opciones de fetch
+   */
+  addCsrfToken(options) {
+    const csrfToken = this.getCsrfToken();
+    if (csrfToken) {
+      options.headers['X-CSRF-Token'] = csrfToken;
+    }
+  },
+  
+  /**
+   * Verifica y gestiona la caché para peticiones GET
+   * @param {string} method - Método HTTP
+   * @param {string} url - URL de la petición
+   * @param {Object} options - Opciones de fetch
+   * @param {boolean} useCache - Si debe usar caché
+   * @returns {Object|null} - Datos en caché o null
+   */
+  checkCache(method, url, options, useCache) {
+    if (method !== 'GET' || !useCache) {
+      return null;
     }
     
+    const cacheKey = `${method}:${url}:${JSON.stringify(options)}`;
+    if (requestCache.has(cacheKey)) {
+      return { key: cacheKey, data: requestCache.get(cacheKey) };
+    }
+    
+    return { key: cacheKey, data: null };
+  },
+  
+  /**
+   * Guarda datos en caché
+   * @param {string} cacheKey - Clave de caché
+   * @param {Object} data - Datos a guardar
+   */
+  saveToCache(cacheKey, data) {
+    requestCache.set(cacheKey, data);
+  },
+  
+  /**
+   * Ejecuta la petición HTTP con timeout
+   * @param {string} url - URL de la petición
+   * @param {Object} options - Opciones de fetch
+   * @returns {Promise<Response>} - Respuesta de fetch
+   */
+  async executeRequest(url, options, data) {
+    // Configurar timeout y ejecutar la petición
+    const { controller, timeoutId } = this.configureRequestTimeout();
+    options.signal = controller.signal;
+    
     try {
-      // Agregar timeout para prevenir peticiones bloqueadas
-      const controller = new AbortController();
-      options.signal = controller.signal;
-      
-      // Establecer timeout según configuración
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, APP_CONFIG.apiTimeout || 30000);
-      
-      // Realizar la petición
-      console.log(`API: ${method} ${url}`, data ? { data } : '');
+      // Registrar la petición y ejecutarla
+      this.logRequestAttempt(url, options.method, data);
       const response = await fetch(url, options);
       
-      // Limpiar el timeout
+      // Limpiar timeout
+      this.clearRequestTimeout(timeoutId);
+      
+      return response;
+    } catch (error) {
+      // Limpiar timeout también en caso de error
+      this.clearRequestTimeout(timeoutId);
+      throw error;
+    }
+  },
+  
+  /**
+   * Configura el controlador de aborto y el timeout para la petición
+   * @returns {Object} - Controlador y ID del timeout
+   */
+  configureRequestTimeout() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, APP_CONFIG.apiTimeout || 30000);
+    
+    return { controller, timeoutId };
+  },
+  
+  /**
+   * Registra un intento de petición en el log
+   * @param {string} url - URL de la petición
+   * @param {string} method - Método HTTP
+   * @param {Object} data - Datos de la petición (opcional)
+   */
+  logRequestAttempt(url, method, data) {
+    console.log(`API: ${method} ${url}`, data ? { data } : '');
+  },
+  
+  /**
+   * Limpia el timeout de la petición
+   * @param {number} timeoutId - ID del timeout a limpiar
+   */
+  clearRequestTimeout(timeoutId) {
+    if (timeoutId) {
       clearTimeout(timeoutId);
+    }
+  },
+  
+  /**
+   * Maneja errores específicos de la petición
+   * @param {Error} error - Error ocurrido
+   * @param {string} endpoint - Endpoint de la petición
+   * @param {string} method - Método HTTP
+   * @param {Object} options - Opciones de configuración
+   * @returns {Promise<Object>} - Resultado del manejo de error
+   */
+  async handleRequestError(error, endpoint, method, options = {}) {
+    const { data, auth, cache } = options;
+    
+    // Error de timeout
+    if (error.name === 'AbortError') {
+      throw new Error(`La petición a ${endpoint} excedió el tiempo límite`);
+    }
+    
+    // Error de autenticación
+    if (error.status === 401 && auth) {
+      return await this.handleAuthError(method, endpoint, data, auth, cache);
+    }
+    
+    // Otros errores
+    return this.handleError(error, `${method} ${endpoint}`);
+  },
+  
+  /**
+   * Maneja errores de autenticación intentando renovar el token
+   * @param {string} method - Método HTTP
+   * @param {string} endpoint - Endpoint de la petición
+   * @param {Object} data - Datos de la petición
+   * @param {boolean} auth - Si requiere autenticación
+   * @param {boolean} cache - Si debe usar caché
+   * @returns {Promise<Object>} - Resultado del manejo de error
+   */
+  async handleAuthError(method, endpoint, data, auth, cache) {
+    try {
+      // Intentar renovar el token
+      const tokenRefreshed = await this.refreshToken();
       
-      // Procesar la respuesta
-      const responseData = await this.handleResponse(response);
-      
-      // Si es GET y se solicita caché, guardar en caché
-      if (method === 'GET' && cache) {
-        requestCache.set(cacheKey, responseData);
+      if (tokenRefreshed) {
+        // Reintentar la petición con el nuevo token
+        return this.request(method, endpoint, data, auth, cache);
       }
+    } catch (refreshError) {
+      console.error('Error al renovar token:', refreshError);
+      // Si falla la renovación, redirigir al login
+      this.redirectToLogin();
+      throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+    }
+  },
+  
+  /**
+   * Realiza una petición HTTP genérica
+   * @param {string} method - Método HTTP (GET, POST, PUT, DELETE)
+   * @param {string} endpoint - Endpoint de la API
+   * @param {Object} data - Datos para enviar (para POST, PUT)
+   * @param {boolean} auth - Si requiere autenticación
+   * @param {boolean} cache - Si debe usar caché (solo para GET)
+   * @returns {Promise<Object>} - Datos de la respuesta
+   */
+  async request(method, endpoint, data = null, auth = true, cache = false) {
+    try {
+      // 1. Preparar la petición
+      const { url, options, cacheResult } = await this.prepareRequest(method, endpoint, data, auth, cache);
+      
+      // 2. Verificar si hay datos en caché
+      if (cacheResult?.data) {
+        return cacheResult.data;
+      }
+      
+      // 3. Ejecutar la petición y procesar respuesta
+      const responseData = await this.executeAndProcessRequest(url, options, data, method, cache, cacheResult);
       
       return responseData;
     } catch (error) {
-      // Manejar errores específicos
-      if (error.name === 'AbortError') {
-        throw new Error(`La petición a ${endpoint} excedió el tiempo límite`);
-      }
-      
-      // Si es un error de autenticación (401), intentar renovar token
-      if (error.status === 401 && auth) {
-        try {
-          // Intentar renovar el token
-          const tokenRefreshed = await this.refreshToken();
-          
-          if (tokenRefreshed) {
-            // Reintentar la petición con el nuevo token
-            return this.request(method, endpoint, data, auth, cache);
-          }
-        } catch (refreshError) {
-          console.error('Error al renovar token:', refreshError);
-          // Si falla la renovación, redirigir al login
-          this.redirectToLogin();
-          throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
-        }
-      }
-      
-      // Pasar el error al manejador
-      return this.handleError(error, `${method} ${endpoint}`);
+      // 4. Manejar errores
+      return this.handleRequestError(error, endpoint, method, { data, auth, cache });
+    }
+  },
+  
+  /**
+   * Prepara los parámetros para una petición
+   * @param {string} method - Método HTTP
+   * @param {string} endpoint - Endpoint de la API
+   * @param {Object} data - Datos para enviar
+   * @param {boolean} auth - Si requiere autenticación
+   * @param {boolean} cache - Si debe usar caché
+   * @returns {Object} - URL, opciones y resultado de caché
+   */
+  async prepareRequest(method, endpoint, data, auth, cache) {
+    // Validar endpoint
+    this.validateEndpoint(endpoint);
+    
+    // Construir URL
+    const url = this.buildUrl(endpoint);
+    
+    // Construir opciones
+    const options = this.buildRequestOptions(method, auth, data);
+    
+    // Verificar caché
+    const cacheResult = this.checkCache(method, url, options, cache);
+    
+    return { url, options, cacheResult };
+  },
+  
+  /**
+   * Ejecuta la petición y procesa la respuesta
+   * @param {string} url - URL completa
+   * @param {Object} options - Opciones de fetch
+   * @param {Object} data - Datos de la petición
+   * @param {string} method - Método HTTP
+   * @param {boolean} cache - Si debe usar caché
+   * @param {Object} cacheResult - Resultado de la verificación de caché
+   * @returns {Promise<Object>} - Datos procesados de la respuesta
+   */
+  async executeAndProcessRequest(url, options, data, method, cache, cacheResult) {
+    // Ejecutar petición
+    const response = await this.executeRequest(url, options, data);
+    
+    // Procesar respuesta
+    const responseData = await this.handleResponse(response);
+    
+    // Guardar en caché si corresponde
+    this.saveToCacheIfNeeded(method, cache, cacheResult, responseData);
+    
+    return responseData;
+  },
+  
+  /**
+   * Guarda los datos en caché si es necesario
+   * @param {string} method - Método HTTP
+   * @param {boolean} cache - Si debe usar caché
+   * @param {Object} cacheResult - Resultado de la verificación de caché
+   * @param {Object} responseData - Datos a guardar en caché
+   */
+  saveToCacheIfNeeded(method, cache, cacheResult, responseData) {
+    if (method === 'GET' && cache && cacheResult?.key) {
+      this.saveToCache(cacheResult.key, responseData);
     }
   },
   
@@ -188,42 +388,123 @@ const apiClient = {
    * @returns {Promise<Object>} - Datos de la respuesta
    */
   async handleResponse(response) {
-    // Verificar CSRF token en la respuesta si está configurado
+    // 1. Verificar y actualizar token CSRF
+    this.updateCsrfToken(response);
+    
+    // 2. Obtener y parsear el contenido de la respuesta
+    const { text, data } = await this.parseResponseContent(response);
+    
+    // 3. Verificar si la respuesta es exitosa
+    if (!response.ok) {
+      throw this.createResponseError(response, data, text);
+    }
+    
+    // 4. Asegurar formato de respuesta estándar
+    return this.standardizeResponse(data);
+  },
+  
+  /**
+   * Verifica y actualiza el token CSRF desde la respuesta
+   * @param {Response} response - Respuesta de fetch
+   */
+  updateCsrfToken(response) {
     if (SECURITY_CONFIG.csrf.enabled) {
       const newCsrfToken = response.headers.get('X-CSRF-Token');
       if (newCsrfToken) {
         this.saveCsrfToken(newCsrfToken);
       }
     }
-    
+  },
+  
+  /**
+   * Parsea el contenido de la respuesta
+   * @param {Response} response - Respuesta de fetch
+   * @returns {Promise<Object>} - Texto y datos parseados de la respuesta
+   */
+  async parseResponseContent(response) {
     // Obtener el texto de la respuesta
-    const text = await response.text();
+    const text = await response.extractResponseText(response);
     
     // Intentar parsear como JSON
-    let data;
+    const data = await this.parseTextAsJson(text, response);
+    
+    return { text, data };
+  },
+  
+  /**
+   * Extrae el texto de la respuesta
+   * @param {Response} response - Respuesta de fetch
+   * @returns {Promise<string>} - Texto de la respuesta
+   */
+  async extractResponseText(response) {
+    return await response.text();
+  },
+  
+  /**
+   * Parsea el texto como JSON
+   * @param {string} text - Texto a parsear
+   * @param {Response} response - Respuesta original
+   * @returns {Object} - Datos parseados como JSON
+   */
+  async parseTextAsJson(text, response) {
+    if (!text) {
+      return {};
+    }
+    
     try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
-      console.warn('API: Error al parsear JSON', { error: e.message, text });
-      
-      // Si no es JSON y la respuesta es exitosa, devolver un objeto simple
-      if (response.ok) {
-        return { success: true, message: text };
-      }
-      throw new Error(`Respuesta no válida: ${text.substring(0, 100)}`);
+      return JSON.parse(text);
+    } catch (error) {
+      return this.handleJsonParseError(error, text, response);
+    }
+  },
+  
+  /**
+   * Maneja errores al parsear JSON
+   * @param {Error} error - Error de parsing
+   * @param {string} text - Texto original
+   * @param {Response} response - Respuesta original
+   * @returns {Object} - Objeto alternativo cuando falla el parsing
+   */
+  handleJsonParseError(error, text, response) {
+    console.warn('API: Error al parsear JSON', { error: error.message, text });
+    
+    // Si no es JSON y la respuesta es exitosa, devolver un objeto simple
+    if (response.ok) {
+      return { success: true, message: text };
     }
     
-    // Si la respuesta no es exitosa, lanzar error
-    if (!response.ok) {
-      const errorMsg = data.message || `Error: ${response.status} ${response.statusText}`;
-      console.error('API: Respuesta con error', { status: response.status, mensaje: errorMsg });
-      
-      const error = new Error(errorMsg);
-      error.status = response.status;
-      error.data = data;
-      throw error;
-    }
+    throw new Error(`Respuesta no válida: ${text.substring(0, 100)}`);
+  },
+  
+  /**
+   * Crea un objeto de error para respuestas fallidas
+   * @param {Response} response - Respuesta de fetch
+   * @param {Object} data - Datos parseados de la respuesta
+   * @param {string} text - Texto original de la respuesta
+   * @returns {Error} - Error con información de la respuesta
+   */
+  createResponseError(response, data, text) {
+    const errorMsg = (data && data.message) || `Error: ${response.status} ${response.statusText}`;
+    console.error('API: Respuesta con error', { 
+      status: response.status, 
+      mensaje: errorMsg,
+      url: response.url
+    });
     
+    const error = new Error(errorMsg);
+    error.status = response.status;
+    error.data = data;
+    error.originalText = text;
+    error.url = response.url;
+    return error;
+  },
+  
+  /**
+   * Estandariza el formato de respuesta
+   * @param {Object} data - Datos de la respuesta
+   * @returns {Object} - Datos con formato estandarizado
+   */
+  standardizeResponse(data) {
     // Asegurar que todas las respuestas tengan un campo success
     if (data && typeof data === 'object' && data.success === undefined) {
       data.success = true;

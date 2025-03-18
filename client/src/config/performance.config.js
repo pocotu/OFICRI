@@ -93,7 +93,9 @@ export const PERFORMANCE_CONFIG = {
 };
 
 /**
- * Funciones de utilidad para optimización
+ * Funciones de utilidad para optimización de rendimiento
+ * IMPORTANTE: Esta es la implementación canónica de PerformanceUtils.
+ * No duplicar esta clase en otras partes del código.
  */
 export const PerformanceUtils = {
     /**
@@ -118,6 +120,14 @@ export const PerformanceUtils = {
      * @returns {Promise<Blob>} - Imagen optimizada
      */
     async optimizeImage(file) {
+        if (!PERFORMANCE_CONFIG.RESOURCES.ALLOWED_FILE_TYPES.includes(file.type)) {
+            throw new Error('Tipo de archivo no permitido');
+        }
+
+        if (file.size > PERFORMANCE_CONFIG.RESOURCES.MAX_ATTACHMENT_SIZE * 1024 * 1024) {
+            throw new Error('Archivo demasiado grande');
+        }
+
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
@@ -181,5 +191,128 @@ export const PerformanceUtils = {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    },
+
+    /**
+     * Optimiza el rendimiento de una función con debounce
+     * @param {Function} func - Función a optimizar
+     * @param {string} type - Tipo de debounce
+     * @returns {Function} - Función optimizada
+     */
+    optimizeFunction(func, type) {
+        const wait = PERFORMANCE_CONFIG[type.toUpperCase()]?.DEBOUNCE || 
+                    PERFORMANCE_CONFIG.PAGINATION.SEARCH_DEBOUNCE;
+        return this.debounce(func, wait);
+    },
+
+    /**
+     * Gestiona la caché de la aplicación
+     * @param {string} key - Clave de caché
+     * @param {Object} data - Datos a cachear
+     * @param {string} type - Tipo de caché
+     */
+    manageCache(key, data, type) {
+        const cacheData = {
+            data,
+            timestamp: Date.now()
+        };
+
+        localStorage.setItem(key, JSON.stringify(cacheData));
+        this.clearCache(type);
+    },
+
+    /**
+     * Crea una nueva instancia de monitoreo de rendimiento
+     * @returns {PerformanceMonitor} - Nueva instancia de monitor
+     */
+    createMonitor() {
+        return new PerformanceMonitor();
     }
-}; 
+};
+
+/**
+ * Clase para monitoreo de rendimiento
+ * Esta clase complementa a PerformanceUtils y mantiene estado
+ */
+export class PerformanceMonitor {
+    constructor() {
+        this.metrics = [];
+        this.startTime = Date.now();
+        this.intervalId = null;
+    }
+
+    /**
+     * Inicializa el monitoreo de rendimiento
+     */
+    initMonitoring() {
+        if (this.intervalId) return;
+        this.intervalId = setInterval(
+            () => this.collectMetrics(), 
+            PERFORMANCE_CONFIG.MONITORING.METRICS_INTERVAL
+        );
+    }
+
+    /**
+     * Detiene el monitoreo de rendimiento
+     */
+    stopMonitoring() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    }
+
+    /**
+     * Recolecta métricas de rendimiento
+     */
+    collectMetrics() {
+        const metrics = {
+            timestamp: Date.now(),
+            memory: window.performance.memory ? window.performance.memory.usedJSHeapSize : null,
+            loadTime: window.performance.timing?.loadEventEnd - window.performance.timing?.navigationStart || 0,
+            domContentLoaded: window.performance.timing?.domContentLoadedEventEnd - window.performance.timing?.navigationStart || 0
+        };
+
+        this.metrics.push(metrics);
+        if (this.metrics.length > PERFORMANCE_CONFIG.MONITORING.METRICS_BUFFER_SIZE) {
+            this.metrics.shift();
+        }
+
+        this.checkPerformanceThreshold(metrics);
+    }
+
+    /**
+     * Verifica si se excede el umbral de rendimiento
+     * @param {Object} metrics - Métricas actuales
+     */
+    checkPerformanceThreshold(metrics) {
+        if (metrics.loadTime > PERFORMANCE_CONFIG.MONITORING.PERFORMANCE_THRESHOLD) {
+            console.warn('Performance threshold exceeded:', metrics);
+            // Aquí se podría implementar un sistema de notificación
+        }
+    }
+
+    /**
+     * Limpia recursos no utilizados
+     */
+    cleanup() {
+        // Limpiar métricas antiguas
+        const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 horas
+        this.metrics = this.metrics.filter(m => m.timestamp > cutoffTime);
+    }
+
+    /**
+     * Obtiene estadísticas de rendimiento
+     * @returns {Object} - Estadísticas de rendimiento
+     */
+    getPerformanceStats() {
+        return {
+            uptime: Date.now() - this.startTime,
+            metricsCount: this.metrics.length,
+            averageLoadTime: this.metrics.length > 0 
+                ? this.metrics.reduce((acc, m) => acc + m.loadTime, 0) / this.metrics.length 
+                : 0,
+            memoryUsage: window.performance.memory ? window.performance.memory.usedJSHeapSize : null
+        };
+    }
+} 

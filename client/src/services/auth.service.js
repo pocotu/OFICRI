@@ -275,102 +275,193 @@ class AuthService {
      */
     _handleAutoRedirect(isLoginPage, userData) {
         try {
-            // Verificar la ruta exacta para determinar si estamos en la página de login
-            const currentPath = window.location.pathname;
-            const isExactlyLoginPage = currentPath === '/' || 
-                                     currentPath === '/index.html' || 
-                                     currentPath.endsWith('/OFICRI/') || 
-                                     currentPath.endsWith('/OFICRI/index.html');
+            // Verificar si estamos exactamente en la página de login
+            const isExactlyLoginPage = this._isExactlyLoginPage();
             
-            errorHandler.log('AUTH', `Verificación exacta de página de login: ${isExactlyLoginPage}`, 
-                { ruta: currentPath }, errorHandler.LOG_LEVEL.DEBUG);
-            
-            // Agregar flag para evitar redirecciones infinitas
-            const redirectionOccurred = sessionStorage.getItem('redirectionOccurred');
-            errorHandler.log('AUTH', 'Manejando redirección automática - En login: ' + isExactlyLoginPage + 
-                ', Flag redirección previa: ' + redirectionOccurred, null, errorHandler.LOG_LEVEL.DEBUG);
-            
-            // Verificar si ya hay redirección en progreso (podría estar causado por otro componente)
-            const redirectionInProgress = sessionStorage.getItem('redirectionInProgress');
-            if (redirectionInProgress === 'true') {
-                errorHandler.log('AUTH', 'Hay una redirección en progreso, evitando redirección adicional', 
-                    null, errorHandler.LOG_LEVEL.WARN);
+            // Verificar si hay redirección en progreso
+            if (this._isRedirectionInProgress()) {
                 return;
             }
             
-            // Si estamos en login y hay sesión válida, redirigir según el rol
-            if (isExactlyLoginPage && redirectionOccurred !== 'true') {
-                errorHandler.log('AUTH', 'Condiciones de redirección cumplidas - iniciando redirección', null, errorHandler.LOG_LEVEL.INFO);
-                
-                // Marcar que hay una redirección en progreso para evitar múltiples redirecciones
-                try {
-                    sessionStorage.setItem('redirectionInProgress', 'true');
-                    sessionStorage.setItem('redirectionOccurred', 'true');
-                    errorHandler.log('AUTH', 'Flag de redirección establecido en sessionStorage', null, errorHandler.LOG_LEVEL.DEBUG);
-                } catch (storageError) {
-                    errorHandler.log('AUTH', 'Error al establecer flags de redirección: ' + storageError.message, null, errorHandler.LOG_LEVEL.ERROR);
-                }
-                
-                // Verificar si hay una ruta anterior guardada
-                const lastPath = localStorage.getItem('lastPath');
-                
-                if (lastPath && lastPath !== '/' && lastPath !== '/index.html' && !lastPath.endsWith('/OFICRI/') && !lastPath.endsWith('/OFICRI/index.html')) {
-                    errorHandler.log('AUTH', 'Redirigiendo a última ruta: ' + lastPath, null, errorHandler.LOG_LEVEL.INFO);
-                    
-                    try {
-                        localStorage.removeItem('lastPath');
-                        errorHandler.log('AUTH', 'lastPath eliminado de localStorage', null, errorHandler.LOG_LEVEL.DEBUG);
-                    } catch (storageError) {
-                        errorHandler.log('AUTH', 'Error al eliminar lastPath: ' + storageError.message, null, errorHandler.LOG_LEVEL.WARN);
-                    }
-                    
-                    // Realizar la redirección
-                    this._safeRedirect(lastPath);
-                } else {
-                    // Determinar la ruta según el rol
-                    let redirectTo = '/dashboard.html';
-                    
-                    if (userData.IDRol === 1) {
-                        redirectTo = '/admin.html';
-                    } else if (userData.IDRol === 2) {
-                        redirectTo = '/mesaPartes.html';
-                        
-                        // Limpiar cualquier contador de redirección para Mesa de Partes
-                        try {
-                            sessionStorage.removeItem('mp_redirection_count');
-                            errorHandler.log('AUTH', 'Contador de redirecciones de Mesa de Partes limpiado', null, errorHandler.LOG_LEVEL.DEBUG);
-                        } catch (e) {
-                            errorHandler.log('AUTH', 'Error al limpiar contador de redirecciones MP: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
-                        }
-                    }
-                    
-                    errorHandler.log('AUTH', 'Redirigiendo según rol ' + userData.IDRol + ' a: ' + redirectTo, null, errorHandler.LOG_LEVEL.INFO);
-                    
-                    // Realizar la redirección
-                    this._safeRedirect(redirectTo);
-                }
-                
-                // Limpiar el flag de redirección en progreso después de un tiempo
-                setTimeout(() => {
-                    try {
-                        sessionStorage.removeItem('redirectionInProgress');
-                        errorHandler.log('AUTH', 'Flag de redirección en progreso eliminado', null, errorHandler.LOG_LEVEL.DEBUG);
-                    } catch (e) {
-                        errorHandler.log('AUTH', 'Error al eliminar flag de redirección en progreso: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
-                    }
-                }, 5000); // 5 segundos debería ser suficiente para cualquier redirección
+            // Realizar redirección si estamos en página de login y no hay redirección previa
+            if (isExactlyLoginPage && sessionStorage.getItem('redirectionOccurred') !== 'true') {
+                this._performRedirection(userData);
             } else if (!isExactlyLoginPage) {
                 // Reiniciar el flag cuando no estamos en la página de login
-                try {
-                    sessionStorage.removeItem('redirectionOccurred');
-                    errorHandler.log('AUTH', 'Flag de redirección reiniciado (no estamos en login)', null, errorHandler.LOG_LEVEL.DEBUG);
-                } catch (e) {
-                    errorHandler.log('AUTH', 'Error al reiniciar flag de redirección: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
-                }
+                this._resetRedirectionFlag();
             }
         } catch (error) {
             errorHandler.handleError('AUTH', error, 'manejar redirección automática', false);
         }
+    }
+    
+    /**
+     * Verifica si la página actual es exactamente la página de login
+     * @returns {boolean} - Si estamos en la página exacta de login
+     * @private
+     */
+    _isExactlyLoginPage() {
+        const currentPath = window.location.pathname;
+        const isExactlyLoginPage = currentPath === '/' || 
+                                 currentPath === '/index.html' || 
+                                 currentPath.endsWith('/OFICRI/') || 
+                                 currentPath.endsWith('/OFICRI/index.html');
+        
+        errorHandler.log('AUTH', `Verificación exacta de página de login: ${isExactlyLoginPage}`, 
+            { ruta: currentPath }, errorHandler.LOG_LEVEL.DEBUG);
+            
+        return isExactlyLoginPage;
+    }
+    
+    /**
+     * Verifica si hay una redirección en progreso
+     * @returns {boolean} - Si hay una redirección en progreso
+     * @private
+     */
+    _isRedirectionInProgress() {
+        const redirectionInProgress = sessionStorage.getItem('redirectionInProgress');
+        if (redirectionInProgress === 'true') {
+            errorHandler.log('AUTH', 'Hay una redirección en progreso, evitando redirección adicional', 
+                null, errorHandler.LOG_LEVEL.WARN);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Reinicia el flag de redirección
+     * @private
+     */
+    _resetRedirectionFlag() {
+        try {
+            sessionStorage.removeItem('redirectionOccurred');
+            errorHandler.log('AUTH', 'Flag de redirección reiniciado (no estamos en login)', null, errorHandler.LOG_LEVEL.DEBUG);
+        } catch (e) {
+            errorHandler.log('AUTH', 'Error al reiniciar flag de redirección: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
+        }
+    }
+    
+    /**
+     * Realiza la redirección según el rol del usuario o a la última ruta
+     * @param {Object} userData - Datos del usuario 
+     * @private
+     */
+    _performRedirection(userData) {
+        errorHandler.log('AUTH', 'Condiciones de redirección cumplidas - iniciando redirección', null, errorHandler.LOG_LEVEL.INFO);
+        
+        // Marcar que hay una redirección en progreso
+        this._setRedirectionFlags();
+        
+        // Verificar si hay una ruta anterior guardada
+        const lastPath = localStorage.getItem('lastPath');
+        
+        if (this._shouldRedirectToLastPath(lastPath)) {
+            this._redirectToLastPath(lastPath);
+        } else {
+            this._redirectBasedOnRole(userData);
+        }
+        
+        // Limpiar el flag de redirección en progreso después de un tiempo
+        this._scheduleRedirectionFlagCleanup();
+    }
+    
+    /**
+     * Establece los flags de redirección
+     * @private
+     */
+    _setRedirectionFlags() {
+        try {
+            sessionStorage.setItem('redirectionInProgress', 'true');
+            sessionStorage.setItem('redirectionOccurred', 'true');
+            errorHandler.log('AUTH', 'Flag de redirección establecido en sessionStorage', null, errorHandler.LOG_LEVEL.DEBUG);
+        } catch (storageError) {
+            errorHandler.log('AUTH', 'Error al establecer flags de redirección: ' + storageError.message, null, errorHandler.LOG_LEVEL.ERROR);
+        }
+    }
+    
+    /**
+     * Verifica si se debe redirigir a la última ruta visitada
+     * @param {string} lastPath - Última ruta visitada
+     * @returns {boolean} - Si se debe redirigir a la última ruta
+     * @private
+     */
+    _shouldRedirectToLastPath(lastPath) {
+        return lastPath && 
+               lastPath !== '/' && 
+               lastPath !== '/index.html' && 
+               !lastPath.endsWith('/OFICRI/') && 
+               !lastPath.endsWith('/OFICRI/index.html');
+    }
+    
+    /**
+     * Redirige a la última ruta visitada
+     * @param {string} lastPath - Última ruta visitada
+     * @private
+     */
+    _redirectToLastPath(lastPath) {
+        errorHandler.log('AUTH', 'Redirigiendo a última ruta: ' + lastPath, null, errorHandler.LOG_LEVEL.INFO);
+        
+        try {
+            localStorage.removeItem('lastPath');
+            errorHandler.log('AUTH', 'lastPath eliminado de localStorage', null, errorHandler.LOG_LEVEL.DEBUG);
+        } catch (storageError) {
+            errorHandler.log('AUTH', 'Error al eliminar lastPath: ' + storageError.message, null, errorHandler.LOG_LEVEL.WARN);
+        }
+        
+        // Realizar la redirección
+        this._safeRedirect(lastPath);
+    }
+    
+    /**
+     * Redirige basado en el rol del usuario
+     * @param {Object} userData - Datos del usuario
+     * @private
+     */
+    _redirectBasedOnRole(userData) {
+        // Determinar la ruta según el rol
+        let redirectTo = '/dashboard.html';
+        
+        if (userData.IDRol === 1) {
+            redirectTo = '/admin.html';
+        } else if (userData.IDRol === 2) {
+            redirectTo = '/mesaPartes.html';
+            
+            // Limpiar cualquier contador de redirección para Mesa de Partes
+            this._clearMesaPartesRedirectionCounter();
+        }
+        
+        errorHandler.log('AUTH', 'Redirigiendo según rol ' + userData.IDRol + ' a: ' + redirectTo, null, errorHandler.LOG_LEVEL.INFO);
+        
+        // Realizar la redirección
+        this._safeRedirect(redirectTo);
+    }
+    
+    /**
+     * Limpia el contador de redirección para Mesa de Partes
+     * @private
+     */
+    _clearMesaPartesRedirectionCounter() {
+        try {
+            sessionStorage.removeItem('mp_redirection_count');
+            errorHandler.log('AUTH', 'Contador de redirecciones de Mesa de Partes limpiado', null, errorHandler.LOG_LEVEL.DEBUG);
+        } catch (e) {
+            errorHandler.log('AUTH', 'Error al limpiar contador de redirecciones MP: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
+        }
+    }
+    
+    /**
+     * Programa la limpieza del flag de redirección en progreso
+     * @private
+     */
+    _scheduleRedirectionFlagCleanup() {
+        setTimeout(() => {
+            try {
+                sessionStorage.removeItem('redirectionInProgress');
+                errorHandler.log('AUTH', 'Flag de redirección en progreso eliminado', null, errorHandler.LOG_LEVEL.DEBUG);
+            } catch (e) {
+                errorHandler.log('AUTH', 'Error al eliminar flag de redirección en progreso: ' + e.message, null, errorHandler.LOG_LEVEL.WARN);
+            }
+        }, 5000); // 5 segundos debería ser suficiente para cualquier redirección
     }
 
     /**
