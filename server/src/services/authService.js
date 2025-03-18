@@ -68,6 +68,7 @@ async function login(codigoCIP, password) {
         const token = jwt.sign(
             {
                 id: user.IDUsuario,
+                IDUsuario: user.IDUsuario,
                 codigoCIP: user.CodigoCIP,
                 rol: user.IDRol,
                 permisos: user.Permisos
@@ -77,15 +78,18 @@ async function login(codigoCIP, password) {
         );
 
         // Registrar sesión
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 1); // 24 horas desde ahora
+        
         await pool.query(
-            'INSERT INTO Session (IDUsuario, SessionToken, IPOrigen) VALUES (?, ?, ?)',
-            [user.IDUsuario, token, '']
+            'INSERT INTO Session (IDUsuario, SessionToken, IPOrigen, Expiracion) VALUES (?, ?, ?, ?)',
+            [user.IDUsuario, token, '', expirationDate]
         );
 
         logger.info(`Usuario ${codigoCIP} ha iniciado sesión`);
-
-        // Retornar datos del usuario y token
+        
         return {
+            success: true,
             token,
             user: {
                 id: user.IDUsuario,
@@ -93,20 +97,18 @@ async function login(codigoCIP, password) {
                 nombres: user.Nombres,
                 apellidos: user.Apellidos,
                 grado: user.Grado,
-                idArea: user.IDArea,
                 idRol: user.IDRol,
                 permisos: user.Permisos
             }
         };
     } catch (error) {
-        // Reenviar errores operacionales
-        if (error.isOperational) {
+        logger.error('Error en servicio de login:', error);
+        
+        if (error instanceof UnauthorizedError) {
             throw error;
         }
         
-        // Loguear y convertir errores no operacionales
-        logger.logError('Error en el servicio de autenticación', error);
-        throw new UnauthorizedError('Error al procesar la solicitud de inicio de sesión');
+        throw new Error('Error al iniciar sesión');
     }
 }
 
@@ -141,15 +143,110 @@ function verifyToken(token) {
             throw new UnauthorizedError('No se proporcionó token de autenticación');
         }
         
+        // Verificar token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Añadir información sobre la expiración
+        const now = Math.floor(Date.now() / 1000);
+        decoded.expiresInSeconds = decoded.exp - now;
+        decoded.needsRenewal = decoded.expiresInSeconds < 3600; // Renovar si queda menos de 1 hora
+        
         return decoded;
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {
             throw new UnauthorizedError('Token inválido');
         }
         if (error.name === 'TokenExpiredError') {
-            throw new UnauthorizedError('Token expirado');
+            try {
+                // Intentar decodificar el token expirado para obtener info del usuario
+                const decoded = jwt.decode(token);
+                throw new UnauthorizedError('Token expirado', 'TOKEN_EXPIRED', decoded);
+            } catch (e) {
+                throw new UnauthorizedError('Token expirado');
+            }
         }
+        throw error;
+    }
+}
+
+/**
+ * Renueva un token JWT que está por expirar
+ * @param {string} oldToken - Token JWT a renovar
+ * @returns {Promise<Object>} Nuevo token y datos del usuario
+ */
+async function renewToken(oldToken) {
+    try {
+        // Intentar decodificar el token sin verificar
+        let userData;
+        try {
+            // Si el token es válido, lo decodificamos normalmente
+            userData = jwt.verify(oldToken, process.env.JWT_SECRET);
+        } catch (error) {
+            // Si el token expiró, lo decodificamos sin verificar
+            if (error.name === 'TokenExpiredError') {
+                userData = jwt.decode(oldToken);
+            } else {
+                throw new UnauthorizedError('Token inválido para renovación');
+            }
+        }
+        
+        if (!userData || !userData.id) {
+            throw new UnauthorizedError('Token inválido para renovación');
+        }
+        
+        // Verificar si el usuario existe y no está bloqueado
+        const [users] = await pool.query(
+            'SELECT * FROM Usuario WHERE IDUsuario = ? AND Bloqueado = FALSE',
+            [userData.id]
+        );
+        
+        if (users.length === 0) {
+            throw new UnauthorizedError('Usuario no encontrado o bloqueado');
+        }
+        
+        // Generar nuevo token
+        const newToken = jwt.sign(
+            {
+                id: userData.id,
+                IDUsuario: userData.id,
+                codigoCIP: userData.codigoCIP,
+                rol: userData.rol,
+                permisos: userData.permisos
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+        
+        // Actualizar sesión en la base de datos
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 1); // 24 horas desde ahora
+        
+        // Marcar el token antiguo como expirado
+        await pool.query(
+            'UPDATE Session SET Expiracion = CURRENT_TIMESTAMP WHERE SessionToken = ?',
+            [oldToken]
+        );
+        
+        // Crear una nueva sesión con el nuevo token
+        await pool.query(
+            'INSERT INTO Session (IDUsuario, SessionToken, IPOrigen, Expiracion) VALUES (?, ?, ?, ?)',
+            [userData.id, newToken, '', expirationDate]
+        );
+        
+        logger.info(`Token renovado para usuario ID ${userData.id}`);
+        
+        return {
+            success: true,
+            token: newToken,
+            user: {
+                id: userData.id,
+                codigoCIP: userData.codigoCIP,
+                rol: userData.rol,
+                permisos: userData.permisos
+            }
+        };
+    } catch (error) {
+        logger.error('Error al renovar token:', error);
         throw error;
     }
 }
@@ -157,5 +254,6 @@ function verifyToken(token) {
 module.exports = {
     login,
     logout,
-    verifyToken
+    verifyToken,
+    renewToken
 }; 

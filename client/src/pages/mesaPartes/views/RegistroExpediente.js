@@ -246,14 +246,11 @@ export class RegistroExpediente {
                 `;
             }
             
-            // Simular envío a la API
+            // Enviar a la API
             await this.saveExpediente();
             
             // Mostrar mensaje de éxito
-            errorHandler.showSuccessMessage(
-                'Expediente registrado',
-                `El expediente ${this.formData.numeroExpediente} ha sido registrado correctamente.`
-            );
+            alert(`El expediente ${this.formData.numeroExpediente} ha sido registrado correctamente.`);
             
             // Redireccionar a la lista de documentos
             setTimeout(() => {
@@ -262,10 +259,9 @@ export class RegistroExpediente {
             
         } catch (error) {
             console.error('[REGISTRO-EXPEDIENTE] Error al guardar:', error);
-            errorHandler.showErrorMessage(
-                'Error al guardar',
-                'No se pudo guardar el expediente. Por favor, verifique los datos e intente nuevamente.'
-            );
+            
+            // Mostrar mensaje de error con alert en lugar de errorHandler
+            alert(`Error al guardar el expediente: ${error.message || 'Verifique los datos e intente nuevamente'}`);
             
             // Restaurar botón
             const submitBtn = container.querySelector('#guardarBtn');
@@ -293,16 +289,146 @@ export class RegistroExpediente {
     }
 
     /**
-     * Guarda el expediente (simulado)
+     * Guarda el expediente
      * @returns {Promise} Promesa que se resuelve cuando se guarda el expediente
      */
     async saveExpediente() {
-        // Simular llamada a la API
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log('[REGISTRO-EXPEDIENTE] Expediente guardado:', this.formData);
-                resolve({ success: true, id: Math.floor(Math.random() * 1000) });
-            }, 1000);
-        });
+        try {
+            // Obtener el token de autenticación
+            let token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('No se encontró token de autenticación. Inicie sesión nuevamente.');
+            }
+            
+            // Preparar los datos para enviar
+            const payload = {
+                numeroExpediente: this.formData.numeroExpediente,
+                remitente: this.formData.remitente,
+                asunto: this.formData.asunto,
+                fechaRecepcion: this.formData.fechaRecepcion,
+                tipoDocumento: this.formData.tipoDocumento,
+                folios: this.formData.folios,
+                prioridad: this.formData.prioridad,
+                observaciones: this.formData.observaciones
+            };
+            
+            console.log('[REGISTRO-EXPEDIENTE] Enviando datos:', payload);
+            
+            return await this.sendRequestWithTokenRenewal('/api/mesa-partes/documento', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (error) {
+            console.error('[REGISTRO-EXPEDIENTE] Error al guardar expediente:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Envía una solicitud con renovación automática de token si es necesario
+     * @param {string} url - URL de la solicitud
+     * @param {Object} options - Opciones de fetch
+     * @param {boolean} retried - Indica si ya se ha reintentado la solicitud
+     * @returns {Promise<Object>} - Respuesta de la solicitud
+     */
+    async sendRequestWithTokenRenewal(url, options, retried = false) {
+        try {
+            console.log('[REGISTRO-EXPEDIENTE] Enviando solicitud a:', url);
+            
+            // Realizar la petición al servidor
+            const response = await fetch(url, options);
+            
+            // Verificar la respuesta
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[REGISTRO-EXPEDIENTE] Operación exitosa:', data);
+                return data;
+            }
+            
+            // Si el token ha expirado y no hemos reintentado aún
+            if (response.status === 401 && !retried) {
+                const errorData = await response.json();
+                
+                if (errorData.code === 'TOKEN_EXPIRED') {
+                    console.log('[REGISTRO-EXPEDIENTE] Token expirado, intentando renovar...');
+                    
+                    // Intentar renovar el token
+                    const renewResponse = await fetch('/api/auth/renew-token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': options.headers.Authorization
+                        }
+                    });
+                    
+                    if (renewResponse.ok) {
+                        const renewData = await renewResponse.json();
+                        console.log('[REGISTRO-EXPEDIENTE] Token renovado exitosamente');
+                        
+                        // Guardar el nuevo token
+                        localStorage.setItem('token', renewData.token);
+                        
+                        // Actualizar opciones con el nuevo token
+                        options.headers.Authorization = `Bearer ${renewData.token}`;
+                        
+                        // Reintentar la solicitud original
+                        console.log('[REGISTRO-EXPEDIENTE] Reintentando solicitud con nuevo token');
+                        return this.sendRequestWithTokenRenewal(url, options, true);
+                    } else {
+                        console.error('[REGISTRO-EXPEDIENTE] No se pudo renovar el token');
+                        // Si no se puede renovar, cerrar sesión
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        throw new Error('Su sesión ha expirado y no se pudo renovar. Por favor, inicie sesión nuevamente.');
+                    }
+                }
+            }
+            
+            // Obtener el mensaje de error específico si está disponible
+            let errorMessage = 'Error al procesar la solicitud';
+            let errorDetails = '';
+            
+            try {
+                const errorData = await response.json();
+                console.error('[REGISTRO-EXPEDIENTE] Detalles del error del servidor:', errorData);
+                
+                errorMessage = errorData.message || errorMessage;
+                
+                // Capturar detalles técnicos si están disponibles
+                if (errorData.error) {
+                    errorDetails = `\nDetalles técnicos: ${errorData.error}`;
+                }
+                
+                if (errorData.sqlMessage) {
+                    errorDetails += `\nError SQL: ${errorData.sqlMessage}`;
+                }
+            } catch (e) {
+                // Si no se puede parsear la respuesta, usar el status text
+                errorMessage = `${errorMessage}: ${response.statusText}`;
+            }
+            
+            // Si después de reintentar seguimos teniendo un 401, es un problema de autenticación
+            if (response.status === 401) {
+                // Limpiar la sesión actual
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                throw new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+            }
+            
+            // Para errores 500, dar un mensaje más específico
+            if (response.status === 500) {
+                throw new Error(`Error interno del servidor al procesar su solicitud. Por favor, verifique los datos e intente nuevamente.${errorDetails}`);
+            }
+            
+            throw new Error(`${errorMessage}${errorDetails}`);
+        } catch (error) {
+            console.error('[REGISTRO-EXPEDIENTE] Error en solicitud:', error);
+            throw error;
+        }
     }
 } 
