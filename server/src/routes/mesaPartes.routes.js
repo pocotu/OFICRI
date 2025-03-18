@@ -189,29 +189,57 @@ router.post('/documento', authMiddleware, async (req, res) => {
             'SELECT IDMesaPartes FROM MesaPartes WHERE IsActive = TRUE LIMIT 1'
         );
 
+        let idMesaPartes;
         if (mesaPartes.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No hay mesas de partes activas en el sistema'
-            });
+            console.log('No hay mesas de partes activas. Creando una mesa de partes predeterminada...');
+            
+            // Crear mesa de partes predeterminada automáticamente
+            const [newMesaResult] = await pool.query(
+                'INSERT INTO MesaPartes (Descripcion, CodigoIdentificacion, IsActive) VALUES (?, ?, ?)',
+                ['MESA DE PARTES PRINCIPAL', 'MP-001', true]
+            );
+            
+            if (!newMesaResult || !newMesaResult.insertId) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al crear mesa de partes predeterminada'
+                });
+            }
+            
+            idMesaPartes = newMesaResult.insertId;
+            console.log(`Mesa de partes predeterminada creada con ID: ${idMesaPartes}`);
+        } else {
+            idMesaPartes = mesaPartes[0].IDMesaPartes;
         }
-
-        const idMesaPartes = mesaPartes[0].IDMesaPartes;
 
         // Obtener área actual (usar la primera del sistema o el área del usuario)
         const [areas] = await pool.query(
             'SELECT IDArea FROM AreaEspecializada WHERE IsActive = TRUE LIMIT 1'
         );
 
+        let idAreaActual;
         if (areas.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No hay áreas disponibles en el sistema'
-            });
+            console.log('No hay áreas disponibles en el sistema. Creando un área predeterminada...');
+            
+            // Crear área predeterminada automáticamente
+            const [newAreaResult] = await pool.query(
+                'INSERT INTO AreaEspecializada (NombreArea, CodigoIdentificacion, TipoArea, Descripcion, IsActive) VALUES (?, ?, ?, ?, ?)',
+                ['ÁREA GENERAL', 'AG-001', 'PRINCIPAL', 'Área general del sistema', true]
+            );
+            
+            if (!newAreaResult || !newAreaResult.insertId) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al crear área predeterminada'
+                });
+            }
+            
+            idAreaActual = newAreaResult.insertId;
+            console.log(`Área predeterminada creada con ID: ${idAreaActual}`);
+        } else {
+            idAreaActual = areas[0].IDArea;
         }
 
-        const idAreaActual = areas[0].IDArea;
-        
         // Verificar que el usuario exista en req.user
         if (!req.user || !req.user.id) {
             return res.status(401).json({
@@ -350,6 +378,42 @@ router.post('/documento', authMiddleware, async (req, res) => {
             message: 'Error interno del servidor',
             error: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// Crear mesa de partes predeterminada para resolver el error de "No hay mesas de partes activas"
+router.post('/create-default', authMiddleware, async (req, res) => {
+    try {
+        // Verificar si ya existen mesas de partes activas
+        const [mesasPartes] = await pool.query(
+            'SELECT * FROM MesaPartes WHERE IsActive = TRUE'
+        );
+
+        if (mesasPartes.length > 0) {
+            return res.json({
+                success: true,
+                message: 'Ya existen mesas de partes activas en el sistema',
+                mesasPartes
+            });
+        }
+
+        // Crear mesa de partes predeterminada
+        const [result] = await pool.query(
+            'INSERT INTO MesaPartes (Descripcion, CodigoIdentificacion, IsActive) VALUES (?, ?, ?)',
+            ['MESA DE PARTES PRINCIPAL', 'MP-001', true]
+        );
+
+        res.json({
+            success: true,
+            mesaPartesId: result.insertId,
+            message: 'Mesa de partes predeterminada creada exitosamente'
+        });
+    } catch (error) {
+        console.error('Error al crear mesa de partes predeterminada:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
         });
     }
 });

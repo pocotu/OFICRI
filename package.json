@@ -5,7 +5,8 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
-    "dev": "nodemon server/server.js"
+    "dev": "nodemon server/server.js",
+    "create-mesa-partes": "node server/scripts/create-mesa-partes.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
