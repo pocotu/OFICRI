@@ -6,19 +6,14 @@
 
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { logger, logSecurityEvent } = require('../utils/logger');
+const { logger } = require('../utils/logger');
+const authService = require('../services/auth/auth.service');
 
-// Simulated user for testing (to be replaced with actual database query)
-const simulatedUser = {
-  id: 1,
-  username: 'admin',
-  // Hash of: Admin123!
-  password: '$2a$10$mBpQoMfPGGjYV2NzvL.YHeTw0znNqptBsYKrn.zxr5Hd2zQvmCv9q',
-  email: 'admin@oficri.gob.pe',
-  role: 'admin',
-  fullName: 'Administrador del Sistema',
-  active: true
-};
+// Función de reemplazo para logSecurityEvent
+function logSecurityEvent(eventType, data = {}) {
+  console.log(`[SECURITY EVENT] ${eventType}`, data);
+  return { eventType, ...data };
+}
 
 /**
  * User login
@@ -29,12 +24,15 @@ exports.login = async (req, res) => {
   try {
     const { codigoCIP, password } = req.body;
     
-    // En una implementación real, consultaríamos la base de datos
-    // Por ahora, usamos un servicio simulado para pruebas
+    if (!codigoCIP || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere código CIP y contraseña'
+      });
+    }
     
-    // Intentamos el login utilizando el servicio de autenticación
     try {
-      const authService = require('../services/auth/auth.service');
+      // Usar el servicio de autenticación para el login
       const authResult = await authService.login(codigoCIP, password);
       
       // Si llegamos aquí, la autenticación fue exitosa
@@ -42,6 +40,7 @@ exports.login = async (req, res) => {
         success: true,
         message: 'Inicio de sesión exitoso',
         token: authResult.token,
+        refreshToken: authResult.refreshToken,
         user: authResult.user
       });
     } catch (authError) {
@@ -73,32 +72,42 @@ exports.login = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.logout = (req, res) => {
+exports.logout = async (req, res) => {
   try {
     // Get the token
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
     
-    if (token) {
-      // In a real implementation, we would add the token to a blacklist
-      // or remove it from storage
+    // Get refresh token from body
+    const { refreshToken } = req.body;
+    
+    try {
+      // Usar el servicio de autenticación para cerrar sesión
+      await authService.logout(token, refreshToken);
       
       // Log logout event
       logSecurityEvent('USER_LOGOUT', {
         ip: req.ip,
-        userId: req.user ? req.user.id : 'unknown'
+        userId: req.user ? req.user.sub : 'unknown'
+      });
+      
+      // Clear session if it exists
+      if (req.session) {
+        req.session.destroy();
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Sesión cerrada exitosamente'
+      });
+    } catch (error) {
+      logger.warn('Error en cierre de sesión', { error: error.message });
+      // Aún así retornamos éxito para no bloquear al usuario
+      return res.status(200).json({
+        success: true,
+        message: 'Sesión cerrada exitosamente'
       });
     }
-    
-    // Clear session if it exists
-    if (req.session) {
-      req.session.destroy();
-    }
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Sesión cerrada exitosamente'
-    });
   } catch (error) {
     logger.error('Error en cierre de sesión', { error: error.message });
     
@@ -114,7 +123,7 @@ exports.logout = (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.refreshToken = (req, res) => {
+exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     
@@ -125,54 +134,30 @@ exports.refreshToken = (req, res) => {
       });
     }
     
-    // Verify refresh token
-    jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        logSecurityEvent('INVALID_REFRESH_TOKEN', {
-          ip: req.ip,
-          error: err.message
-        });
-        
-        return res.status(401).json({
-          success: false,
-          message: 'Token de refresco inválido o expirado'
-        });
-      }
-      
-      // In a real implementation, we would fetch the user from database
-      // For now, using the simulated user
-      const user = simulatedUser;
-      
-      // Generate new access token
-      const newAccessToken = jwt.sign(
-        { 
-          id: user.id, 
-          username: user.username, 
-          role: user.role 
-        }, 
-        process.env.JWT_SECRET, 
-        { 
-          expiresIn: '1h'
-        }
-      );
-      
-      // Log token refresh
-      logSecurityEvent('TOKEN_REFRESH', {
-        userId: user.id,
-        ip: req.ip
-      });
+    try {
+      // Usar el servicio de autenticación para refrescar el token
+      const refreshResult = await authService.refreshToken(refreshToken);
       
       return res.status(200).json({
         success: true,
         message: 'Token refrescado exitosamente',
-        data: {
-          accessToken: newAccessToken,
-          expiresIn: 3600 // 1 hour in seconds
-        }
+        token: refreshResult.token,
+        refreshToken: refreshResult.refreshToken,
+        expiresIn: refreshResult.expiresIn
       });
-    });
+    } catch (error) {
+      logger.error('Error al refrescar token', { 
+        error: error.message,
+        refreshToken: '[REDACTED]' 
+      });
+      
+      return res.status(error.statusCode || 401).json({
+        success: false,
+        message: error.message || 'Token de refresco inválido o expirado'
+      });
+    }
   } catch (error) {
-    logger.error('Error al refrescar token', { error: error.message });
+    logger.error('Error al procesar solicitud de refresh token', { error: error.message });
     
     return res.status(500).json({
       success: false,
@@ -188,31 +173,48 @@ exports.refreshToken = (req, res) => {
  */
 exports.checkAuth = async (req, res) => {
   try {
-    // El middleware verifyToken ya ha verificado el token y agregado el usuario a req.user
-    if (!req.user) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
         message: 'No se proporcionó token de autenticación'
       });
     }
-
-    // Log successful auth check
-    logSecurityEvent('AUTH_CHECK', {
-      userId: req.user.id,
-      ip: req.ip
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: 'Token válido',
-      data: {
-        user: {
-          id: req.user.id,
-          username: req.user.username,
-          role: req.user.role
+    
+    const token = authHeader.split(' ')[1];
+    
+    try {
+      // Usar el servicio de autenticación para verificar el token
+      const verifyResult = await authService.verifyToken(token);
+      
+      // Log successful auth check
+      logSecurityEvent('AUTH_CHECK', {
+        userId: verifyResult.user.IDUsuario,
+        ip: req.ip
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Token válido',
+        data: {
+          user: {
+            id: verifyResult.user.IDUsuario,
+            codigoCIP: verifyResult.user.CodigoCIP,
+            nombres: verifyResult.user.Nombres,
+            apellidos: verifyResult.user.Apellidos,
+            grado: verifyResult.user.Grado,
+            rol: verifyResult.user.IDRol,
+            nombreRol: verifyResult.user.NombreRol,
+            permisos: verifyResult.user.Permisos
+          }
         }
-      }
-    });
+      });
+    } catch (error) {
+      return res.status(error.statusCode || 401).json({
+        success: false,
+        message: error.message || 'Token inválido o expirado'
+      });
+    }
   } catch (error) {
     logger.error('Error al verificar autenticación', { error: error.message });
     

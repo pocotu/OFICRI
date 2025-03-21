@@ -20,18 +20,18 @@ describe('Document API', () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-          username: 'admin', // Assuming this is a test user
+          codigoCIP: '12345678', // Actualizado para usar codigoCIP en lugar de username
           password: 'Admin123!'
         });
 
       // Check if login was successful
-      if (loginResponse.status !== 200 || !loginResponse.body.data.tokens.accessToken) {
+      if (loginResponse.status !== 200 || !loginResponse.body.token) {
         logger.error('Failed to obtain auth token for document API tests');
         return;
       }
 
       // Save the token for use in tests
-      authToken = loginResponse.body.data.tokens.accessToken;
+      authToken = loginResponse.body.token;
 
       // Get dependencies for tests (mesa partes, área)
       const mesaPartesResult = await db.executeQuery('SELECT IDMesaPartes FROM MesaPartes LIMIT 1');

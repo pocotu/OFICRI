@@ -58,9 +58,9 @@ async function checkUsuarioTable() {
       users.forEach((user, index) => {
         console.log(`\nUsuario #${index + 1}:`);
         Object.entries(user).forEach(([key, value]) => {
-          // Ocultar contraseñas por seguridad
-          if (key.includes('Password') || key.includes('Salt')) {
-            console.log(`  ${key}: ******`);
+          // Ofuscar datos sensibles
+          if (key.includes('Password')) {
+            console.log(`  ${key}: [OFUSCADO]`);
           } else {
             console.log(`  ${key}: ${value}`);
           }

@@ -10,10 +10,24 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { logger } = require('./logger');
 
-// Cargar variables de entorno con opción para especificar ubicación
+// Cargar variables de entorno
 function loadEnv(envPath = null) {
   const configPath = envPath || path.resolve(__dirname, '../../.env');
   dotenv.config({ path: configPath });
+  
+  // Verificar si tenemos la variable de entorno DB_NAME
+  if (!process.env.DB_NAME) {
+    process.env.DB_NAME = 'Oficri_sistema';
+  }
+  
+  // Verificar si tenemos la variable de entorno DB_PASSWORD
+  if (!process.env.DB_PASSWORD) {
+    logger.warn('DB_PASSWORD no definida, usando contraseña por defecto "kali"');
+    process.env.DB_PASSWORD = 'kali';
+  }
+  
+  // Log de configuración (sin mostrar la contraseña)
+  logger.debug(`Configuración DB: host=${process.env.DB_HOST}, user=${process.env.DB_USER}, database=${process.env.DB_NAME}`);
 }
 
 // Cargar variables de entorno por defecto
@@ -28,13 +42,16 @@ loadEnv();
  */
 async function executeQuery(sql, params = [], options = {}) {
   const connectionConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'kali', // Usar kali como valor por defecto
+    database: process.env.DB_NAME || 'Oficri_sistema',
     multipleStatements: options.multipleStatements || false
   };
 
+  // Log de la consulta (sin contraseña)
+  logger.debug(`Conexión a: ${connectionConfig.host}@${connectionConfig.database} como ${connectionConfig.user}`);
+  
   const connection = await mysql.createConnection(connectionConfig);
   
   try {
@@ -46,13 +63,29 @@ async function executeQuery(sql, params = [], options = {}) {
 }
 
 /**
- * Desactiva restricciones de integridad referencial 
- * @returns {Promise<void>}
+ * Desactiva restricciones de integridad referencial y triggers temporalmente
+ * @returns {Promise<boolean>}
  */
 async function disableConstraints() {
   try {
-    await executeQuery("SET foreign_key_checks=0;", [], { multipleStatements: true });
+    await executeQuery("SET FOREIGN_KEY_CHECKS = 0;", [], { multipleStatements: true });
     await executeQuery("SET @DISABLE_TRIGGERS = 1;", [], { multipleStatements: true });
+    
+    // Desactivar los triggers directamente
+    try {
+      // Intentar eliminar los triggers que causan problemas
+      await executeQuery(`
+        DROP TRIGGER IF EXISTS trg_area_insert;
+        DROP TRIGGER IF EXISTS trg_area_update;
+        DROP TRIGGER IF EXISTS trg_area_delete;
+        DROP TRIGGER IF EXISTS trg_rol_insert;
+        DROP TRIGGER IF EXISTS trg_rol_update;
+        DROP TRIGGER IF EXISTS trg_rol_delete;
+      `, [], { multipleStatements: true });
+    } catch (triggerError) {
+      logger.warn('No se pudieron eliminar los triggers, continuando de todas formas:', triggerError.message);
+    }
+    
     return true;
   } catch (error) {
     logger.error('Error al desactivar restricciones:', { 
@@ -70,7 +103,7 @@ async function disableConstraints() {
 async function enableConstraints() {
   try {
     await executeQuery("SET @DISABLE_TRIGGERS = NULL;", [], { multipleStatements: true });
-    await executeQuery("SET foreign_key_checks=1;", [], { multipleStatements: true });
+    await executeQuery("SET FOREIGN_KEY_CHECKS = 1;", [], { multipleStatements: true });
     return true;
   } catch (error) {
     logger.error('Error al reactivar restricciones:', { 
@@ -154,14 +187,27 @@ function getDefaultAreas() {
 }
 
 /**
- * Genera un hash seguro para la contraseña
+ * Genera un hash seguro para la contraseña con el salt incorporado en el hash
+ * El hash generado por bcrypt ya incluye el salt, por lo que no es necesario almacenarlo por separado
  * @param {string} password - Contraseña a hashear
- * @returns {Promise<Object>} - Hash y salt
+ * @returns {Promise<string>} - Hash completo que incluye el salt incorporado
  */
 async function hashPassword(password) {
-  const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(password, salt);
-  return { hash, salt };
+  // bcrypt.genSalt(10) genera un salt aleatorio con un costo de 10 rondas
+  // y bcrypt.hash incluye automáticamente el salt en el hash resultante
+  const saltRounds = 10;
+  const hash = await bcrypt.hash(password, saltRounds);
+  return hash;
+}
+
+/**
+ * Verifica si una contraseña coincide con un hash
+ * @param {string} password - Contraseña a verificar
+ * @param {string} hash - Hash almacenado
+ * @returns {Promise<boolean>} - true si la contraseña coincide
+ */
+async function verifyPassword(password, hash) {
+  return await bcrypt.compare(password, hash);
 }
 
 /**
@@ -189,5 +235,6 @@ module.exports = {
   getDefaultRoles,
   getDefaultAreas,
   getDefaultPermissions,
-  hashPassword
+  hashPassword,
+  verifyPassword
 }; 

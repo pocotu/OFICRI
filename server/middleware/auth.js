@@ -50,6 +50,37 @@ const authMiddleware = (req, res, next) => {
 };
 
 /**
+ * Middleware para verificar token
+ */
+const verifyToken = (req, res, next) => {
+  try {
+    // Obtener token del header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: {
+          message: 'No autorizado - Token no proporcionado'
+        }
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Verificar token
+    const decoded = jwt.verify(token, jwtConfig.secret);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    logger.error('Error al verificar token:', error);
+    return res.status(401).json({
+      error: {
+        message: 'No autorizado - Token inválido o expirado'
+      }
+    });
+  }
+};
+
+/**
  * Middleware para verificar roles
  */
 const checkRole = (...roles) => {
@@ -223,6 +254,7 @@ const getResource = async (type, id) => {
 
 module.exports = {
   authMiddleware,
+  verifyToken,
   checkRole,
   checkPermissions,
   checkResourceOwnership

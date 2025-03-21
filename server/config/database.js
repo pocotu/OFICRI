@@ -7,17 +7,20 @@
 const mysql = require('mysql2/promise');
 const { logger } = require('../utils/logger');
 
-// Configuración de la base de datos
+// Asegurarse de que se usa la contraseña correcta (kali)
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'oficri',
+  password: process.env.DB_PASSWORD || 'kali', // Usar kali como contraseña por defecto
+  database: process.env.DB_NAME || 'Oficri_sistema',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 };
+
+// Loguear la configuración (sin la contraseña) para depuración
+logger.debug(`Configuración de base de datos: host=${dbConfig.host}, port=${dbConfig.port}, user=${dbConfig.user}, database=${dbConfig.database}`);
 
 // Crear pool de conexiones
 const pool = mysql.createPool(dbConfig);

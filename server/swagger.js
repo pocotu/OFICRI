@@ -112,7 +112,7 @@ const swaggerOptions = {
             CodigoCIP: { type: 'string', example: '12345678' },
             Nombres: { type: 'string', example: 'Juan' },
             Apellidos: { type: 'string', example: 'Pérez' },
-            Rango: { type: 'string', example: 'General' },
+            Grado: { type: 'string', example: 'General' },
             IDArea: { type: 'integer', example: 1 },
             IDRol: { type: 'integer', example: 1 },
             UltimoAcceso: { type: 'string', format: 'date-time', example: '2023-01-15T10:30:00' },

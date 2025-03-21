@@ -146,70 +146,80 @@ async function initializeMesaPartes() {
 }
 
 /**
- * Create the default admin user with secure password
+ * Create default admin user if not exists
  */
-async function createAdminUser() {
+async function createDefaultAdmin() {
   try {
-    logger.info('Verificando y creando usuario administrador...');
+    logger.info('Creando usuario administrador predeterminado...');
     
-    // Verificar si existe el usuario admin
+    // Verificar si ya existe
     const existingAdmin = await executeQuery(
       'SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?',
       ['12345678']
     );
-
-    if (existingAdmin.length === 0) {
-      // Obtener el ID del rol administrador
-      const adminRole = await executeQuery(
-        'SELECT IDRol FROM Rol WHERE NombreRol = ?',
-        ['Administrador']
-      );
-
-      if (!adminRole[0]) {
-        throw new Error('No se encontró el rol de administrador');
-      }
-
-      // Obtener el ID del área administrativa
-      const adminArea = await executeQuery(
-        'SELECT IDArea FROM AreaEspecializada WHERE TipoArea = ?',
-        ['ADMIN']
-      );
-
-      if (!adminArea[0]) {
-        throw new Error('No se encontró el área administrativa');
-      }
-
-      // Crear hash de la contraseña (usando bcrypt con salt)
-      const { hash: passwordHash, salt } = await hashPassword('Admin123!');
-
-      // Insertar usuario administrador
+    
+    if (existingAdmin.length > 0) {
+      logger.info('Usuario administrador ya existe');
+      
+      // Actualizar datos del administrador existente
       await executeQuery(
-        `INSERT INTO Usuario (
-          CodigoCIP, Nombres, Apellidos, Grado,
-          PasswordHash, Salt, IDArea, IDRol,
-          UltimoAcceso, IntentosFallidos, Bloqueado
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0, FALSE)`,
+        `UPDATE Usuario 
+         SET Nombres = ?, Apellidos = ?, Grado = ?, PasswordHash = ? 
+         WHERE IDUsuario = ?`,
         [
-          '12345678',
-          'Administrador',
-          'Sistema',
-          'SuperAdmin',
-          passwordHash,
-          salt,
-          adminArea[0].IDArea,
-          adminRole[0].IDRol
+          'Jan',
+          'Perez',
+          'Teniente',
+          await hashPassword('admin123'),
+          existingAdmin[0].IDUsuario
         ]
       );
-
-      logger.info('Usuario administrador creado exitosamente');
-      logger.info('Credenciales de acceso:');
-      logger.info('CIP: 12345678');
-      logger.info('Contraseña: Admin123!');
-    } else {
-      logger.info('El usuario administrador ya existe');
+      logger.info(`Usuario administrador actualizado con ID: ${existingAdmin[0].IDUsuario}`);
+      
+      return true;
     }
+    
+    // Obtener IDs de rol y área administrativos
+    const rolResult = await executeQuery(
+      'SELECT IDRol FROM Rol WHERE NombreRol = ?',
+      ['Administrador']
+    );
+    
+    const areaResult = await executeQuery(
+      'SELECT IDArea FROM Area WHERE NombreArea = ?',
+      ['Administración']
+    );
+    
+    if (rolResult.length === 0 || areaResult.length === 0) {
+      throw new Error('No se encontró el rol o área de administrador');
+    }
+    
+    const rolId = rolResult[0].IDRol;
+    const areaId = areaResult[0].IDArea;
+    
+    // Crear hash de contraseña utilizando bcrypt
+    const passwordHash = await hashPassword('admin123');
+    
+    // Insertar usuario administrador
+    const result = await executeQuery(`
+      INSERT INTO Usuario (
+        CodigoCIP, Nombres, Apellidos, Grado,
+        PasswordHash, IDArea, IDRol,
+        UltimoAcceso, IntentosFallidos, Bloqueado
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 0, 0)
+    `, [
+      '12345678', 'Jan', 'Perez', 'Teniente',
+      passwordHash, areaId, rolId
+    ]);
+    
+    logger.info(`Usuario administrador creado con ID: ${result.insertId}`);
+    logger.info('Credenciales de acceso:');
+    logger.info('CIP: 12345678');
+    logger.info('Contraseña: admin123');
+    
+    return true;
   } catch (error) {
-    logger.error('Error al crear usuario administrador:', { error: error.message, stack: error.stack });
+    logger.error('Error al crear usuario administrador:', error.message);
     throw error;
   }
 }
@@ -288,7 +298,7 @@ async function initializeDatabase() {
       // Este usuario es necesario para los registros de auditoría
       await initializeRoles();
       await initializeAreas();
-      await createAdminUser();
+      await createDefaultAdmin();
       await initializeMesaPartes();
       await initializeSecurity();
       
@@ -323,7 +333,7 @@ if (require.main === module) {
     initializeAreas,
     initializeRoles,
     initializeMesaPartes,
-    createAdminUser,
+    createDefaultAdmin,
     initializeSecurity
   };
 } 

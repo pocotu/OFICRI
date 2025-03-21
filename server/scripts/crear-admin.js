@@ -46,6 +46,96 @@ const logger = createLogger({
 });
 
 /**
+ * Función principal que ejecuta el proceso completo
+ */
+async function main() {
+  try {
+    logger.info('Iniciando creación de usuario administrador...');
+    
+    // Desactivar restricciones de claves foráneas
+    await disableConstraints();
+    
+    try {
+      // 1. Primero crear área administrativa (sin logs)
+      logger.info('Creando área administrativa...');
+      const idArea = await crearAreaAdministrativa();
+      
+      // 2. Luego crear rol de administrador (sin logs)
+      logger.info('Creando rol de administrador...');
+      const idRol = await crearRolAdministrador();
+      
+      // 3. Finalmente, crear el usuario administrador con las referencias correctas
+      logger.info('Creando usuario administrador...');
+      
+      // Verificar si ya existe
+      const existingAdmin = await executeQuery(
+        'SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?',
+        ['12345678']
+      );
+      
+      let adminUserId;
+      
+      if (existingAdmin.length > 0) {
+        logger.info('Usuario administrador ya existe');
+        adminUserId = existingAdmin[0].IDUsuario;
+        
+        // Actualizar datos del administrador existente
+        await executeQuery(
+          `UPDATE Usuario 
+           SET Nombres = ?, Apellidos = ?, Grado = ?, PasswordHash = ? 
+           WHERE IDUsuario = ?`,
+          [
+            'Jan',
+            'Perez',
+            'Teniente',
+            await hashPassword('admin123'),
+            adminUserId
+          ]
+        );
+        logger.info(`Usuario administrador actualizado con ID: ${adminUserId}`);
+      } else {
+        // Crear contraseña segura con el hash que ya incluye el salt
+        const passwordHash = await hashPassword('admin123');
+        
+        // Insertar usuario administrador con IDs correctos
+        const userResult = await executeQuery(
+          `INSERT INTO Usuario (
+            CodigoCIP, Nombres, Apellidos, Grado,
+            PasswordHash, IDArea, IDRol,
+            UltimoAcceso, IntentosFallidos, Bloqueado
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 0, FALSE)`,
+          [
+            '12345678',
+            'Jan',
+            'Perez',
+            'Teniente',
+            passwordHash,
+            idArea,
+            idRol
+          ]
+        );
+        
+        adminUserId = userResult.insertId;
+        logger.info(`Usuario administrador creado con ID: ${adminUserId}`);
+      }
+      
+      logger.info('Proceso completado exitosamente');
+      logger.info('----------------------------------');
+      logger.info('Credenciales de acceso:');
+      logger.info('CIP: 12345678');
+      logger.info('Contraseña: admin123');
+      logger.info('----------------------------------');
+    } finally {
+      // Reactivar restricciones
+      await enableConstraints();
+    }
+  } catch (error) {
+    logger.error(`Error en el proceso: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+/**
  * Crea el rol de administrador si no existe
  * @returns {Promise<number>} ID del rol administrador
  */
@@ -119,90 +209,6 @@ async function crearAreaAdministrativa() {
   }
 }
 
-/**
- * Crea el usuario administrador
- * @param {number} idRol - ID del rol administrador
- * @param {number} idArea - ID del área administrativa
- * @returns {Promise<number>} ID del usuario creado
- */
-async function crearAdmin(idRol, idArea) {
-  try {
-    logger.info('Verificando usuario administrador...');
-    
-    // Verificar si ya existe
-    const existingAdmin = await executeQuery(
-      'SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?',
-      ['12345678']
-    );
-    
-    if (existingAdmin.length > 0) {
-      logger.info('Usuario administrador ya existe');
-      return existingAdmin[0].IDUsuario;
-    }
-    
-    // Crear contraseña segura
-    const { hash: passwordHash, salt } = await hashPassword('Admin123!');
-    
-    // Insertar usuario
-    const result = await executeQuery(
-      `INSERT INTO Usuario (
-        CodigoCIP, Nombres, Apellidos, Grado,
-        PasswordHash, Salt, IDArea, IDRol,
-        UltimoAcceso, IntentosFallidos, Bloqueado
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0, FALSE)`,
-      [
-        '12345678',
-        'Administrador',
-        'Sistema',
-        'SuperAdmin',
-        passwordHash,
-        salt,
-        idArea,
-        idRol
-      ]
-    );
-    
-    logger.info('Usuario administrador creado exitosamente');
-    logger.info('Credenciales de acceso:');
-    logger.info('CIP: 12345678');
-    logger.info('Contraseña: Admin123!');
-    
-    return result.insertId;
-  } catch (error) {
-    logger.error(`Error al crear usuario administrador: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
- * Función principal que ejecuta el proceso completo
- */
-async function main() {
-  try {
-    logger.info('Iniciando creación de usuario administrador...');
-    
-    // Desactivar restricciones de claves foráneas
-    await disableConstraints();
-    
-    try {
-      // Crear rol y área primero
-      const idRol = await crearRolAdministrador();
-      const idArea = await crearAreaAdministrativa();
-      
-      // Crear usuario administrador
-      const idUsuario = await crearAdmin(idRol, idArea);
-      
-      logger.info(`Proceso completado. ID de usuario administrador: ${idUsuario}`);
-    } finally {
-      // Reactivar restricciones
-      await enableConstraints();
-    }
-  } catch (error) {
-    logger.error(`Error en el proceso: ${error.message}`);
-    process.exit(1);
-  }
-}
-
 // Ejecutar script directamente
 if (require.main === module) {
   main().then(() => {
@@ -214,6 +220,5 @@ if (require.main === module) {
 // Exportar funciones para uso en otros scripts
 module.exports = {
   crearRolAdministrador,
-  crearAreaAdministrativa,
-  crearAdmin
+  crearAreaAdministrativa
 }; 

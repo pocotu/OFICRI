@@ -7,13 +7,20 @@ const dotenv = require('dotenv');
 const path = require('path');
 
 // Cargar variables de entorno de prueba
+// Primero cargamos las variables de entorno normales
 dotenv.config({
   path: path.join(__dirname, '../../.env')
+});
+
+// Luego cargamos las específicas de prueba, que pueden sobrescribir las anteriores
+dotenv.config({
+  path: path.join(__dirname, '../../.env.test')
 });
 
 // Configurar variables de entorno por defecto para pruebas
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
+// Aseguramos que se use la contraseña correcta (kali)
 process.env.DB_HOST = 'localhost';
 process.env.DB_PORT = '3306';
 process.env.DB_NAME = 'Oficri_sistema';

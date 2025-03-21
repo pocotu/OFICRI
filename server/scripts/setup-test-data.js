@@ -9,6 +9,7 @@ require('dotenv').config({ path: '.env.test' });
 
 const db = require('../config/database');
 const { logger } = require('../utils/logger');
+const { hashPassword } = require('../utils/password-utils');
 
 async function setupTestData() {
   try {
@@ -46,13 +47,14 @@ async function setupTestData() {
     
     // Crear usuarios de prueba
     logger.info('Creando usuarios de prueba...');
+    const passwordHash = await hashPassword('TestPassword123!');
     await db.executeQuery(
-      'INSERT IGNORE INTO Usuario (IDUsuario, CodigoCIP, Nombres, Apellidos, Rango, PasswordHash, Salt, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [998, 'TEST-USER-1', 'Usuario', 'De Prueba 1', 'General', '$2a$10$mBpQoMfPGGjYV2NzvL.YHeTw0znNqptBsYKrn.zxr5Hd2zQvmCv9q', 'testSalt123', 999, 999]
+      'INSERT IGNORE INTO Usuario (IDUsuario, CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [998, 'TEST-USER-1', 'Usuario', 'De Prueba 1', 'General', passwordHash, 999, 999]
     );
     await db.executeQuery(
-      'INSERT IGNORE INTO Usuario (IDUsuario, CodigoCIP, Nombres, Apellidos, Rango, PasswordHash, Salt, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [999, 'TEST-USER-2', 'Usuario', 'De Prueba 2', 'General', '$2a$10$mBpQoMfPGGjYV2NzvL.YHeTw0znNqptBsYKrn.zxr5Hd2zQvmCv9q', 'testSalt123', 999, 999]
+      'INSERT IGNORE INTO Usuario (IDUsuario, CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [999, 'TEST-USER-2', 'Usuario', 'De Prueba 2', 'General', passwordHash, 999, 999]
     );
     logger.info(`Usuarios creados con IDs: 998, 999`);
     

@@ -63,10 +63,13 @@ const passwordResetLimiter = rateLimit({
   }
 });
 
+// Export the rate limiters
+const rateLimitMiddleware = {
+  standard: standardLimiter,
+  auth: authLimiter,
+  passwordReset: passwordResetLimiter
+};
+
 module.exports = {
-  rateLimitMiddleware: {
-    standard: standardLimiter,
-    auth: authLimiter,
-    passwordReset: passwordResetLimiter
-  }
+  rateLimitMiddleware
 }; 

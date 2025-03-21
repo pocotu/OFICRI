@@ -5,6 +5,7 @@
 
 const db = require('../../config/database');
 const { logger } = require('../../utils/logger');
+const { hashPassword } = require('../../utils/database-helpers');
 
 describe('Pruebas de Entidad Usuario', () => {
   // Datos de prueba para un usuario
@@ -12,9 +13,8 @@ describe('Pruebas de Entidad Usuario', () => {
     CodigoCIP: 'TEST123456',
     Nombres: 'Usuario',
     Apellidos: 'De Prueba',
-    Rango: 'Suboficial',
+    Grado: 'Suboficial',
     PasswordHash: '$2a$10$mBpQoMfPGGjYV2NzvL.YHeTw0znNqptBsYKrn.zxr5Hd2zQvmCv9q', // hash de 'Test1234'
-    Salt: 'testSalt123',
     IDArea: 999,
     IDRol: 999
   };
@@ -95,14 +95,13 @@ describe('Pruebas de Entidad Usuario', () => {
 
       // Insertar el usuario de prueba
       const result = await db.executeQuery(
-        'INSERT INTO Usuario (CodigoCIP, Nombres, Apellidos, Rango, PasswordHash, Salt, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO Usuario (CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
           testUserData.CodigoCIP,
           testUserData.Nombres,
           testUserData.Apellidos,
-          testUserData.Rango,
+          testUserData.Grado,
           testUserData.PasswordHash,
-          testUserData.Salt,
           testUserData.IDArea,
           testUserData.IDRol
         ]

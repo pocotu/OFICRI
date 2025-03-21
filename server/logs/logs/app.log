@@ -1,0 +1,3 @@
+{"ip":"::1","level":"http","message":"HTTP POST /api/auth/login","method":"POST","responseTime":102,"service":"oficri-api","status":200,"timestamp":"2025-03-21T22:41:35.308Z","url":"/api/auth/login","userAgent":"","userId":null}
+{"ip":"::1","level":"http","message":"HTTP GET /api/status","method":"GET","responseTime":1,"service":"oficri-api","status":200,"timestamp":"2025-03-21T22:41:43.453Z","url":"/api/status","userAgent":"","userId":null}
+{"ip":"::1","level":"http","message":"HTTP POST /api/auth/login","method":"POST","responseTime":93,"service":"oficri-api","status":200,"timestamp":"2025-03-21T22:45:47.435Z","url":"/api/auth/login","userAgent":"","userId":null}

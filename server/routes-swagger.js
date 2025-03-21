@@ -22,6 +22,8 @@
  *     description: Sistema de notificaciones para usuarios
  *   - name: Seguridad
  *     description: Configuraciones de seguridad del sistema
+ *   - name: Logs
+ *     description: Gestión y exportación de logs del sistema
  */
 
 /**
@@ -664,6 +666,272 @@
  *     responses:
  *       200:
  *         description: Lista de logs de auditoría
+ */
+
+/**
+ * @swagger
+ * /api/logs:
+ *   get:
+ *     summary: Obtiene logs del sistema
+ *     description: Recupera logs almacenados en la base de datos según los filtros proporcionados
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tipo
+ *         schema:
+ *           type: string
+ *           enum: [usuario, documento, area, rol, permiso, mesapartes, derivacion, request, intrusion, exportacion, backup]
+ *         description: Tipo de log a recuperar
+ *       - in: query
+ *         name: fechaInicio
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Fecha de inicio para filtrar logs (formato ISO)
+ *       - in: query
+ *         name: fechaFin
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Fecha de fin para filtrar logs (formato ISO)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *         description: Número máximo de registros a retornar
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Desplazamiento para paginación
+ *     responses:
+ *       200:
+ *         description: Lista de logs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 logs:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     offset:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Prohibido, sin permisos suficientes
+ *       500:
+ *         description: Error interno del servidor
+ * 
+ * /api/logs/files:
+ *   get:
+ *     summary: Obtiene logs del sistema de archivos
+ *     description: Recupera logs almacenados en archivos físicos según los filtros proporcionados
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tipo
+ *         schema:
+ *           type: string
+ *           enum: [app, error, security, exceptions, rejections]
+ *         description: Tipo de archivo de log a recuperar
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 1000
+ *         description: Número máximo de líneas a leer
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Número de líneas a omitir desde el inicio
+ *     responses:
+ *       200:
+ *         description: Contenido de los logs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 logs:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     offset:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Prohibido, sin permisos suficientes
+ *       500:
+ *         description: Error interno del servidor
+ * 
+ * /api/logs/export:
+ *   post:
+ *     summary: Exporta logs del sistema
+ *     description: Exporta logs a un archivo para su descarga según los filtros proporcionados
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tipo:
+ *                 type: string
+ *                 enum: [usuario, documento, area, rol, permiso, mesapartes, derivacion, request, intrusion, exportacion, backup]
+ *               fechaInicio:
+ *                 type: string
+ *                 format: date-time
+ *               fechaFin:
+ *                 type: string
+ *                 format: date-time
+ *               formato:
+ *                 type: string
+ *                 enum: [json, csv]
+ *                 default: json
+ *     responses:
+ *       200:
+ *         description: Logs exportados exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 exportInfo:
+ *                   type: object
+ *                   properties:
+ *                     fileName:
+ *                       type: string
+ *                     fileSize:
+ *                       type: integer
+ *                     recordCount:
+ *                       type: integer
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Prohibido, sin permisos suficientes
+ *       500:
+ *         description: Error interno del servidor
+ * 
+ * /api/logs/download/{fileName}:
+ *   get:
+ *     summary: Descarga un archivo de logs exportado
+ *     description: Descarga un archivo de logs generado previamente con el endpoint de exportación
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: fileName
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Nombre del archivo a descargar
+ *     responses:
+ *       200:
+ *         description: Archivo de logs
+ *         content:
+ *           application/gzip:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Prohibido, sin permisos suficientes
+ *       404:
+ *         description: Archivo no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ * 
+ * /api/logs/security/stats:
+ *   get:
+ *     summary: Obtiene estadísticas de eventos de seguridad
+ *     description: Recupera estadísticas de eventos de seguridad registrados en el sistema
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: fechaInicio
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Fecha de inicio para filtrar estadísticas (formato ISO)
+ *       - in: query
+ *         name: fechaFin
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Fecha de fin para filtrar estadísticas (formato ISO)
+ *     responses:
+ *       200:
+ *         description: Estadísticas de eventos de seguridad
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 intrusionsByType:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       TipoEvento:
+ *                         type: string
+ *                       total:
+ *                         type: integer
+ *                 logTableCounts:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       table:
+ *                         type: string
+ *                       count:
+ *                         type: integer
+ *                 totalLogs:
+ *                   type: integer
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Prohibido, sin permisos suficientes
+ *       500:
+ *         description: Error interno del servidor
  */
 
 module.exports = {}; 

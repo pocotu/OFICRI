@@ -12,7 +12,7 @@ const authController = require('../controllers/auth.controller');
 
 // Import middleware
 const { csrfMiddleware } = require('../middleware/security/csrf.middleware');
-const { authMiddleware } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
 
 // Import validators
@@ -206,6 +206,6 @@ router.post('/refresh-token', authController.refreshToken);
  *                   type: string
  *                   example: No se proporcionó token de autenticación
  */
-router.get('/check', authMiddleware.verifyToken, authController.checkAuth);
+router.get('/check', verifyToken, authController.checkAuth);
 
 module.exports = router; 

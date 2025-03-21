@@ -46,6 +46,9 @@ const upload = multer({
   }
 });
 
+// Exportar el middleware de multer para ser usado en rutas
+const uploadMiddleware = upload;
+
 /**
  * Función para guardar información de IP en la tabla UsuarioLog
  */
@@ -460,13 +463,13 @@ const fileHandlerMiddleware = (req, res, next) => {
 };
 
 module.exports = {
-  upload,
+  processFilePond,
   validateFile,
   deleteFile,
   moveFile,
   copyFile,
   checkFileExists,
+  handleFilePondUpload,
   fileHandlerMiddleware,
-  processFilePond,
-  handleFilePondUpload
+  uploadMiddleware
 }; 

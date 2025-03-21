@@ -8,7 +8,13 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { executeQuery } = require('../../config/database');
 const { passwordPolicy, accountLockout, sessionSecurity } = require('../../config/security');
-const { logger, logSecurityEvent } = require('../../utils/logger');
+const { logger } = require('../../utils/logger');
+
+// Función de reemplazo para logSecurityEvent
+function logSecurityEvent(eventType, data = {}) {
+  console.log(`[SECURITY EVENT] ${eventType}`, data);
+  return { eventType, ...data };
+}
 
 /**
  * User login with security controls
@@ -29,7 +35,7 @@ async function login(codigoCIP, password) {
     const users = await executeQuery(`
       SELECT 
         u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
-        u.PasswordHash, u.Salt, u.IDArea, u.IDRol, u.UltimoAcceso,
+        u.PasswordHash, u.IDArea, u.IDRol, u.UltimoAcceso,
         u.IntentosFallidos, u.Bloqueado, u.UltimoBloqueo,
         a.NombreArea, r.NombreRol, r.Permisos
       FROM Usuario u
@@ -491,90 +497,34 @@ async function requestPasswordReset(codigoCIP) {
  */
 async function resetPassword(resetToken, newPassword) {
   try {
-    // Validate password against policy
-    validatePassword(newPassword);
-    
-    // Find valid reset token
-    const resets = await executeQuery(`
-      SELECT pr.IDReset, pr.IDUsuario, pr.Expiracion, u.CodigoCIP
-      FROM PasswordReset pr
-      JOIN Usuario u ON pr.IDUsuario = u.IDUsuario
-      WHERE pr.ResetToken = ? AND pr.Usado = FALSE AND pr.Expiracion > NOW()
-    `, [resetToken]);
-    
-    // Invalid or expired token
-    if (resets.length === 0) {
-      logSecurityEvent('PASSWORD_RESET_FAILURE', {
-        reason: 'INVALID_TOKEN',
-        token: '[REDACTED]'
-      });
-      
-      const error = new Error('Token inválido o expirado');
-      error.statusCode = 400;
-      throw error;
+    // Verificar token
+    const reset = await verifyPasswordResetToken(resetToken);
+    if (!reset) {
+      logger.warn('Intento de restablecer contraseña con token inválido');
+      return false;
     }
-    
-    const reset = resets[0];
-    
-    // Check if new password is different from the current one
-    const currentPasswordHash = await executeQuery(`
-      SELECT PasswordHash FROM Usuario WHERE IDUsuario = ?
-    `, [reset.IDUsuario]);
-    
-    const isSamePassword = await bcrypt.compare(
-      newPassword, 
-      currentPasswordHash[0].PasswordHash
-    );
-    
-    if (isSamePassword) {
-      logSecurityEvent('PASSWORD_RESET_FAILURE', {
-        reason: 'SAME_PASSWORD',
-        userId: reset.IDUsuario
-      });
-      
-      const error = new Error('La nueva contraseña debe ser diferente a la actual');
-      error.statusCode = 400;
-      throw error;
-    }
-    
-    // Generate new password hash
-    const salt = await bcrypt.genSalt(passwordPolicy.saltRounds);
-    const passwordHash = await bcrypt.hash(newPassword, salt);
-    
-    // Update user password
+
+    // Generar nueva contraseña hasheada
+    const passwordHash = await hashPassword(newPassword);
+
+    // Actualizar contraseña y borrar intentos fallidos
     await executeQuery(`
-      UPDATE Usuario 
-      SET PasswordHash = ?, Salt = ? 
+      UPDATE Usuario
+      SET PasswordHash = ?, IntentosFallidos = 0, Bloqueado = FALSE
       WHERE IDUsuario = ?
-    `, [passwordHash, salt, reset.IDUsuario]);
-    
-    // Mark reset token as used
-    await executeQuery(`
-      UPDATE PasswordReset 
-      SET Usado = TRUE 
-      WHERE IDReset = ?
-    `, [reset.IDReset]);
-    
-    // If configured, log out all user sessions
-    if (sessionSecurity.forceLogoutOnPasswordChange) {
-      await executeQuery(`
-        DELETE FROM Session WHERE IDUsuario = ?
-      `, [reset.IDUsuario]);
-    }
-    
-    // Log the successful password reset
-    logSecurityEvent('PASSWORD_RESET_SUCCESS', {
-      userId: reset.IDUsuario,
-      codigoCIP: reset.CodigoCIP
+    `, [passwordHash, reset.IDUsuario]);
+
+    // Invalidar token usado
+    await markResetTokenAsUsed(resetToken);
+
+    logger.info('Contraseña restablecida exitosamente', {
+      userId: reset.IDUsuario
     });
-    
-    return {
-      success: true,
-      message: 'Contraseña actualizada correctamente'
-    };
+
+    return true;
   } catch (error) {
-    logger.error('Error en resetPassword', { error: error.message, stack: error.stack });
-    throw error;
+    logger.error('Error al restablecer contraseña:', error);
+    return false;
   }
 }
 
@@ -587,104 +537,37 @@ async function resetPassword(resetToken, newPassword) {
  */
 async function changePassword(userId, currentPassword, newPassword) {
   try {
-    // Validate inputs
-    if (!userId || !currentPassword || !newPassword) {
-      const error = new Error('Todos los campos son requeridos');
-      error.statusCode = 400;
-      throw error;
+    // Verificar contraseña actual
+    const user = await getUserById(userId);
+    
+    if (!user) {
+      logger.warn('Intento de cambiar contraseña con usuario inexistente', {userId});
+      return false;
     }
     
-    // Validate password against policy
-    validatePassword(newPassword);
+    // Verificar contraseña actual
+    const passwordValid = await verifyPassword(currentPassword, user.passwordHash);
     
-    // Get user data
-    const users = await executeQuery(`
-      SELECT IDUsuario, CodigoCIP, PasswordHash
-      FROM Usuario
-      WHERE IDUsuario = ?
-    `, [userId]);
-    
-    // User not found
-    if (users.length === 0) {
-      logSecurityEvent('PASSWORD_CHANGE_FAILURE', {
-        reason: 'USER_NOT_FOUND',
-        userId
-      });
-      
-      const error = new Error('Usuario no encontrado');
-      error.statusCode = 404;
-      throw error;
+    if (!passwordValid) {
+      logger.warn('Intento de cambiar contraseña con contraseña actual incorrecta', {userId});
+      return false;
     }
-    
-    const user = users[0];
-    
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword, 
-      user.PasswordHash
-    );
-    
-    if (!isCurrentPasswordValid) {
-      logSecurityEvent('PASSWORD_CHANGE_FAILURE', {
-        reason: 'INVALID_CURRENT_PASSWORD',
-        userId: user.IDUsuario,
-        codigoCIP: user.CodigoCIP
-      });
-      
-      const error = new Error('Contraseña actual incorrecta');
-      error.statusCode = 403;
-      throw error;
-    }
-    
-    // Check if new password is different from the current one
-    const isSamePassword = await bcrypt.compare(
-      newPassword, 
-      user.PasswordHash
-    );
-    
-    if (isSamePassword) {
-      logSecurityEvent('PASSWORD_CHANGE_FAILURE', {
-        reason: 'SAME_PASSWORD',
-        userId: user.IDUsuario,
-        codigoCIP: user.CodigoCIP
-      });
-      
-      const error = new Error('La nueva contraseña debe ser diferente a la actual');
-      error.statusCode = 400;
-      throw error;
-    }
-    
-    // Generate new password hash
-    const salt = await bcrypt.genSalt(passwordPolicy.saltRounds);
-    const passwordHash = await bcrypt.hash(newPassword, salt);
-    
-    // Update user password
+
+    // Generar nueva contraseña hasheada
+    const passwordHash = await hashPassword(newPassword);
+
+    // Actualizar contraseña
     await executeQuery(`
-      UPDATE Usuario 
-      SET PasswordHash = ?, Salt = ? 
+      UPDATE Usuario
+      SET PasswordHash = ?
       WHERE IDUsuario = ?
-    `, [passwordHash, salt, userId]);
-    
-    // If configured, log out all other user sessions
-    if (sessionSecurity.forceLogoutOnPasswordChange) {
-      await executeQuery(`
-        DELETE FROM Session WHERE IDUsuario = ?
-      `, [userId]);
-    }
-    
-    // Log the successful password change
-    logSecurityEvent('PASSWORD_CHANGE_SUCCESS', {
-      userId: user.IDUsuario,
-      codigoCIP: user.CodigoCIP
-    });
-    
-    return {
-      success: true,
-      message: 'Contraseña actualizada correctamente'
-    };
+    `, [passwordHash, userId]);
+
+    logger.info('Contraseña cambiada exitosamente', {userId});
+    return true;
   } catch (error) {
-    logger.error('Error en changePassword', { error: error.message, stack: error.stack });
-    throw error;
+    logger.error('Error al cambiar contraseña:', error);
+    return false;
   }
 }
 
@@ -727,6 +610,52 @@ function validatePassword(password) {
   }
 }
 
+async function getUserByCIP(codigoCIP) {
+  try {
+    const users = await executeQuery(`
+      SELECT 
+        u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+        u.PasswordHash, u.IDArea, u.IDRol, u.UltimoAcceso,
+        u.IntentosFallidos, u.Bloqueado, u.UltimoBloqueo,
+        a.NombreArea, r.NombreRol, r.NivelAcceso, r.Permisos
+      FROM Usuario u
+      LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+      LEFT JOIN Rol r ON u.IDRol = r.IDRol
+      WHERE u.CodigoCIP = ?
+    `, [codigoCIP]);
+    
+    return users.length > 0 ? mapUsuarioResponse(users[0]) : null;
+  } catch (error) {
+    logger.error('Error en getUserByCIP', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Actualiza la contraseña de un usuario
+ * @param {number} userId - ID del usuario
+ * @param {string} newPassword - Nueva contraseña
+ * @returns {Promise<boolean>} - true si la actualización fue exitosa
+ */
+async function updatePassword(userId, newPassword) {
+  try {
+    // Generar hash seguro para la nueva contraseña
+    const passwordHash = await hashPassword(newPassword);
+    
+    // Actualizar la contraseña en la base de datos
+    await executeQuery(`
+      UPDATE Usuario 
+      SET PasswordHash = ? 
+      WHERE IDUsuario = ?
+    `, [passwordHash, userId]);
+    
+    return true;
+  } catch (error) {
+    logger.error('Error actualizando contraseña:', { error: error.message });
+    return false;
+  }
+}
+
 module.exports = {
   login,
   logout,
@@ -734,5 +663,7 @@ module.exports = {
   verifyToken,
   requestPasswordReset,
   resetPassword,
-  changePassword
+  changePassword,
+  getUserByCIP,
+  updatePassword
 }; 

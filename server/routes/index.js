@@ -8,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import route modules
-// const authRoutes = require('./auth.routes');
+const authRoutes = require('./auth.routes');
 const userRoutes = require('./user.routes');
 const areaRoutes = require('./area.routes');
 const roleRoutes = require('./role.routes');
@@ -16,11 +16,13 @@ const mesaPartesRoutes = require('./mesaPartes.routes');
 const documentRoutes = require('./document.routes');
 const dashboardRoutes = require('./dashboard.routes');
 const securityRoutes = require('./security.routes');
+const notificationRoutes = require('./notification.routes');
+const logsRoutes = require('./logs.routes');
 
 // Import common middleware
 const { verifyToken } = require('../middleware/auth');
 const { csrfMiddleware } = require('../middleware/security/csrf.middleware');
-const { logSecurityEvent } = require('../utils/logger');
+const { logSecurityEvent } = require('../utils/logger/index');
 
 // Middleware to extract API version from header
 router.use((req, res, next) => {
@@ -39,17 +41,17 @@ router.get('/status', (req, res) => {
   });
 });
 
-// Apply routes
-// router.use('/auth', authRoutes);
-
-// Protected routes - require authentication
-router.use('/users', verifyToken, userRoutes);
-router.use('/areas', verifyToken, areaRoutes);
-router.use('/roles', verifyToken, roleRoutes);
-router.use('/mesa-partes', verifyToken, mesaPartesRoutes);
-router.use('/documents', verifyToken, documentRoutes);
-router.use('/dashboard', verifyToken, dashboardRoutes);
-router.use('/security', verifyToken, securityRoutes);
+// Apply routes (sin el prefijo /api duplicado)
+router.use('/auth', authRoutes);
+router.use('/documents', documentRoutes);
+router.use('/users', userRoutes);
+router.use('/areas', areaRoutes);
+router.use('/roles', roleRoutes);
+router.use('/security', securityRoutes);
+router.use('/mesapartes', mesaPartesRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/logs', logsRoutes);
 
 // Spanish aliases for compatibility
 router.use('/usuarios', verifyToken, userRoutes);

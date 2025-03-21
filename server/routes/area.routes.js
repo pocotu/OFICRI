@@ -99,6 +99,7 @@ router.get('/:id/pending',
  * @access Admin, Area Manager
  */
 router.get('/:id/statistics', 
+  verifyToken,
   checkRole(['admin', 'area_manager']), 
   areaController.getAreaStatistics
 );

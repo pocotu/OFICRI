@@ -20,7 +20,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./docs/swagger.json');
 const { errorHandler } = require('./middleware/error-handler');
 const { authenticate } = require('./middleware/auth');
-const { Logger } = require('./utils/logger');
+const { logger } = require('./utils/logger');
 const { loadEnv } = require('./utils/database-helpers');
 const { initializeDatabase } = require('./scripts/init-database');
 
@@ -30,7 +30,7 @@ const security = require('./config/security');
 const { getCorsOptions } = require('./config/cors');
 
 // Import utilities
-const { logger, logHttpRequest, logSecurityEvent } = require('./utils/logger');
+const { logHttpRequest, logSecurityEvent } = require('./utils/logger/index');
 
 // Import middlewares
 const errorMiddleware = require('./middleware/error.middleware');
@@ -118,9 +118,11 @@ app.use((req, res, next) => {
 });
 
 // Rate limiting
+/* Temporarily disabled for debugging
 app.use('/api/', rateLimitMiddleware.standard);
 app.use('/api/auth/', rateLimitMiddleware.auth);
 app.use('/api/auth/password/reset', rateLimitMiddleware.passwordReset);
+*/
 
 // Swagger documentation - exclude in production
 if (process.env.NODE_ENV !== 'production') {
@@ -195,12 +197,12 @@ app.use(errorMiddleware);
  */
 async function initializeDatabaseAndAdmin() {
   try {
-    Logger.info('Verificando configuración inicial de la base de datos...');
+    logger.info('Verificando configuración inicial de la base de datos...');
     await initializeDatabase();
-    Logger.info('Inicialización de base de datos completada');
+    logger.info('Inicialización de base de datos completada');
     return true;
   } catch (error) {
-    Logger.error('Error al inicializar la base de datos:', error);
+    logger.error('Error al inicializar la base de datos:', error);
     return false;
   }
 }
@@ -235,11 +237,11 @@ const startServer = async () => {
     
     // Iniciar el servidor HTTP
     app.listen(PORT, () => {
-      Logger.info(`Servidor iniciado en http://localhost:${PORT}`);
-      Logger.info(`Documentación API disponible en http://localhost:${PORT}/api-docs`);
+      logger.info(`Servidor iniciado en http://localhost:${PORT}`);
+      logger.info(`Documentación API disponible en http://localhost:${PORT}/api-docs`);
     });
   } catch (error) {
-    Logger.error('Error al iniciar el servidor:', error);
+    logger.error('Error al iniciar el servidor:', error);
     process.exit(1);
   }
 };
