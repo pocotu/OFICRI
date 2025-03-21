@@ -1,255 +1,247 @@
 /**
- * Servidor principal de la aplicación OFICRI
- * Configura y arranca el servidor Express
+ * OFICRI API Server
+ * Main entry point for the application
+ * ISO/IEC 27001 compliant security implementation
  */
 
+// Load environment variables 
+require('dotenv').config();
+
+// Import dependencies
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-
-// Configurar dotenv para cargar el archivo .env desde la raíz del proyecto
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
-// Importar configuraciones
-const { dbConfig, pool, testConnection } = require('./src/config/database');
-const { sessionConfig } = require('./src/config/session');
-const { corsConfig } = require('./src/config/cors');
-const { rateLimitConfig } = require('./src/config/rateLimit');
+const fs = require('fs');
+const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./docs/swagger.json');
+const { errorHandler } = require('./middleware/error-handler');
+const { authenticate } = require('./middleware/auth');
+const { Logger } = require('./utils/logger');
+const { loadEnv } = require('./utils/database-helpers');
 const { initializeDatabase } = require('./scripts/init-database');
 
-// Importar utilidades
-const { logger, errorHandler } = require('./src/utils/utilsExport');
+// Import configurations
+const { dbConfig, pool, testConnection, closePool } = require('./config/database');
+const security = require('./config/security');
+const { getCorsOptions } = require('./config/cors');
 
-// Verificar variables de entorno requeridas
-const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+// Import utilities
+const { logger, logHttpRequest, logSecurityEvent } = require('./utils/logger');
+
+// Import middlewares
+const errorMiddleware = require('./middleware/error.middleware');
+const { rateLimitMiddleware } = require('./middleware/security');
+const { authMiddleware } = require('./middleware/auth');
+
+// Import routes
+const routes = require('./routes');
+
+// Import Swagger documentation
+const { swaggerUiOptions } = require('./docs/swagger');
+
+// Load environment variables
+loadEnv();
+
+// Verify required environment variables
+const requiredEnvVars = ['JWT_SECRET', 'SESSION_SECRET', 'CSRF_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
-    logger.error(`Faltan las siguientes variables de entorno: ${missingEnvVars.join(', ')}`);
-    process.exit(1);
+  logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
 }
 
-// Importar rutas
-const authRoutes = require('./src/routes/auth.routes');
-const userRoutes = require('./src/routes/user.routes');
-const areaRoutes = require('./src/routes/area.routes');
-const mesaPartesRoutes = require('./src/routes/mesaPartes.routes');
-const dashboardRoutes = require('./src/routes/dashboard.routes');
-const roleRoutes = require('./src/routes/role.routes');
-
-// Importar middlewares
-const { errorMiddleware } = require('./src/middleware/middlewareExport');
-
-// Crear aplicación Express
+// Create Express application
 const app = express();
 
-// Configuración básica
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configuración de CORS - Usar la configuración importada
-app.use(cors(corsConfig));
-
-// Middleware adicional para manejar preflight OPTIONS
-app.options('*', cors(corsConfig));
-
-// Configuración de sesiones con SameSite y Secure apropiados
-const sess = {
-    ...sessionConfig,
-    cookie: {
-        ...sessionConfig.cookie,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production'
-    }
-};
-
-app.use(session(sess));
-
-// Configuración de seguridad básica
+// Set up basic security using Helmet
 app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false
+  contentSecurityPolicy: {
+    directives: security.contentSecurityPolicy.directives
+  },
+  crossOriginEmbedderPolicy: process.env.NODE_ENV === 'production',
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+  dnsPrefetchControl: { allow: false },
+  expectCt: { enforce: true, maxAge: 30 },
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
+  hsts: { maxAge: 15552000, includeSubDomains: true, preload: true },
+  ieNoOpen: true,
+  noSniff: true,
+  originAgentCluster: true,
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true
 }));
 
-// Configuración de tipos MIME
-express.static.mime.define({
-    'application/javascript': ['js', 'mjs'],
-    'text/css': ['css'],
-    'image/png': ['png'],
-    'image/jpeg': ['jpg', 'jpeg'],
-    'image/gif': ['gif'],
-    'image/svg+xml': ['svg'],
-    'font/woff2': ['woff2'],
-    'font/woff': ['woff'],
-    'font/ttf': ['ttf'],
-    'font/eot': ['eot']
-});
+// Request parsing middleware
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Middleware para manejar tipos MIME
-app.use((req, res, next) => {
-    const ext = path.extname(req.path).toLowerCase();
-    switch (ext) {
-        case '.js':
-        case '.mjs':
-            res.type('application/javascript');
-            break;
-        case '.css':
-            res.type('text/css');
-            break;
-        case '.png':
-            res.type('image/png');
-            break;
-        case '.jpg':
-        case '.jpeg':
-            res.type('image/jpeg');
-            break;
-        case '.gif':
-            res.type('image/gif');
-            break;
-        case '.svg':
-            res.type('image/svg+xml');
-            break;
-        case '.woff2':
-            res.type('font/woff2');
-            break;
-        case '.woff':
-            res.type('font/woff');
-            break;
-        case '.ttf':
-            res.type('font/ttf');
-            break;
-        case '.eot':
-            res.type('font/eot');
-            break;
-    }
-    next();
-});
+// Setup CORS
+const corsOptions = getCorsOptions();
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
 
-// Middleware para verificar la conexión a la base de datos
-app.use('/api', async (req, res, next) => {
-    // Excluir rutas de autenticación de la verificación de DB
-    if (req.path.startsWith('/auth/')) {
-        return next();
-    }
-    try {
-        await testConnection();
-        next();
-    } catch (error) {
-        logger.error('Error de conexión a la base de datos:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error de conexión a la base de datos'
-        });
-    }
-});
-
-// Rutas API
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/usuarios', userRoutes); // Alias en español para compatibilidad
-app.use('/api/usuario', userRoutes);  // Alias en singular para compatibilidad
-app.use('/api/areas', areaRoutes);
-app.use('/api/roles', roleRoutes);    // Ruta para roles (plural)
-app.use('/api/rol', roleRoutes);      // Alias en singular para compatibilidad
-app.use('/api/mesa-partes', mesaPartesRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-
-// Endpoints de estado básicos
-app.get('/api/status', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'API funcionando correctamente' });
-});
-
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ health: 'ok', message: 'Servidor en funcionamiento' });
-});
-
-// Servir archivos estáticos
-const staticOptions = {
-    setHeaders: (res, path) => {
-        res.set('X-Content-Type-Options', 'nosniff');
-        
-        // Desactivar caché en modo desarrollo o activarla en producción
-        if (process.env.NODE_ENV === 'production') {
-            if (path.endsWith('.html')) {
-                res.set('Cache-Control', 'no-cache');
-            } else {
-                res.set('Cache-Control', 'public, max-age=31536000');
-            }
-        } else {
-            // En desarrollo, desactivar completamente la caché
-            res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-            res.set('Pragma', 'no-cache');
-            res.set('Expires', '0');
-            res.set('Surrogate-Control', 'no-store');
-        }
-    }
+// Session configuration
+const sessionOptions = {
+  secret: process.env.SESSION_SECRET,
+  name: 'oficri.sid', // Custom session cookie name
+  cookie: {
+    httpOnly: true, // Prevent client-side JS from reading
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: 'lax', // Protection against CSRF
+    maxAge: security.sessionSecurity.sessionMaxAge
+  },
+  resave: false,
+  saveUninitialized: false,
+  rolling: true, // Reset expiration on activity
 };
+app.use(session(sessionOptions));
 
-app.use('/src', express.static(path.join(__dirname, '../client/src'), staticOptions));
-app.use(express.static(path.join(__dirname, '../client/public'), staticOptions));
-
-// Manejar rutas del cliente (SPA)
-app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api/') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
-        return next();
-    }
-    res.sendFile(path.join(__dirname, '../client/public/index.html'));
+// Request logging middleware
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  // Log request completion and timing
+  res.on('finish', () => {
+    const responseTime = Date.now() - startTime;
+    logHttpRequest(req, res, responseTime);
+  });
+  
+  next();
 });
 
-// Manejo de errores
-app.use(errorMiddleware);
+// Rate limiting
+app.use('/api/', rateLimitMiddleware.standard);
+app.use('/api/auth/', rateLimitMiddleware.auth);
+app.use('/api/auth/password/reset', rateLimitMiddleware.passwordReset);
 
-const PORT = process.env.PORT || 3000;
-
-/**
- * Función para iniciar el servidor
- */
-async function startServer() {
-    try {
-        // Verificar conexión a la base de datos
-        logger.info('Verificando conexión a la base de datos...');
-        await testConnection();
-
-        // Inicializar base de datos
-        logger.info('Iniciando configuración de la base de datos...');
-        await initializeDatabase();
-        logger.info('Base de datos inicializada correctamente');
-        
-        // Iniciar servidor
-        app.listen(PORT, () => {
-            logger.info(`Servidor corriendo en puerto ${PORT}`);
-            logger.info(`Modo: ${process.env.NODE_ENV || 'development'}`);
-            logger.info(`Base de datos: ${dbConfig.host}`);
-            
-            if (process.env.NODE_ENV !== 'production') {
-                logger.info('\nCredenciales de administrador:');
-                logger.info('CIP: 12345678');
-                logger.info('Contraseña: admin123');
-                logger.info(`\nAcceda a http://localhost:${PORT} para comenzar`);
-            }
-        });
-    } catch (error) {
-        logger.error('Error al iniciar el servidor:', error);
-        process.exit(1);
-    }
+// Swagger documentation - exclude in production
+if (process.env.NODE_ENV !== 'production') {
+  // Disable helmet for Swagger UI
+  app.use('/api-docs', (req, res, next) => {
+    // Middleware to disable CSP for Swagger UI
+    const cspMiddleware = helmet.contentSecurityPolicy({
+      directives: {
+        ...security.contentSecurityPolicy.directives,
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:"]
+      }
+    });
+    cspMiddleware(req, res, next);
+  });
+  
+  // Mount Swagger UI
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
+  
+  // Log Swagger UI availability
+  logger.info('Swagger documentation available at /api-docs');
 }
 
-// Manejar señales de terminación
-process.on('SIGTERM', async () => {
-    logger.info('Recibida señal SIGTERM. Cerrando servidor...');
-    await pool.end();
-    process.exit(0);
+// API Routes
+app.use('/api', routes);
+
+// Static files for frontend (only in production)
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from "public" directory
+  app.use(express.static(path.join(__dirname, '../public')));
+  
+  // Serve index.html for any request that doesn't match API routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
+} else {
+  // Root endpoint for testing
+  app.get('/', (req, res) => {
+    res.status(200).json({ 
+      message: 'OFICRI API Server está funcionando correctamente',
+      endpoints: {
+        api: '/api',
+        docs: '/api-docs',
+        status: '/api/status',
+        health: '/health'
+      }
+    });
+  });
+  
+  // Health Check Endpoint (no auth needed)
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', environment: process.env.NODE_ENV });
+  });
+}
+
+// Catch-all route for 404s
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint not found',
+    path: req.originalUrl
+  });
 });
 
-process.on('SIGINT', async () => {
-    logger.info('Recibida señal SIGINT. Cerrando servidor...');
-    await pool.end();
-    process.exit(0);
-});
+// Error handling middleware
+app.use(errorMiddleware);
 
-// Iniciar servidor
-startServer();
+/**
+ * Función para inicializar la base de datos y verificar usuario admin
+ * Esta función es ejecutada al inicio del servidor
+ */
+async function initializeDatabaseAndAdmin() {
+  try {
+    Logger.info('Verificando configuración inicial de la base de datos...');
+    await initializeDatabase();
+    Logger.info('Inicialización de base de datos completada');
+    return true;
+  } catch (error) {
+    Logger.error('Error al inicializar la base de datos:', error);
+    return false;
+  }
+}
+
+// Graceful shutdown function
+async function shutdownGracefully() {
+  logger.info('Shutting down gracefully...');
+  
+  try {
+    // Close database connections
+    await closePool();
+    logger.info('Database connections closed');
+    
+    // Close server
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+// Handle graceful shutdown
+process.on('SIGTERM', shutdownGracefully);
+process.on('SIGINT', shutdownGracefully);
+
+// Iniciar el servidor
+const PORT = process.env.PORT || 3000;
+const startServer = async () => {
+  try {
+    // Inicializar la base de datos antes de iniciar el servidor
+    await initializeDatabaseAndAdmin();
+    
+    // Iniciar el servidor HTTP
+    app.listen(PORT, () => {
+      Logger.info(`Servidor iniciado en http://localhost:${PORT}`);
+      Logger.info(`Documentación API disponible en http://localhost:${PORT}/api-docs`);
+    });
+  } catch (error) {
+    Logger.error('Error al iniciar el servidor:', error);
+    process.exit(1);
+  }
+};
+
+startServer(); 

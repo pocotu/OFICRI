@@ -1,0 +1,738 @@
+/**
+ * Authentication Service
+ * Handles user authentication with ISO/IEC 27001 security controls
+ */
+
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { executeQuery } = require('../../config/database');
+const { passwordPolicy, accountLockout, sessionSecurity } = require('../../config/security');
+const { logger, logSecurityEvent } = require('../../utils/logger');
+
+/**
+ * User login with security controls
+ * @param {string} codigoCIP - User CIP code
+ * @param {string} password - User password
+ * @returns {Promise<Object>} Authentication result with user data and tokens
+ */
+async function login(codigoCIP, password) {
+  try {
+    // Input validation
+    if (!codigoCIP || !password) {
+      const error = new Error('CIP y contraseña son requeridos');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Find user by CIP
+    const users = await executeQuery(`
+      SELECT 
+        u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+        u.PasswordHash, u.Salt, u.IDArea, u.IDRol, u.UltimoAcceso,
+        u.IntentosFallidos, u.Bloqueado, u.UltimoBloqueo,
+        a.NombreArea, r.NombreRol, r.Permisos
+      FROM Usuario u
+      LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+      LEFT JOIN Rol r ON u.IDRol = r.IDRol
+      WHERE u.CodigoCIP = ?
+    `, [codigoCIP]);
+    
+    // User not found
+    if (users.length === 0) {
+      logSecurityEvent('AUTH_FAILURE', {
+        reason: 'USER_NOT_FOUND',
+        codigoCIP,
+        ipAddress: null
+      });
+      
+      // Use the same error message as password failure for security
+      const error = new Error('Credenciales incorrectas');
+      error.statusCode = 401;
+      throw error;
+    }
+    
+    const user = users[0];
+    
+    // Check if account is locked
+    if (user.Bloqueado) {
+      const lockoutTime = new Date(user.UltimoBloqueo).getTime();
+      const currentTime = new Date().getTime();
+      const lockoutDuration = accountLockout.lockoutDuration;
+      
+      // If lockout period hasn't expired
+      if (currentTime - lockoutTime < lockoutDuration) {
+        const remainingTime = Math.ceil((lockoutDuration - (currentTime - lockoutTime)) / 60000);
+        
+        logSecurityEvent('AUTH_BLOCKED_ACCOUNT_ACCESS', {
+          userId: user.IDUsuario,
+          codigoCIP,
+          remainingTime
+        });
+        
+        const error = new Error(`Cuenta bloqueada. Intente nuevamente en ${remainingTime} minutos`);
+        error.statusCode = 403;
+        throw error;
+      }
+      
+      // Lockout period expired, reset lockout status
+      await executeQuery(`
+        UPDATE Usuario 
+        SET Bloqueado = FALSE, IntentosFallidos = 0 
+        WHERE IDUsuario = ?
+      `, [user.IDUsuario]);
+      
+      user.Bloqueado = false;
+      user.IntentosFallidos = 0;
+    }
+    
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.PasswordHash);
+    
+    // Password is incorrect
+    if (!isPasswordValid) {
+      // Increment failed attempts
+      const newAttempts = (user.IntentosFallidos || 0) + 1;
+      const shouldLock = newAttempts >= accountLockout.maxLoginAttempts;
+      
+      await executeQuery(`
+        UPDATE Usuario 
+        SET 
+          IntentosFallidos = ?,
+          Bloqueado = ?,
+          UltimoBloqueo = ${shouldLock ? 'NOW()' : 'UltimoBloqueo'}
+        WHERE IDUsuario = ?
+      `, [newAttempts, shouldLock, user.IDUsuario]);
+      
+      logSecurityEvent('AUTH_FAILURE', {
+        reason: 'INVALID_PASSWORD',
+        userId: user.IDUsuario,
+        codigoCIP,
+        attempts: newAttempts,
+        locked: shouldLock
+      });
+      
+      if (shouldLock) {
+        const error = new Error('Demasiados intentos fallidos. Cuenta bloqueada temporalmente');
+        error.statusCode = 403;
+        throw error;
+      } else {
+        const attemptsLeft = accountLockout.maxLoginAttempts - newAttempts;
+        const error = new Error(`Credenciales incorrectas. Intentos restantes: ${attemptsLeft}`);
+        error.statusCode = 401;
+        throw error;
+      }
+    }
+    
+    // Password is correct, reset failed attempts
+    await executeQuery(`
+      UPDATE Usuario 
+      SET IntentosFallidos = 0, UltimoAcceso = NOW() 
+      WHERE IDUsuario = ?
+    `, [user.IDUsuario]);
+    
+    // Generate tokens (JWT and refresh token)
+    const tokenPayload = {
+      sub: user.IDUsuario,
+      cip: user.CodigoCIP,
+      rol: user.IDRol,
+      permisos: user.Permisos
+    };
+    
+    const token = jwt.sign(
+      tokenPayload,
+      process.env.JWT_SECRET,
+      { expiresIn: sessionSecurity.tokenExpiresIn }
+    );
+    
+    // Generate refresh token
+    const refreshToken = crypto.randomBytes(40).toString('hex');
+    const refreshExpires = new Date();
+    refreshExpires.setDate(refreshExpires.getDate() + 7); // 7 days
+    
+    // Store refresh token in database
+    await executeQuery(`
+      INSERT INTO Session (
+        IDUsuario, SessionToken, FechaInicio, 
+        UltimoAcceso, Expiracion, IPOrigen
+      ) VALUES (?, ?, NOW(), NOW(), ?, ?)
+    `, [
+      user.IDUsuario,
+      refreshToken,
+      refreshExpires,
+      null // IP is captured at controller level
+    ]);
+    
+    // Log successful login
+    logSecurityEvent('AUTH_SUCCESS', {
+      userId: user.IDUsuario,
+      codigoCIP,
+      sessionId: null // Session ID is not available at this point
+    });
+    
+    // Return auth result
+    return {
+      success: true,
+      user: {
+        IDUsuario: user.IDUsuario,
+        CodigoCIP: user.CodigoCIP,
+        Nombres: user.Nombres,
+        Apellidos: user.Apellidos,
+        Grado: user.Grado,
+        IDArea: user.IDArea,
+        NombreArea: user.NombreArea,
+        IDRol: user.IDRol,
+        NombreRol: user.NombreRol,
+        Permisos: user.Permisos,
+        UltimoAcceso: user.UltimoAcceso
+      },
+      token,
+      refreshToken,
+      expiresIn: sessionSecurity.tokenExpiresIn
+    };
+  } catch (error) {
+    logger.error('Error en autenticación', { 
+      error: error.message, 
+      codigoCIP,
+      stack: error.stack 
+    });
+    throw error;
+  }
+}
+
+/**
+ * Logout and invalidate user session
+ * @param {string} token - JWT token to invalidate
+ * @param {string} refreshToken - Refresh token to invalidate
+ * @returns {Promise<Object>} Logout result
+ */
+async function logout(token, refreshToken) {
+  try {
+    if (!token && !refreshToken) {
+      return { success: true, message: 'Sesión cerrada' };
+    }
+    
+    let userId = null;
+    
+    // If token exists, decode it to get userId
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.sub;
+      } catch (e) {
+        // Token is invalid, but we still want to continue with logout
+        logger.warn('Token inválido en logout', { error: e.message });
+      }
+    }
+    
+    // If refreshToken exists, invalidate it
+    if (refreshToken) {
+      const result = await executeQuery(`
+        DELETE FROM Session WHERE SessionToken = ?
+      `, [refreshToken]);
+      
+      if (result.affectedRows > 0) {
+        logger.info('Token de refresco invalidado', { refreshToken: '[REDACTED]' });
+      }
+    }
+    
+    // If userId exists, invalidate all sessions for this user (optional)
+    if (userId && process.env.LOGOUT_ALL_SESSIONS === 'true') {
+      await executeQuery(`
+        DELETE FROM Session WHERE IDUsuario = ?
+      `, [userId]);
+      
+      logger.info('Todas las sesiones invalidadas para usuario', { userId });
+    }
+    
+    // Log the logout event
+    if (userId) {
+      logSecurityEvent('AUTH_LOGOUT', { userId });
+    }
+    
+    return {
+      success: true,
+      message: 'Sesión cerrada correctamente'
+    };
+  } catch (error) {
+    logger.error('Error en logout', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Refresh authentication token
+ * @param {string} refreshToken - Current refresh token
+ * @returns {Promise<Object>} New tokens
+ */
+async function refreshToken(refreshToken) {
+  try {
+    if (!refreshToken) {
+      const error = new Error('Token de refresco requerido');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Find session by refresh token
+    const sessions = await executeQuery(`
+      SELECT 
+        s.IDSession, s.IDUsuario, s.FechaInicio, s.Expiracion,
+        u.CodigoCIP, u.IDRol, r.Permisos
+      FROM Session s
+      JOIN Usuario u ON s.IDUsuario = u.IDUsuario
+      JOIN Rol r ON u.IDRol = r.IDRol
+      WHERE s.SessionToken = ? AND s.Expiracion > NOW()
+    `, [refreshToken]);
+    
+    // Invalid or expired refresh token
+    if (sessions.length === 0) {
+      logSecurityEvent('AUTH_REFRESH_FAILURE', {
+        reason: 'INVALID_REFRESH_TOKEN'
+      });
+      
+      const error = new Error('Token de refresco inválido o expirado');
+      error.statusCode = 401;
+      throw error;
+    }
+    
+    const session = sessions[0];
+    
+    // Generate new JWT token
+    const tokenPayload = {
+      sub: session.IDUsuario,
+      cip: session.CodigoCIP,
+      rol: session.IDRol,
+      permisos: session.Permisos
+    };
+    
+    const newToken = jwt.sign(
+      tokenPayload,
+      process.env.JWT_SECRET,
+      { expiresIn: sessionSecurity.tokenExpiresIn }
+    );
+    
+    // Generate new refresh token
+    const newRefreshToken = crypto.randomBytes(40).toString('hex');
+    const refreshExpires = new Date();
+    refreshExpires.setDate(refreshExpires.getDate() + 7); // 7 days
+    
+    // Update session with new refresh token
+    await executeQuery(`
+      UPDATE Session 
+      SET 
+        SessionToken = ?,
+        UltimoAcceso = NOW(),
+        Expiracion = ?
+      WHERE IDSession = ?
+    `, [newRefreshToken, refreshExpires, session.IDSession]);
+    
+    // Log token refresh
+    logSecurityEvent('AUTH_TOKEN_REFRESH', {
+      userId: session.IDUsuario,
+      sessionId: session.IDSession
+    });
+    
+    return {
+      success: true,
+      token: newToken,
+      refreshToken: newRefreshToken,
+      expiresIn: sessionSecurity.tokenExpiresIn
+    };
+  } catch (error) {
+    logger.error('Error en refreshToken', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Verify JWT token
+ * @param {string} token - JWT token
+ * @returns {Promise<Object>} Decoded token with user data
+ */
+async function verifyToken(token) {
+  try {
+    if (!token) {
+      const error = new Error('Token requerido');
+      error.statusCode = 401;
+      throw error;
+    }
+    
+    // Verify JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Get user data
+    const users = await executeQuery(`
+      SELECT 
+        u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+        u.IDArea, u.IDRol, r.NombreRol, r.Permisos
+      FROM Usuario u
+      JOIN Rol r ON u.IDRol = r.IDRol
+      WHERE u.IDUsuario = ? AND u.Bloqueado = FALSE
+    `, [decoded.sub]);
+    
+    // User not found or blocked
+    if (users.length === 0) {
+      logSecurityEvent('AUTH_VERIFICATION_FAILURE', {
+        reason: 'USER_NOT_FOUND_OR_BLOCKED',
+        tokenSubject: decoded.sub
+      });
+      
+      const error = new Error('Usuario no encontrado o bloqueado');
+      error.statusCode = 401;
+      throw error;
+    }
+    
+    const user = users[0];
+    
+    // Return verified user data
+    return {
+      user: {
+        IDUsuario: user.IDUsuario,
+        CodigoCIP: user.CodigoCIP,
+        Nombres: user.Nombres,
+        Apellidos: user.Apellidos,
+        Grado: user.Grado,
+        IDArea: user.IDArea,
+        IDRol: user.IDRol,
+        NombreRol: user.NombreRol,
+        Permisos: user.Permisos
+      },
+      token: decoded
+    };
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      logSecurityEvent('AUTH_VERIFICATION_FAILURE', {
+        reason: error.name,
+        message: error.message
+      });
+      
+      const err = new Error('Token inválido o expirado');
+      err.statusCode = 401;
+      throw err;
+    }
+    
+    logger.error('Error en verifyToken', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Request password reset
+ * @param {string} codigoCIP - User CIP code
+ * @returns {Promise<Object>} Reset token data
+ */
+async function requestPasswordReset(codigoCIP) {
+  try {
+    // Find user by CIP
+    const users = await executeQuery(`
+      SELECT IDUsuario, CodigoCIP, Nombres, Apellidos
+      FROM Usuario
+      WHERE CodigoCIP = ? AND Bloqueado = FALSE
+    `, [codigoCIP]);
+    
+    // For security reasons, always return success even if user is not found
+    if (users.length === 0) {
+      // Log but don't expose that the user doesn't exist
+      logSecurityEvent('PASSWORD_RESET_REQUEST', {
+        result: 'USER_NOT_FOUND',
+        codigoCIP
+      });
+      
+      return {
+        success: true,
+        message: 'Si el usuario existe, se enviará un enlace de recuperación'
+      };
+    }
+    
+    const user = users[0];
+    
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpires = new Date();
+    tokenExpires.setHours(tokenExpires.getHours() + 1); // 1 hour expiration
+    
+    // Store reset token in database
+    await executeQuery(`
+      INSERT INTO PasswordReset (
+        IDUsuario, ResetToken, Expiracion, Usado
+      ) VALUES (?, ?, ?, FALSE)
+    `, [user.IDUsuario, resetToken, tokenExpires]);
+    
+    // Log the reset request
+    logSecurityEvent('PASSWORD_RESET_REQUEST', {
+      result: 'SUCCESS',
+      userId: user.IDUsuario,
+      codigoCIP
+    });
+    
+    // In a real implementation, send email with reset link
+    // For this example, just return the token (would normally be sent via email)
+    return {
+      success: true,
+      // Only include these in development, in production we'd send an email instead
+      ...(process.env.NODE_ENV !== 'production' && {
+        resetToken,
+        userId: user.IDUsuario,
+        expiresAt: tokenExpires
+      }),
+      message: 'Se ha enviado un enlace de recuperación'
+    };
+  } catch (error) {
+    logger.error('Error en requestPasswordReset', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Reset password using reset token
+ * @param {string} resetToken - Password reset token
+ * @param {string} newPassword - New password
+ * @returns {Promise<Object>} Reset result
+ */
+async function resetPassword(resetToken, newPassword) {
+  try {
+    // Validate password against policy
+    validatePassword(newPassword);
+    
+    // Find valid reset token
+    const resets = await executeQuery(`
+      SELECT pr.IDReset, pr.IDUsuario, pr.Expiracion, u.CodigoCIP
+      FROM PasswordReset pr
+      JOIN Usuario u ON pr.IDUsuario = u.IDUsuario
+      WHERE pr.ResetToken = ? AND pr.Usado = FALSE AND pr.Expiracion > NOW()
+    `, [resetToken]);
+    
+    // Invalid or expired token
+    if (resets.length === 0) {
+      logSecurityEvent('PASSWORD_RESET_FAILURE', {
+        reason: 'INVALID_TOKEN',
+        token: '[REDACTED]'
+      });
+      
+      const error = new Error('Token inválido o expirado');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    const reset = resets[0];
+    
+    // Check if new password is different from the current one
+    const currentPasswordHash = await executeQuery(`
+      SELECT PasswordHash FROM Usuario WHERE IDUsuario = ?
+    `, [reset.IDUsuario]);
+    
+    const isSamePassword = await bcrypt.compare(
+      newPassword, 
+      currentPasswordHash[0].PasswordHash
+    );
+    
+    if (isSamePassword) {
+      logSecurityEvent('PASSWORD_RESET_FAILURE', {
+        reason: 'SAME_PASSWORD',
+        userId: reset.IDUsuario
+      });
+      
+      const error = new Error('La nueva contraseña debe ser diferente a la actual');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Generate new password hash
+    const salt = await bcrypt.genSalt(passwordPolicy.saltRounds);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+    
+    // Update user password
+    await executeQuery(`
+      UPDATE Usuario 
+      SET PasswordHash = ?, Salt = ? 
+      WHERE IDUsuario = ?
+    `, [passwordHash, salt, reset.IDUsuario]);
+    
+    // Mark reset token as used
+    await executeQuery(`
+      UPDATE PasswordReset 
+      SET Usado = TRUE 
+      WHERE IDReset = ?
+    `, [reset.IDReset]);
+    
+    // If configured, log out all user sessions
+    if (sessionSecurity.forceLogoutOnPasswordChange) {
+      await executeQuery(`
+        DELETE FROM Session WHERE IDUsuario = ?
+      `, [reset.IDUsuario]);
+    }
+    
+    // Log the successful password reset
+    logSecurityEvent('PASSWORD_RESET_SUCCESS', {
+      userId: reset.IDUsuario,
+      codigoCIP: reset.CodigoCIP
+    });
+    
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente'
+    };
+  } catch (error) {
+    logger.error('Error en resetPassword', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Change user password (when already authenticated)
+ * @param {number} userId - User ID
+ * @param {string} currentPassword - Current password
+ * @param {string} newPassword - New password
+ * @returns {Promise<Object>} Change result
+ */
+async function changePassword(userId, currentPassword, newPassword) {
+  try {
+    // Validate inputs
+    if (!userId || !currentPassword || !newPassword) {
+      const error = new Error('Todos los campos son requeridos');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Validate password against policy
+    validatePassword(newPassword);
+    
+    // Get user data
+    const users = await executeQuery(`
+      SELECT IDUsuario, CodigoCIP, PasswordHash
+      FROM Usuario
+      WHERE IDUsuario = ?
+    `, [userId]);
+    
+    // User not found
+    if (users.length === 0) {
+      logSecurityEvent('PASSWORD_CHANGE_FAILURE', {
+        reason: 'USER_NOT_FOUND',
+        userId
+      });
+      
+      const error = new Error('Usuario no encontrado');
+      error.statusCode = 404;
+      throw error;
+    }
+    
+    const user = users[0];
+    
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword, 
+      user.PasswordHash
+    );
+    
+    if (!isCurrentPasswordValid) {
+      logSecurityEvent('PASSWORD_CHANGE_FAILURE', {
+        reason: 'INVALID_CURRENT_PASSWORD',
+        userId: user.IDUsuario,
+        codigoCIP: user.CodigoCIP
+      });
+      
+      const error = new Error('Contraseña actual incorrecta');
+      error.statusCode = 403;
+      throw error;
+    }
+    
+    // Check if new password is different from the current one
+    const isSamePassword = await bcrypt.compare(
+      newPassword, 
+      user.PasswordHash
+    );
+    
+    if (isSamePassword) {
+      logSecurityEvent('PASSWORD_CHANGE_FAILURE', {
+        reason: 'SAME_PASSWORD',
+        userId: user.IDUsuario,
+        codigoCIP: user.CodigoCIP
+      });
+      
+      const error = new Error('La nueva contraseña debe ser diferente a la actual');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Generate new password hash
+    const salt = await bcrypt.genSalt(passwordPolicy.saltRounds);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+    
+    // Update user password
+    await executeQuery(`
+      UPDATE Usuario 
+      SET PasswordHash = ?, Salt = ? 
+      WHERE IDUsuario = ?
+    `, [passwordHash, salt, userId]);
+    
+    // If configured, log out all other user sessions
+    if (sessionSecurity.forceLogoutOnPasswordChange) {
+      await executeQuery(`
+        DELETE FROM Session WHERE IDUsuario = ?
+      `, [userId]);
+    }
+    
+    // Log the successful password change
+    logSecurityEvent('PASSWORD_CHANGE_SUCCESS', {
+      userId: user.IDUsuario,
+      codigoCIP: user.CodigoCIP
+    });
+    
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente'
+    };
+  } catch (error) {
+    logger.error('Error en changePassword', { error: error.message, stack: error.stack });
+    throw error;
+  }
+}
+
+/**
+ * Validate password against security policy
+ * @param {string} password - Password to validate
+ * @throws {Error} If password doesn't meet requirements
+ */
+function validatePassword(password) {
+  // Check length
+  if (!password || password.length < passwordPolicy.minLength) {
+    const error = new Error(`La contraseña debe tener al menos ${passwordPolicy.minLength} caracteres`);
+    error.statusCode = 400;
+    throw error;
+  }
+  
+  // Check complexity
+  let errorMessage = [];
+  
+  if (passwordPolicy.requireUppercase && !/[A-Z]/.test(password)) {
+    errorMessage.push('al menos una mayúscula');
+  }
+  
+  if (passwordPolicy.requireLowercase && !/[a-z]/.test(password)) {
+    errorMessage.push('al menos una minúscula');
+  }
+  
+  if (passwordPolicy.requireNumbers && !/[0-9]/.test(password)) {
+    errorMessage.push('al menos un número');
+  }
+  
+  if (passwordPolicy.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errorMessage.push('al menos un carácter especial');
+  }
+  
+  if (errorMessage.length > 0) {
+    const error = new Error(`La contraseña debe contener ${errorMessage.join(', ')}`);
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
+module.exports = {
+  login,
+  logout,
+  refreshToken,
+  verifyToken,
+  requestPasswordReset,
+  resetPassword,
+  changePassword
+}; 
