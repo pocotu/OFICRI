@@ -10,7 +10,7 @@ SET GLOBAL event_scheduler = ON;
 SET GLOBAL innodb_lock_wait_timeout=5; -- 5 segundos
 
 -- ########################################################
--- 2. CREACIÓN DE TABLAS PRINCIPALES
+-- 2. TABLAS PRINCIPALES (ROLES, USUARIOS, LOGS, ETC.)
 -- ########################################################
 
 -- ---------------- MESA DE PARTES ----------------
@@ -26,27 +26,29 @@ CREATE TABLE AreaEspecializada (
     IDArea INT AUTO_INCREMENT PRIMARY KEY,
     NombreArea VARCHAR(100) NOT NULL,
     CodigoIdentificacion VARCHAR(50),
-    TipoArea VARCHAR(50),
+    TipoArea VARCHAR(50),  -- Ej: 'RECEPCION','ESPECIALIZADA','OTRO'
     Descripcion VARCHAR(255),
     IsActive BOOLEAN DEFAULT TRUE
 ) ENGINE=InnoDB;
 
--- ---------------- ROL (CON BITS) ----------------
+-- ---------------- ROL (BITS) ----------------
 CREATE TABLE Rol (
     IDRol INT AUTO_INCREMENT PRIMARY KEY,
     NombreRol VARCHAR(50) NOT NULL,
     Descripcion VARCHAR(255),
+    NivelAcceso INT NOT NULL,   -- 1: Admin, 2: Mesa Partes, 3: Responsable, etc.
+
+    -- Campo que almacena todos los permisos como bits (0..7)
     Permisos TINYINT UNSIGNED NOT NULL DEFAULT 0
     /*
-      Bits (0..7) => Valor
-      bit 0: Crear (1)
-      bit 1: Editar (2)
-      bit 2: Eliminar (4)
-      bit 3: Ver (8)
-      bit 4: Derivar (16)
-      bit 5: Auditar (32)
-      bit 6: Exportar (64)
-      bit 7: Bloquear (128)
+      bit 0 => Crear (1)
+      bit 1 => Editar (2)
+      bit 2 => Eliminar (4)
+      bit 3 => Ver (8)
+      bit 4 => Derivar (16)
+      bit 5 => Auditar (32)
+      bit 6 => Exportar (64)
+      bit 7 => Bloquear (128)
     */
 ) ENGINE=InnoDB;
 
@@ -72,17 +74,17 @@ CREATE TABLE RolPermiso (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- ---------------- USUARIO (SIN USERNAME) ----------------
+-- ---------------- USUARIO (SIN USERNAME, CON CIP) ----------------
 CREATE TABLE Usuario (
     IDUsuario INT AUTO_INCREMENT PRIMARY KEY,
-    
-    CodigoCIP VARCHAR(8) NOT NULL UNIQUE, -- CIP para login
+
+    CodigoCIP VARCHAR(20) NOT NULL UNIQUE,  -- CIP para login
     Nombres VARCHAR(100) NOT NULL,
     Apellidos VARCHAR(100) NOT NULL,
     Grado VARCHAR(50) NOT NULL,
 
     PasswordHash VARCHAR(255) NOT NULL,
-    Salt VARCHAR(255) NOT NULL,
+    -- El Salt ya no es necesario, está incluido en el PasswordHash generado por bcrypt
 
     IDArea INT NOT NULL,
     IDRol INT NOT NULL,
@@ -102,6 +104,7 @@ CREATE TABLE Usuario (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- USUARIO SEGURIDAD ----------------
 CREATE TABLE UsuarioSeguridad (
     IDSeguridad INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NOT NULL,
@@ -114,14 +117,38 @@ CREATE TABLE UsuarioSeguridad (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- USUARIO LOG (ACTUALIZADO PARA GEOLOCALIZACIÓN) ----------------
 CREATE TABLE UsuarioLog (
     IDLog INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NOT NULL,
+
     TipoEvento VARCHAR(100),
+
+    -- IP básica
     IPOrigen VARCHAR(50),
+
+    -- Geolocalización
+    IPCountry VARCHAR(100),
+    IPCountryCode VARCHAR(10),
+    IPRegion VARCHAR(100),
+    IPRegionName VARCHAR(100),
+    IPCity VARCHAR(100),
+    IPZip VARCHAR(20),
+    IPLat DECIMAL(9,6),
+    IPLon DECIMAL(9,6),
+    IPTimezone VARCHAR(100),
+    IPISP VARCHAR(255),
+    IPOrg VARCHAR(255),
+    IPAs VARCHAR(255),
+    IPHostname VARCHAR(255),
+    IPIsProxy BOOLEAN DEFAULT FALSE,
+    IPIsVPN BOOLEAN DEFAULT FALSE,
+    IPIsTor BOOLEAN DEFAULT FALSE,
+
     DispositivoInfo VARCHAR(255),
     FechaEvento DATETIME DEFAULT CURRENT_TIMESTAMP,
     Exitoso BOOLEAN DEFAULT TRUE,
+
     CONSTRAINT fk_usuariolog_usuario
         FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
         ON DELETE CASCADE
@@ -130,10 +157,11 @@ CREATE TABLE UsuarioLog (
 
 CREATE INDEX idx_usuariolog_tipo_fecha ON UsuarioLog(TipoEvento, FechaEvento);
 
+-- ---------------- ROL LOG ----------------
 CREATE TABLE RolLog (
     IDRolLog INT AUTO_INCREMENT PRIMARY KEY,
     IDRol INT NOT NULL,
-    IDUsuario INT NULL,
+    IDUsuario INT NOT NULL,
     TipoEvento VARCHAR(50),
     FechaEvento DATETIME DEFAULT CURRENT_TIMESTAMP,
     Detalles TEXT,
@@ -143,14 +171,15 @@ CREATE TABLE RolLog (
         ON UPDATE CASCADE,
     CONSTRAINT fk_rollog_usuario
         FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
-        ON DELETE SET NULL
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- PERMISO LOG ----------------
 CREATE TABLE PermisoLog (
     IDPermisoLog INT AUTO_INCREMENT PRIMARY KEY,
     IDPermiso INT NOT NULL,
-    IDUsuario INT NULL,
+    IDUsuario INT NOT NULL,
     TipoEvento VARCHAR(50),
     FechaEvento DATETIME DEFAULT CURRENT_TIMESTAMP,
     Detalles TEXT,
@@ -160,10 +189,11 @@ CREATE TABLE PermisoLog (
         ON UPDATE CASCADE,
     CONSTRAINT fk_permisolog_usuario
         FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
-        ON DELETE SET NULL
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- MESA PARTES LOG ----------------
 CREATE TABLE MesaPartesLog (
     IDMesaPartesLog INT AUTO_INCREMENT PRIMARY KEY,
     IDMesaPartes INT NOT NULL,
@@ -181,23 +211,25 @@ CREATE TABLE MesaPartesLog (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- AREA LOG ----------------
 CREATE TABLE AreaLog (
     IDAreaLog INT AUTO_INCREMENT PRIMARY KEY,
     IDArea INT NOT NULL,
-    IDUsuario INT NULL, -- Permitir NULL durante inicialización
-    TipoEvento VARCHAR(50) NOT NULL,
-    Detalles VARCHAR(255),
+    IDUsuario INT NOT NULL,
+    TipoEvento VARCHAR(50),
     FechaEvento DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Detalles TEXT,
     CONSTRAINT fk_arealog_area
         FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     CONSTRAINT fk_arealog_usuario
         FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
-        ON DELETE SET NULL
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- SESSION ----------------
 CREATE TABLE Session (
     IDSession INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NOT NULL,
@@ -212,6 +244,7 @@ CREATE TABLE Session (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- REQUEST LOG ----------------
 CREATE TABLE RequestLog (
     IDRequestLog INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NOT NULL,
@@ -226,6 +259,7 @@ CREATE TABLE RequestLog (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- INTRUSION DETECTION LOG ----------------
 CREATE TABLE IntrusionDetectionLog (
     IDIntrusionLog INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NULL,
@@ -239,6 +273,7 @@ CREATE TABLE IntrusionDetectionLog (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- EXPORTACION LOG ----------------
 CREATE TABLE ExportacionLog (
     IDExportacion INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NOT NULL,
@@ -253,6 +288,7 @@ CREATE TABLE ExportacionLog (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- BACKUP LOG ----------------
 CREATE TABLE BackupLog (
     IDBackup INT AUTO_INCREMENT PRIMARY KEY,
     IDUsuario INT NOT NULL,
@@ -267,7 +303,7 @@ CREATE TABLE BackupLog (
 ) ENGINE=InnoDB;
 
 -- ########################################################
--- 3. CREACIÓN DE TABLAS DE DOCUMENTOS Y DERIVACIONES
+-- 3. TABLAS DE DOCUMENTOS, DERIVACIONES, LOGS
 -- ########################################################
 
 CREATE TABLE Documento (
@@ -407,25 +443,134 @@ CREATE TABLE DerivacionLog (
 ) ENGINE=InnoDB;
 
 -- ########################################################
--- 5. TRIGGERS DE AUDITORÍA Y NUEVOS TRIGGERS PARA REGISTRAR TODO
+-- 4. TABLA PARA ARCHIVOS ESCANEADOS (PDF, IMAGEN)
+-- ########################################################
+
+CREATE TABLE DocumentoArchivo (
+    IDArchivo INT AUTO_INCREMENT PRIMARY KEY,
+    IDDocumento INT NOT NULL,
+    TipoArchivo VARCHAR(50),
+    RutaArchivo VARCHAR(500),
+    FechaSubida DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Observaciones TEXT,
+    CONSTRAINT fk_documentoarchivo_documento
+        FOREIGN KEY (IDDocumento) REFERENCES Documento(IDDocumento)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ########################################################
+-- 5. TABLAS ESPECIALIZADAS: DOSAJE, FORENSEDIGITAL, QUIMICA
+-- ########################################################
+
+CREATE TABLE Dosaje (
+    IDDosaje INT AUTO_INCREMENT PRIMARY KEY,
+    IDArea INT NOT NULL,
+    IsActive BOOLEAN DEFAULT TRUE,
+
+    NumeroRegistro VARCHAR(50),
+    FechaIngreso DATE,
+    OficioDoc VARCHAR(50),
+    NumeroOficio INT,
+    TipoDosaje VARCHAR(100),
+
+    Nombres VARCHAR(100),
+    Apellidos VARCHAR(100),
+    DocumentoIdentidad VARCHAR(20),
+    Procedencia VARCHAR(255),
+
+    ResultadoCualitativo VARCHAR(50),
+    ResultadoCuantitativo DECIMAL(10,2),
+    UnidadMedida VARCHAR(20),
+    MetodoAnalisis VARCHAR(100),
+
+    DocSalidaNroInforme VARCHAR(100),
+    DocSalidaFecha DATE,
+    Responsable VARCHAR(100),
+    Observaciones TEXT,
+
+    CONSTRAINT fk_dosaje_area
+        FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE ForenseDigital (
+    IDForenseDigital INT AUTO_INCREMENT PRIMARY KEY,
+    IDArea INT NOT NULL,
+    IsActive BOOLEAN DEFAULT TRUE,
+
+    NumeroRegistro VARCHAR(50),
+    FechaIngreso DATE,
+    OficioDoc VARCHAR(50),
+    NumeroOficio INT,
+    TipoPericia VARCHAR(100),
+
+    Nombres VARCHAR(100),
+    Apellidos VARCHAR(100),
+    DelitoInvestigado VARCHAR(255),
+
+    DispositivoTipo VARCHAR(100),
+    DispositivoMarca VARCHAR(100),
+    DispositivoModelo VARCHAR(100),
+    DispositivoNumeroSerie VARCHAR(100),
+    MetodoExtraccion VARCHAR(100),
+
+    DocSalidaNroInforme VARCHAR(100),
+    DocSalidaDFG VARCHAR(100),
+    DocSalidaFecha DATE,
+    Responsable VARCHAR(100),
+    Observaciones TEXT,
+
+    CONSTRAINT fk_forensedigital_area
+        FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE QuimicaToxicologiaForense (
+    IDQuimicaToxForense INT AUTO_INCREMENT PRIMARY KEY,
+    IDArea INT NOT NULL,
+    IsActive BOOLEAN DEFAULT TRUE,
+
+    NumeroRegistro VARCHAR(50),
+    FechaIngreso DATE,
+    OficioDoc VARCHAR(50),
+    NumeroOficio INT,
+    Examen VARCHAR(100),
+
+    Nombres VARCHAR(100),
+    Apellidos VARCHAR(100),
+    DelitoInfraccion VARCHAR(255),
+    Como VARCHAR(100),
+
+    DocSalidaNroInforme VARCHAR(100),
+    DocSalidaDFG VARCHAR(100),
+    DocSalidaFecha DATE,
+    Responsable VARCHAR(100),
+    Observaciones TEXT,
+
+    CONSTRAINT fk_quimica_area
+        FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ########################################################
+-- 6. TRIGGERS DE AUDITORÍA (INSERT/UPDATE/DELETE)
 -- ########################################################
 
 DELIMITER $$
 
--- -------------------- TRIGGERS PARA ROL -> RolLog --------------------
+-- Ejemplos para ROL (INSERT, UPDATE, DELETE)
 CREATE TRIGGER trg_rol_insert
 AFTER INSERT ON Rol
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Usar admin_id que puede ser NULL si no hay administrador
     INSERT INTO RolLog (IDRol, IDUsuario, TipoEvento, Detalles)
     VALUES (
         NEW.IDRol,
-        admin_id,
+        1, -- IDUsuario=1 como placeholder
         'INSERT',
         CONCAT('Rol creado: ', NEW.NombreRol)
     );
@@ -435,15 +580,10 @@ CREATE TRIGGER trg_rol_update
 AFTER UPDATE ON Rol
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Usar admin_id que puede ser NULL si no hay administrador
     INSERT INTO RolLog (IDRol, IDUsuario, TipoEvento, Detalles)
     VALUES (
         NEW.IDRol,
-        admin_id,
+        1,
         'UPDATE',
         CONCAT('Rol actualizado: ', OLD.NombreRol, ' -> ', NEW.NombreRol)
     );
@@ -453,34 +593,24 @@ CREATE TRIGGER trg_rol_delete
 AFTER DELETE ON Rol
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Usar admin_id que puede ser NULL si no hay administrador
     INSERT INTO RolLog (IDRol, IDUsuario, TipoEvento, Detalles)
     VALUES (
         OLD.IDRol,
-        admin_id,
+        1,
         'DELETE',
         CONCAT('Rol eliminado: ', OLD.NombreRol)
     );
 END$$
 
--- -------------------- TRIGGERS PARA PERMISO -> PermisoLog --------------------
+-- Ejemplos para PERMISO (INSERT, UPDATE, DELETE)
 CREATE TRIGGER trg_permiso_insert
 AFTER INSERT ON Permiso
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Usar admin_id que puede ser NULL si no hay administrador
     INSERT INTO PermisoLog (IDPermiso, IDUsuario, TipoEvento, Detalles)
     VALUES (
         NEW.IDPermiso,
-        admin_id,
+        1,
         'INSERT',
         CONCAT('Permiso creado: ', NEW.NombrePermiso)
     );
@@ -490,15 +620,10 @@ CREATE TRIGGER trg_permiso_update
 AFTER UPDATE ON Permiso
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Usar admin_id que puede ser NULL si no hay administrador
     INSERT INTO PermisoLog (IDPermiso, IDUsuario, TipoEvento, Detalles)
     VALUES (
         NEW.IDPermiso,
-        admin_id,
+        1,
         'UPDATE',
         CONCAT('Permiso actualizado: ', OLD.NombrePermiso, ' -> ', NEW.NombrePermiso)
     );
@@ -508,34 +633,24 @@ CREATE TRIGGER trg_permiso_delete
 AFTER DELETE ON Permiso
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Usar admin_id que puede ser NULL si no hay administrador
     INSERT INTO PermisoLog (IDPermiso, IDUsuario, TipoEvento, Detalles)
     VALUES (
         OLD.IDPermiso,
-        admin_id,
+        1,
         'DELETE',
         CONCAT('Permiso eliminado: ', OLD.NombrePermiso)
     );
 END$$
 
--- -------------------- TRIGGERS PARA AREA -> AreaLog --------------------
+-- Ejemplos para AREA (INSERT, UPDATE, DELETE)
 CREATE TRIGGER trg_area_insert
 AFTER INSERT ON AreaEspecializada
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Si no existe, usar NULL
     INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, Detalles)
     VALUES (
         NEW.IDArea,
-        admin_id,
+        1,
         'INSERT',
         CONCAT('Área creada: ', NEW.NombreArea)
     );
@@ -545,15 +660,10 @@ CREATE TRIGGER trg_area_update
 AFTER UPDATE ON AreaEspecializada
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Si no existe, usar NULL
     INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, Detalles)
     VALUES (
         NEW.IDArea,
-        admin_id,
+        1,
         'UPDATE',
         CONCAT('Área actualizada: ', OLD.NombreArea, ' -> ', NEW.NombreArea)
     );
@@ -563,21 +673,16 @@ CREATE TRIGGER trg_area_delete
 AFTER DELETE ON AreaEspecializada
 FOR EACH ROW
 BEGIN
-    DECLARE admin_id INT;
-    -- Intentar obtener el ID del administrador
-    SELECT IDUsuario INTO admin_id FROM Usuario WHERE CodigoCIP = '12345678' LIMIT 1;
-    
-    -- Si no existe, usar NULL
     INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, Detalles)
     VALUES (
         OLD.IDArea,
-        admin_id,
+        1,
         'DELETE',
         CONCAT('Área eliminada: ', OLD.NombreArea)
     );
 END$$
 
--- -------------------- TRIGGERS PARA MESAPARTES -> MesaPartesLog --------------------
+-- Ejemplos para MESA PARTES (INSERT, UPDATE, DELETE)
 CREATE TRIGGER trg_mesapartes_insert
 AFTER INSERT ON MesaPartes
 FOR EACH ROW
@@ -617,9 +722,7 @@ BEGIN
     );
 END$$
 
--- -------------------- TRIGGERS PARA USUARIO, DOCUMENTO, ETC. --------------------
--- (Mantenemos los anteriores, ajustando IPOrigen/Dispositivo si lo deseas)
-
+-- TRIGGERS PARA USUARIO
 CREATE TRIGGER trg_usuario_update
 AFTER UPDATE ON Usuario
 FOR EACH ROW
@@ -638,19 +741,6 @@ BEGIN
             '(No IP Provided)',
             '(AppProvided)',
             TRUE
-        );
-
-        INSERT INTO IntrusionDetectionLog (
-            IDUsuario,
-            TipoEvento,
-            Descripcion,
-            IPOrigen
-        )
-        VALUES (
-            NEW.IDUsuario,
-            'BLOQUEO_USUARIO',
-            'Usuario bloqueado',
-            '(No IP Provided)'
         );
     END IF;
 END$$
@@ -675,13 +765,128 @@ BEGIN
     );
 END$$
 
--- (Se asume que los triggers para Documento, Dosaje, ForenseDigital, etc.
---  siguen la misma lógica y se adaptan para no usar IP fija)
+-- TRIGGERS PARA DOCUMENTO
+CREATE TRIGGER trg_documento_insert
+AFTER INSERT ON Documento
+FOR EACH ROW
+BEGIN
+    INSERT INTO DocumentoLog (
+        IDDocumento,
+        IDUsuario,
+        TipoAccion,
+        DetallesAccion,
+        IPOrigen
+    )
+    VALUES (
+        NEW.IDDocumento,
+        NEW.IDUsuarioCreador,
+        'INSERT',
+        CONCAT('Documento creado con NumeroOficioDocumento=', NEW.NumeroOficioDocumento),
+        '(No IP Provided)'
+    );
+END$$
+
+CREATE TRIGGER trg_documento_update
+AFTER UPDATE ON Documento
+FOR EACH ROW
+BEGIN
+    IF NEW.Estado <> OLD.Estado THEN
+        INSERT INTO DocumentoLog (
+            IDDocumento,
+            IDUsuario,
+            TipoAccion,
+            DetallesAccion,
+            IPOrigen
+        )
+        VALUES (
+            NEW.IDDocumento,
+            NEW.IDUsuarioAsignado,
+            'UPDATE',
+            CONCAT('Estado cambiado de ', OLD.Estado, ' a ', NEW.Estado),
+            '(No IP Provided)'
+        );
+    END IF;
+END$$
+
+CREATE TRIGGER trg_documento_delete
+AFTER DELETE ON Documento
+FOR EACH ROW
+BEGIN
+    INSERT INTO DocumentoLog (
+        IDDocumento,
+        IDUsuario,
+        TipoAccion,
+        DetallesAccion,
+        IPOrigen
+    )
+    VALUES (
+        OLD.IDDocumento,
+        1,
+        'DELETE',
+        CONCAT('Documento con ID=', OLD.IDDocumento, ' eliminado'),
+        '(No IP Provided)'
+    );
+END$$
+
+-- TRIGGERS PARA DOSAJE, FORENSEDIGITAL, QUIMICA
+CREATE TRIGGER trg_dosaje_insert
+AFTER INSERT ON Dosaje
+FOR EACH ROW
+BEGIN
+    INSERT INTO IntrusionDetectionLog (
+        IDUsuario,
+        TipoEvento,
+        Descripcion,
+        IPOrigen
+    )
+    VALUES (
+        NULL,
+        'REGISTRO_DOSAJE',
+        CONCAT('Nuevo registro de dosaje: ', NEW.NumeroRegistro),
+        '(No IP Provided)'
+    );
+END$$
+
+CREATE TRIGGER trg_forensedigital_insert
+AFTER INSERT ON ForenseDigital
+FOR EACH ROW
+BEGIN
+    INSERT INTO IntrusionDetectionLog (
+        IDUsuario,
+        TipoEvento,
+        Descripcion,
+        IPOrigen
+    )
+    VALUES (
+        NULL,
+        'REGISTRO_FORENSE_DIGITAL',
+        CONCAT('Nuevo registro forense digital: ', NEW.NumeroRegistro),
+        '(No IP Provided)'
+    );
+END$$
+
+CREATE TRIGGER trg_quimica_insert
+AFTER INSERT ON QuimicaToxicologiaForense
+FOR EACH ROW
+BEGIN
+    INSERT INTO IntrusionDetectionLog (
+        IDUsuario,
+        TipoEvento,
+        Descripcion,
+        IPOrigen
+    )
+    VALUES (
+        NULL,
+        'REGISTRO_QUIMICA',
+        CONCAT('Nuevo registro quimica toxicológica: ', NEW.NumeroRegistro),
+        '(No IP Provided)'
+    );
+END$$
 
 DELIMITER ;
 
 -- ########################################################
--- 6. EVENTOS (MONITORES)
+-- 7. EVENTOS (MONITORES)
 -- ########################################################
 
 DELIMITER $$
@@ -693,7 +898,6 @@ DO
 BEGIN
     DECLARE v_count INT DEFAULT 0;
     SELECT COUNT(*) INTO v_count FROM Usuario WHERE Bloqueado = TRUE;
-    
     IF v_count > 0 THEN
         INSERT INTO IntrusionDetectionLog (
             IDUsuario,
@@ -704,7 +908,7 @@ BEGIN
         VALUES (
             NULL,
             'MONITOR_BLOQUEADOS',
-            CONCAT('Se detectaron ', v_count, ' usuarios bloqueados a la 1:00 AM'),
+            CONCAT('Se detectaron ', v_count, ' usuarios bloqueados'),
             '(Monitor Event)'
         );
     END IF;
@@ -717,7 +921,9 @@ ON SCHEDULE EVERY 1 DAY
 STARTS '2025-01-01 02:00:00'
 DO
 BEGIN
-    INSERT INTO DocumentoLog (IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen)
+    INSERT INTO DocumentoLog (
+        IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen
+    )
     SELECT d.IDDocumento,
            1,
            'MONITOR',
@@ -742,88 +948,12 @@ END$$
 DELIMITER ;
 
 -- ########################################################
--- 7. PROCEDIMIENTOS (STORED PROCEDURES)
+-- 8. PROCEDIMIENTOS (STORED PROCEDURES) - EJEMPLOS ACID
 -- ########################################################
 
 DELIMITER $$
 
-CREATE PROCEDURE sp_insertar_dosaje(
-    IN p_IDArea INT,
-    IN p_NumeroRegistro VARCHAR(50),
-    IN p_OficioDoc VARCHAR(50),
-    IN p_NumeroOficio INT,
-    IN p_TipoDosaje VARCHAR(100),
-    IN p_Nombres VARCHAR(100),
-    IN p_Apellidos VARCHAR(100),
-    IN p_Procedencia VARCHAR(255),
-    IN p_Responsable VARCHAR(100)
-)
-BEGIN
-    INSERT INTO Dosaje (
-        IDArea,
-        NumeroRegistro,
-        FechaIngreso,
-        OficioDoc,
-        NumeroOficio,
-        TipoDosaje,
-        Nombres,
-        Apellidos,
-        Procedencia,
-        Responsable
-    ) VALUES (
-        p_IDArea,
-        p_NumeroRegistro,
-        CURDATE(),
-        p_OficioDoc,
-        p_NumeroOficio,
-        p_TipoDosaje,
-        p_Nombres,
-        p_Apellidos,
-        p_Procedencia,
-        p_Responsable
-    );
-END$$
-
-CREATE PROCEDURE sp_insertar_forense_digital(
-    IN p_IDArea INT,
-    IN p_NumeroRegistro VARCHAR(50),
-    IN p_OficioDoc VARCHAR(50),
-    IN p_NumeroOficio INT,
-    IN p_TipoPericia VARCHAR(100),
-    IN p_Nombres VARCHAR(100),
-    IN p_Apellidos VARCHAR(100),
-    IN p_DelitoInvestigado VARCHAR(255),
-    IN p_DispositivoTipo VARCHAR(100),
-    IN p_Responsable VARCHAR(100)
-)
-BEGIN
-    INSERT INTO ForenseDigital (
-        IDArea,
-        NumeroRegistro,
-        FechaIngreso,
-        OficioDoc,
-        NumeroOficio,
-        TipoPericia,
-        Nombres,
-        Apellidos,
-        DelitoInvestigado,
-        DispositivoTipo,
-        Responsable
-    ) VALUES (
-        p_IDArea,
-        p_NumeroRegistro,
-        CURDATE(),
-        p_OficioDoc,
-        p_NumeroOficio,
-        p_TipoPericia,
-        p_Nombres,
-        p_Apellidos,
-        p_DelitoInvestigado,
-        p_DispositivoTipo,
-        p_Responsable
-    );
-END$$
-
+-- Ejemplo transaccional para crear documento y derivarlo
 CREATE PROCEDURE sp_crear_documento_derivacion(
     IN p_IDMesaPartes INT,
     IN p_IDAreaActual INT,
@@ -880,68 +1010,120 @@ BEGIN
     COMMIT;
 END$$
 
-DELIMITER $$
-
-CREATE PROCEDURE sp_registrar_backup(
-    IN p_IDUsuario INT,
-    IN p_NombreArchivo VARCHAR(255)
+-- Subir archivo escaneado (PDF, imagen) para un documento
+CREATE PROCEDURE sp_subir_archivo_documento(
+    IN p_IDDocumento INT,
+    IN p_TipoArchivo VARCHAR(50),
+    IN p_RutaArchivo VARCHAR(500),
+    IN p_Observaciones TEXT
 )
 BEGIN
-    INSERT INTO BackupLog (
-        IDUsuario,
-        NombreArchivo,
-        Resultado,
-        Detalles
-    )
-    VALUES (
-        p_IDUsuario,
-        p_NombreArchivo,
-        'En Proceso',
-        'Backup solicitado manualmente'
+    INSERT INTO DocumentoArchivo (
+        IDDocumento,
+        TipoArchivo,
+        RutaArchivo,
+        Observaciones
+    ) VALUES (
+        p_IDDocumento,
+        p_TipoArchivo,
+        p_RutaArchivo,
+        p_Observaciones
     );
 END$$
 
-DELIMITER $$
-
+-- Eliminar un usuario (ACID)
 CREATE PROCEDURE sp_eliminar_usuario(
     IN p_IDUsuario INT
 )
 BEGIN
+    START TRANSACTION;
     DELETE FROM Usuario
     WHERE IDUsuario = p_IDUsuario;
-    -- AFTER DELETE trigger en Usuario (trg_usuario_delete) se encarga de loguear
+    -- AFTER DELETE trigger (trg_usuario_delete) se encarga de loguear
+    COMMIT;
 END$$
 
-DELIMITER ;
-
-DELIMITER $$
-
-CREATE TRIGGER trg_exportacionlog_insert
-AFTER INSERT ON ExportacionLog
-FOR EACH ROW
+-- Insertar registro en Dosaje
+CREATE PROCEDURE sp_insertar_dosaje(
+    IN p_IDArea INT,
+    IN p_NumeroRegistro VARCHAR(50),
+    IN p_OficioDoc VARCHAR(50),
+    IN p_NumeroOficio INT,
+    IN p_TipoDosaje VARCHAR(100),
+    IN p_Nombres VARCHAR(100),
+    IN p_Apellidos VARCHAR(100),
+    IN p_Procedencia VARCHAR(255),
+    IN p_Responsable VARCHAR(100)
+)
 BEGIN
-    -- Guardamos un registro en IntrusionDetectionLog
-    -- indicando que se ha solicitado una exportación de logs.
-    INSERT INTO IntrusionDetectionLog (
-        IDUsuario,
-        TipoEvento,
-        Descripcion,
-        IPOrigen
-    )
-    VALUES (
-        NEW.IDUsuario,
-        'EXPORT_LOGS',
-        CONCAT(
-            'Se solicitó una exportación de datos. ',
-            'Archivo: ', IFNULL(NEW.NombreArchivo, 'N/A'),
-            ' | RangoFechas: (',
-            IFNULL(DATE_FORMAT(NEW.FechaInicio, '%Y-%m-%d'), 'SIN_INICIO'),
-            ' - ',
-            IFNULL(DATE_FORMAT(NEW.FechaFin, '%Y-%m-%d'), 'SIN_FIN'),
-            ')'
-        ),
-        '(No IP Provided)'  -- La aplicación podría pasar la IP real en lugar de este valor
+    INSERT INTO Dosaje (
+        IDArea,
+        NumeroRegistro,
+        FechaIngreso,
+        OficioDoc,
+        NumeroOficio,
+        TipoDosaje,
+        Nombres,
+        Apellidos,
+        Procedencia,
+        Responsable
+    ) VALUES (
+        p_IDArea,
+        p_NumeroRegistro,
+        CURDATE(),
+        p_OficioDoc,
+        p_NumeroOficio,
+        p_TipoDosaje,
+        p_Nombres,
+        p_Apellidos,
+        p_Procedencia,
+        p_Responsable
+    );
+END$$
+
+-- Insertar registro en ForenseDigital
+CREATE PROCEDURE sp_insertar_forense_digital(
+    IN p_IDArea INT,
+    IN p_NumeroRegistro VARCHAR(50),
+    IN p_OficioDoc VARCHAR(50),
+    IN p_NumeroOficio INT,
+    IN p_TipoPericia VARCHAR(100),
+    IN p_Nombres VARCHAR(100),
+    IN p_Apellidos VARCHAR(100),
+    IN p_DelitoInvestigado VARCHAR(255),
+    IN p_DispositivoTipo VARCHAR(100),
+    IN p_Responsable VARCHAR(100)
+)
+BEGIN
+    INSERT INTO ForenseDigital (
+        IDArea,
+        NumeroRegistro,
+        FechaIngreso,
+        OficioDoc,
+        NumeroOficio,
+        TipoPericia,
+        Nombres,
+        Apellidos,
+        DelitoInvestigado,
+        DispositivoTipo,
+        Responsable
+    ) VALUES (
+        p_IDArea,
+        p_NumeroRegistro,
+        CURDATE(),
+        p_OficioDoc,
+        p_NumeroOficio,
+        p_TipoPericia,
+        p_Nombres,
+        p_Apellidos,
+        p_DelitoInvestigado,
+        p_DispositivoTipo,
+        p_Responsable
     );
 END$$
 
 DELIMITER ;
+
+-- ########################################################
+-- FIN DEL SCRIPT
+-- ########################################################

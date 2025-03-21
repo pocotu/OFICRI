@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="5" failures="0" errors="0" time="1.03">
+  <testsuite name="Pruebas de autenticación" errors="0" failures="0" skipped="0" timestamp="2025-03-21T22:21:16" time="0.974" tests="5">
+    <testcase classname="Pruebas de autenticación" name="Debería rechazar un login con credenciales inválidas" time="0.06">
+    </testcase>
+    <testcase classname="Pruebas de autenticación" name="Debería procesar un login con credenciales válidas" time="0.022">
+    </testcase>
+    <testcase classname="Pruebas de autenticación" name="Debería procesar solicitud de refresh token" time="0.01">
+    </testcase>
+    <testcase classname="Pruebas de autenticación" name="Debería procesar verificación de autenticación" time="0.011">
+    </testcase>
+    <testcase classname="Pruebas de autenticación" name="Debería procesar cierre de sesión" time="0.008">
+    </testcase>
+  </testsuite>
+</testsuites>
