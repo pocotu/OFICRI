@@ -4,8 +4,8 @@
   "description": "Sistema de Gestión para OFICRI Cusco - ISO/IEC 27001 compliant",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
+    "start": "node start.js",
+    "dev": "nodemon start.js",
     "mock": "node server/mock-server.js",
     "start:client": "webpack serve --mode development",
     "build:client": "webpack --mode production",
@@ -66,6 +66,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.2",
     "mysql2": "^3.14.0",
+    "punycode2": "^1.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0",

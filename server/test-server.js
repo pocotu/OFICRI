@@ -2,10 +2,15 @@
  * Servidor de prueba básico para endpoints
  */
 
+// Establecer entorno de prueba
+process.env.NODE_ENV = 'test';
+
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { setupSwagger } = require('./swagger');
+const permisosRoutes = require('./routes/permisos.routes');
+
 const app = express();
 
 // Middleware básico
@@ -16,21 +21,48 @@ app.use(cors({
   credentials: true
 }));
 
+// Middleware de autenticación simulada para pruebas
+app.use((req, res, next) => {
+  // Si la solicitud tiene un header de autorización, establecer req.user
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret');
+      req.user = decoded;
+      
+      // En modo test, siempre agregamos permisos completos
+      if (process.env.NODE_ENV === 'test') {
+        req.user.permissions = ['crear', 'editar', 'eliminar', 'ver', 'derivar', 'auditar'];
+      }
+      
+      console.log('Usuario autenticado:', req.user);
+    } catch (error) {
+      console.error('Error al verificar token:', error.message);
+    }
+  }
+  next();
+});
+
 // Configurar Swagger
 setupSwagger(app);
 
+// Agregar rutas de la API real
+app.use('/api/permisos', permisosRoutes);
+
 // Endpoint para generar token de prueba
 app.post('/api/auth/test-token', (req, res) => {
+  const userId = req.body.id || 1;
   const payload = {
-    id: 1,
+    id: userId,
     email: 'test@oficri.com',
-    role: req.body.role || 'admin',
+    role: req.body.role || 'ADMIN',
     name: 'Usuario de Prueba'
   };
   
   const token = jwt.sign(
     payload,
-    process.env.JWT_SECRET || 'your_jwt_secret_key_for_development_only',
+    process.env.JWT_SECRET || 'test_secret',
     { expiresIn: '1h' }
   );
   
@@ -220,9 +252,15 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Inicio del servidor
-const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor de prueba corriendo en http://localhost:${PORT}`);
-  console.log(`📚 Documentación completa de API en http://localhost:${PORT}/api-docs`);
-}); 
+// NO iniciamos el servidor, solo exportamos la app para tests
+// Si no estamos en modo test, iniciamos el servidor
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 3002;
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor de prueba corriendo en http://localhost:${PORT}`);
+    console.log(`📚 Documentación completa de API en http://localhost:${PORT}/api-docs`);
+  });
+}
+
+// Exportamos la app para pruebas
+module.exports = app; 

@@ -16,13 +16,12 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 const morgan = require('morgan');
-const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./docs/swagger.json');
 const { errorHandler } = require('./middleware/error-handler');
 const { authenticate } = require('./middleware/auth');
 const { logger } = require('./utils/logger');
 const { loadEnv } = require('./utils/database-helpers');
 const { initializeDatabase } = require('./scripts/init-database');
+const { setupSwagger } = require('./swagger');
 
 // Import configurations
 const { dbConfig, pool, testConnection, closePool } = require('./config/database');
@@ -39,9 +38,6 @@ const { authMiddleware } = require('./middleware/auth');
 
 // Import routes
 const routes = require('./routes');
-
-// Import Swagger documentation
-const { swaggerUiOptions } = require('./docs/swagger');
 
 // Load environment variables
 loadEnv();
@@ -60,9 +56,7 @@ const app = express();
 
 // Set up basic security using Helmet
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: security.contentSecurityPolicy.directives
-  },
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: process.env.NODE_ENV === 'production',
   crossOriginOpenerPolicy: { policy: 'same-origin' },
   crossOriginResourcePolicy: { policy: 'same-origin' },
@@ -128,20 +122,13 @@ app.use('/api/auth/password/reset', rateLimitMiddleware.passwordReset);
 if (process.env.NODE_ENV !== 'production') {
   // Disable helmet for Swagger UI
   app.use('/api-docs', (req, res, next) => {
-    // Middleware to disable CSP for Swagger UI
-    const cspMiddleware = helmet.contentSecurityPolicy({
-      directives: {
-        ...security.contentSecurityPolicy.directives,
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"]
-      }
-    });
-    cspMiddleware(req, res, next);
+    // Permitir que Swagger UI funcione sin restricciones CSP
+    req.cspdisabled = true;
+    next();
   });
   
   // Mount Swagger UI
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
+  setupSwagger(app);
   
   // Log Swagger UI availability
   logger.info('Swagger documentation available at /api-docs');
@@ -149,6 +136,17 @@ if (process.env.NODE_ENV !== 'production') {
 
 // API Routes
 app.use('/api', routes);
+
+// Añadimos CSP para todas las rutas excepto /api-docs
+app.use((req, res, next) => {
+  if (!req.cspdisabled) {
+    helmet.contentSecurityPolicy({
+      directives: security.contentSecurityPolicy.directives
+    })(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // Static files for frontend (only in production)
 if (process.env.NODE_ENV === 'production') {

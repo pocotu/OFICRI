@@ -104,6 +104,44 @@ CREATE TABLE Usuario (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- PERMISO CONTEXTUAL (NUEVA TABLA) ----------------
+CREATE TABLE PermisoContextual (
+    IDPermisoContextual INT AUTO_INCREMENT PRIMARY KEY,
+    IDRol INT NOT NULL,
+    IDArea INT NOT NULL,
+    TipoRecurso VARCHAR(50) NOT NULL, -- 'DOCUMENTO', 'USUARIO', 'AREA', etc.
+    ReglaContexto TEXT NOT NULL, -- Regla JSON: {"condicion": "PROPIETARIO", "accion": "ELIMINAR"}
+    Activo BOOLEAN DEFAULT TRUE,
+    FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_permisocontextual_rol
+        FOREIGN KEY (IDRol) REFERENCES Rol(IDRol)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_permisocontextual_area
+        FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX idx_permisocontextual_tiporecurso (TipoRecurso)
+) ENGINE=InnoDB;
+
+CREATE TABLE PermisoContextualLog (
+    IDPermisoContextualLog INT AUTO_INCREMENT PRIMARY KEY,
+    IDPermisoContextual INT NOT NULL,
+    IDUsuario INT NOT NULL,
+    TipoEvento VARCHAR(50),
+    FechaEvento DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Detalles TEXT,
+    CONSTRAINT fk_permisocontextuallog_permiso
+        FOREIGN KEY (IDPermisoContextual) REFERENCES PermisoContextual(IDPermisoContextual)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_permisocontextuallog_usuario
+        FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- ---------------- USUARIO SEGURIDAD ----------------
 CREATE TABLE UsuarioSeguridad (
     IDSeguridad INT AUTO_INCREMENT PRIMARY KEY,
@@ -809,23 +847,28 @@ BEGIN
 END$$
 
 CREATE TRIGGER trg_documento_delete
-AFTER DELETE ON Documento
+BEFORE DELETE ON Documento
 FOR EACH ROW
 BEGIN
-    INSERT INTO DocumentoLog (
-        IDDocumento,
-        IDUsuario,
-        TipoAccion,
-        DetallesAccion,
-        IPOrigen
-    )
-    VALUES (
-        OLD.IDDocumento,
-        1,
-        'DELETE',
-        CONCAT('Documento con ID=', OLD.IDDocumento, ' eliminado'),
-        '(No IP Provided)'
-    );
+    -- Ya no insertamos un log aquí, lo hacemos antes en el procedimiento
+    -- para evitar problemas con IDUsuario NULL
+    -- Este trigger queda como respaldo para eliminaciones fuera del procedimiento
+    IF NOT EXISTS (SELECT 1 FROM DocumentoLog WHERE IDDocumento = OLD.IDDocumento AND TipoAccion = 'ELIMINAR_PERMANENTE') THEN
+        INSERT INTO DocumentoLog (
+            IDDocumento,
+            IDUsuario,
+            TipoAccion,
+            DetallesAccion,
+            IPOrigen
+        )
+        VALUES (
+            OLD.IDDocumento,
+            IFNULL(OLD.IDUsuarioCreador, 1),  -- Usar el creador o 1 como respaldo
+            'DELETE',
+            CONCAT('Documento con ID=', OLD.IDDocumento, ' eliminado'),
+            '(No IP Provided)'
+        );
+    END IF;
 END$$
 
 -- TRIGGERS PARA DOSAJE, FORENSEDIGITAL, QUIMICA
@@ -1120,6 +1163,228 @@ BEGIN
         p_DispositivoTipo,
         p_Responsable
     );
+END$$
+
+DELIMITER ;
+
+-- ########################################################
+-- 9. VISTAS (VIEWS) - PARA GESTIÓN DE PERMISOS
+-- ########################################################
+
+-- Vista para facilitar la verificación de permisos contextuales
+CREATE OR REPLACE VIEW v_permisos_contextuales AS
+SELECT 
+    pc.IDPermisoContextual,
+    pc.IDRol,
+    r.NombreRol,
+    pc.IDArea,
+    a.NombreArea,
+    pc.TipoRecurso,
+    pc.ReglaContexto,
+    pc.Activo
+FROM 
+    PermisoContextual pc
+JOIN Rol r ON pc.IDRol = r.IDRol
+JOIN AreaEspecializada a ON pc.IDArea = a.IDArea
+WHERE 
+    pc.Activo = TRUE;
+
+-- ########################################################
+-- 10. STORED PROCEDURES PARA GESTIÓN DE PERMISOS
+-- ########################################################
+
+DELIMITER $$
+
+-- Procedimiento para crear una papelera de reciclaje
+CREATE PROCEDURE sp_papelera_reciclaje (
+    IN p_IDDocumento INT,
+    IN p_IDUsuario INT,
+    IN p_Accion VARCHAR(20) -- 'MOVER_PAPELERA', 'RESTAURAR', 'ELIMINAR_PERMANENTE'
+)
+BEGIN
+    DECLARE v_tiene_permiso BOOLEAN DEFAULT FALSE;
+    DECLARE v_es_area_responsable BOOLEAN DEFAULT FALSE;
+    DECLARE v_area_usuario INT;
+    DECLARE v_area_documento INT;
+    DECLARE v_estado_actual VARCHAR(50);
+    
+    -- Verificar que los parámetros no sean nulos
+    IF p_IDDocumento IS NULL OR p_IDUsuario IS NULL OR p_Accion IS NULL THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Los parámetros IDDocumento, IDUsuario y Acción no pueden ser nulos';
+    END IF;
+    
+    -- Obtener área del usuario y documento
+    SELECT IDArea INTO v_area_usuario FROM Usuario WHERE IDUsuario = p_IDUsuario;
+    SELECT IDAreaActual, Estado INTO v_area_documento, v_estado_actual FROM Documento WHERE IDDocumento = p_IDDocumento;
+    
+    -- Verificar si el usuario es responsable del área
+    SET v_es_area_responsable = (v_area_usuario = v_area_documento);
+    
+    -- Verificar permisos básicos mediante bits (si tiene permiso de eliminar)
+    SELECT EXISTS (
+        SELECT 1 FROM Usuario u
+        JOIN Rol r ON u.IDRol = r.IDRol
+        WHERE u.IDUsuario = p_IDUsuario 
+        AND (r.Permisos & 4) > 0 -- Bit 2 = Eliminar (valor 4)
+    ) INTO v_tiene_permiso;
+    
+    -- Si no tiene permiso por bit, verificar permisos contextuales
+    IF NOT v_tiene_permiso THEN
+        SELECT EXISTS (
+            SELECT 1 FROM PermisoContextual pc
+            JOIN Usuario u ON pc.IDRol = u.IDRol
+            WHERE u.IDUsuario = p_IDUsuario
+            AND pc.IDArea = v_area_usuario
+            AND pc.TipoRecurso = 'DOCUMENTO'
+            AND pc.Activo = TRUE
+            AND pc.ReglaContexto LIKE '%"accion":"ELIMINAR"%'
+            AND (
+                pc.ReglaContexto LIKE '%"condicion":"PROPIETARIO"%' AND
+                EXISTS (SELECT 1 FROM Documento WHERE IDDocumento = p_IDDocumento AND IDUsuarioCreador = p_IDUsuario)
+            )
+        ) INTO v_tiene_permiso;
+    END IF;
+    
+    -- Administradores siempre tienen permiso
+    IF NOT v_tiene_permiso THEN
+        SELECT EXISTS (
+            SELECT 1 FROM Usuario u
+            JOIN Rol r ON u.IDRol = r.IDRol
+            WHERE u.IDUsuario = p_IDUsuario
+            AND r.NombreRol = 'Administrador'
+        ) INTO v_tiene_permiso;
+    END IF;
+    
+    -- Si el usuario tiene permiso o es responsable del área
+    IF v_tiene_permiso OR v_es_area_responsable THEN
+        IF p_Accion = 'MOVER_PAPELERA' THEN
+            -- Crear el log primero (para evitar problemas de triggers)
+            INSERT INTO DocumentoLog (IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen)
+            VALUES (p_IDDocumento, p_IDUsuario, 'MOVER_PAPELERA', 'Documento movido a papelera', '(AppProvided)');
+            
+            -- Mover a papelera (cambiar estado)
+            UPDATE Documento 
+            SET Estado = 'PAPELERA', 
+                Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Movido a papelera por usuario ID: ', p_IDUsuario, ' en ', NOW())
+            WHERE IDDocumento = p_IDDocumento;
+            
+        ELSEIF p_Accion = 'RESTAURAR' THEN
+            -- Crear el log primero
+            INSERT INTO DocumentoLog (IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen)
+            VALUES (p_IDDocumento, p_IDUsuario, 'RESTAURAR_PAPELERA', 'Documento restaurado de papelera', '(AppProvided)');
+            
+            -- Restaurar de papelera (volver a estado anterior)
+            UPDATE Documento 
+            SET Estado = 'ACTIVO', 
+                Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Restaurado de papelera por usuario ID: ', p_IDUsuario, ' en ', NOW())
+            WHERE IDDocumento = p_IDDocumento;
+            
+        ELSEIF p_Accion = 'ELIMINAR_PERMANENTE' THEN
+            -- Crear el log primero antes de eliminar el documento
+            INSERT INTO DocumentoLog (IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen)
+            VALUES (p_IDDocumento, p_IDUsuario, 'ELIMINAR_PERMANENTE', 'Documento eliminado permanentemente', '(AppProvided)');
+            
+            -- Eliminar permanentemente (solo si ya está en papelera)
+            DELETE FROM DocumentoLog WHERE IDDocumento = p_IDDocumento AND TipoAccion != 'ELIMINAR_PERMANENTE';
+            DELETE FROM Documento WHERE IDDocumento = p_IDDocumento;
+            
+        ELSE
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Acción no reconocida. Debe ser MOVER_PAPELERA, RESTAURAR o ELIMINAR_PERMANENTE';
+        END IF;
+    ELSE
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'El usuario no tiene permisos para realizar esta acción';
+    END IF;
+END$$
+
+-- Función para verificar permisos contextuales
+CREATE FUNCTION fn_verificar_permiso_contextual(
+    p_IDUsuario INT,
+    p_TipoRecurso VARCHAR(50),
+    p_IDRecurso INT,
+    p_Accion VARCHAR(50)
+) RETURNS BOOLEAN
+DETERMINISTIC
+BEGIN
+    DECLARE v_permiso_bit BOOLEAN DEFAULT FALSE;
+    DECLARE v_permiso_contextual BOOLEAN DEFAULT FALSE;
+    DECLARE v_bit_valor INT;
+    DECLARE v_id_area_usuario INT;
+    DECLARE v_id_rol_usuario INT;
+    
+    -- Determinar qué bit corresponde a la acción
+    CASE p_Accion
+        WHEN 'CREAR' THEN SET v_bit_valor = 1;   -- bit 0 = 1
+        WHEN 'EDITAR' THEN SET v_bit_valor = 2;  -- bit 1 = 2
+        WHEN 'ELIMINAR' THEN SET v_bit_valor = 4; -- bit 2 = 4
+        WHEN 'VER' THEN SET v_bit_valor = 8;     -- bit 3 = 8
+        WHEN 'DERIVAR' THEN SET v_bit_valor = 16; -- bit 4 = 16
+        WHEN 'AUDITAR' THEN SET v_bit_valor = 32; -- bit 5 = 32
+        WHEN 'EXPORTAR' THEN SET v_bit_valor = 64; -- bit 6 = 64
+        WHEN 'BLOQUEAR' THEN SET v_bit_valor = 128; -- bit 7 = 128
+        ELSE SET v_bit_valor = 0;
+    END CASE;
+    
+    -- Obtener área y rol del usuario
+    SELECT IDArea, IDRol INTO v_id_area_usuario, v_id_rol_usuario 
+    FROM Usuario 
+    WHERE IDUsuario = p_IDUsuario;
+    
+    -- Verificar permiso por bit
+    SELECT EXISTS (
+        SELECT 1 FROM Usuario u
+        JOIN Rol r ON u.IDRol = r.IDRol
+        WHERE u.IDUsuario = p_IDUsuario 
+        AND (r.Permisos & v_bit_valor) > 0
+    ) INTO v_permiso_bit;
+    
+    -- Si ya tiene permiso por bit, devolver TRUE
+    IF v_permiso_bit THEN
+        RETURN TRUE;
+    END IF;
+    
+    -- Verificar permiso contextual según el tipo de recurso
+    IF p_TipoRecurso = 'DOCUMENTO' THEN
+        -- Verificar si es el creador del documento
+        SELECT EXISTS (
+            SELECT 1 FROM PermisoContextual pc
+            JOIN Usuario u ON pc.IDRol = u.IDRol
+            WHERE u.IDUsuario = p_IDUsuario
+            AND pc.TipoRecurso = 'DOCUMENTO'
+            AND pc.Activo = TRUE
+            AND pc.ReglaContexto LIKE CONCAT('%"accion":"', p_Accion, '"%')
+            AND pc.ReglaContexto LIKE '%"condicion":"PROPIETARIO"%'
+            AND EXISTS (
+                SELECT 1 FROM Documento 
+                WHERE IDDocumento = p_IDRecurso 
+                AND IDUsuarioCreador = p_IDUsuario
+            )
+        ) INTO v_permiso_contextual;
+        
+        IF v_permiso_contextual THEN
+            RETURN TRUE;
+        END IF;
+        
+        -- Verificar si es del mismo área que el documento
+        SELECT EXISTS (
+            SELECT 1 FROM PermisoContextual pc
+            JOIN Usuario u ON pc.IDRol = u.IDRol
+            WHERE u.IDUsuario = p_IDUsuario
+            AND pc.TipoRecurso = 'DOCUMENTO'
+            AND pc.Activo = TRUE
+            AND pc.ReglaContexto LIKE CONCAT('%"accion":"', p_Accion, '"%')
+            AND pc.ReglaContexto LIKE '%"condicion":"MISMA_AREA"%'
+            AND EXISTS (
+                SELECT 1 FROM Documento 
+                WHERE IDDocumento = p_IDRecurso 
+                AND IDAreaActual = v_id_area_usuario
+            )
+        ) INTO v_permiso_contextual;
+    END IF;
+    
+    RETURN v_permiso_contextual;
 END$$
 
 DELIMITER ;

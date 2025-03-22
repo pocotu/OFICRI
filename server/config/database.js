@@ -124,11 +124,37 @@ async function executeQuery(sql, params = [], options = {}) {
  */
 async function closePool() {
   try {
-    await pool.end();
-    logger.info('Database connection pool closed successfully');
+    if (pool && !pool._closed) {
+      await pool.end();
+      pool._closed = true;
+      logger.info('Database connection pool closed successfully');
+    } else {
+      logger.info('Database connection pool already closed');
+    }
   } catch (error) {
     logger.error('Error closing database connection pool', { error: error.message });
     throw error;
+  }
+}
+
+/**
+ * Close database connection for tests
+ * This method is more reliable for test environments
+ */
+async function close() {
+  try {
+    if (pool && !pool._closed) {
+      await pool.end();
+      pool._closed = true;
+      logger.info('Database connection pool closed successfully');
+      return true;
+    } else {
+      logger.info('Database connection pool already closed');
+      return true;
+    }
+  } catch (error) {
+    logger.error('Error closing database connection', { error: error.message });
+    return false;
   }
 }
 
@@ -137,5 +163,6 @@ module.exports = {
   pool,
   testConnection,
   executeQuery,
-  closePool
+  closePool,
+  close
 }; 

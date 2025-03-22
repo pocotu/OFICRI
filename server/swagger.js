@@ -309,7 +309,7 @@ const swaggerOptions = {
     ]
   },
   // Rutas a escanear para los comentarios de anotación Swagger
-  apis: ['./routes/*.js', './routes-swagger.js']
+  apis: ['./server/routes/*.js', './server/routes-swagger.js']
 };
 
 // Generar especificación Swagger

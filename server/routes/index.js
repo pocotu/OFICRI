@@ -18,6 +18,7 @@ const dashboardRoutes = require('./dashboard.routes');
 const securityRoutes = require('./security.routes');
 const notificationRoutes = require('./notification.routes');
 const logsRoutes = require('./logs.routes');
+const permisosRoutes = require('./permisos.routes');
 
 // Import common middleware
 const { verifyToken } = require('../middleware/auth');
@@ -52,6 +53,7 @@ router.use('/mesapartes', mesaPartesRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/logs', logsRoutes);
+router.use('/permisos', permisosRoutes);
 
 // Spanish aliases for compatibility
 router.use('/usuarios', verifyToken, userRoutes);
@@ -62,6 +64,7 @@ router.use('/roles', verifyToken, roleRoutes);
 router.use('/rol', verifyToken, roleRoutes);      // Singular alias
 router.use('/documentos', verifyToken, documentRoutes);
 router.use('/documento', verifyToken, documentRoutes); // Singular alias
+router.use('/permissions', verifyToken, permisosRoutes); // English alias
 
 // Route not found handler (catch any undefined API routes)
 router.use('*', (req, res) => {
