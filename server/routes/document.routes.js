@@ -141,36 +141,64 @@ router.get('/:id',
  *           schema:
  *             type: object
  *             required:
- *               - titulo
- *               - idTipoDocumento
- *               - contenido
+ *               - NroRegistro
+ *               - NumeroOficioDocumento
+ *               - Contenido
+ *               - Procedencia
  *             properties:
- *               titulo:
+ *               NroRegistro:
  *                 type: string
- *                 description: Título del documento
- *               idTipoDocumento:
- *                 type: integer
- *                 description: ID del tipo de documento
- *               contenido:
+ *                 description: Número de registro único del documento
+ *                 example: "REG-2023-001"
+ *               NumeroOficioDocumento:
+ *                 type: string
+ *                 description: Número de oficio del documento
+ *                 example: "OF-2023-001"
+ *               Contenido:
  *                 type: string
  *                 description: Contenido o descripción del documento
- *               idArea:
- *                 type: integer
- *                 description: ID del área destinataria (opcional)
- *               prioridad:
- *                 type: integer
- *                 enum: [1, 2, 3]
- *                 description: Prioridad (1=Alta, 2=Media, 3=Baja)
- *               fechaVencimiento:
+ *                 example: "Solicitud de análisis forense"
+ *               Procedencia:
+ *                 type: string
+ *                 description: Procedencia o fuente del documento
+ *                 example: "Fiscalía Provincial"
+ *               FechaDocumento:
  *                 type: string
  *                 format: date
- *                 description: Fecha de vencimiento (opcional)
+ *                 description: Fecha del documento
+ *                 example: "2023-05-15"
+ *               OrigenDocumento:
+ *                 type: string
+ *                 enum: [INTERNO, EXTERNO]
+ *                 description: Origen del documento
+ *                 default: "EXTERNO"
+ *                 example: "EXTERNO"
+ *               Observaciones:
+ *                 type: string
+ *                 description: Observaciones adicionales
+ *                 example: "Documento recibido en mesa de partes"
+ *               IDMesaPartes:
+ *                 type: integer
+ *                 description: ID de la mesa de partes donde se registra
+ *                 example: 1
+ *               IDAreaActual:
+ *                 type: integer
+ *                 description: ID del área actual donde se encuentra el documento
+ *                 example: 3
+ *               IDUsuarioAsignado:
+ *                 type: integer
+ *                 description: ID del usuario asignado al documento
+ *                 example: 2
+ *               IDDocumentoPadre:
+ *                 type: integer
+ *                 description: ID del documento padre (si existe)
+ *                 example: null
  *               archivos:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Archivos adjuntos (máximo 5)
+ *                 description: Archivos adjuntos al documento (máximo 5)
  *     responses:
  *       201:
  *         description: Documento creado correctamente
@@ -193,7 +221,7 @@ router.post('/',
  * @swagger
  * /api/documentos/{id}:
  *   put:
- *     summary: Actualizar un documento
+ *     summary: Actualizar un documento existente
  *     tags: [Documentos]
  *     security:
  *       - bearerAuth: []
@@ -203,7 +231,7 @@ router.post('/',
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID del documento
+ *         description: ID del documento a actualizar
  *     requestBody:
  *       required: true
  *       content:
@@ -211,23 +239,49 @@ router.post('/',
  *           schema:
  *             type: object
  *             properties:
- *               titulo:
+ *               NroRegistro:
  *                 type: string
- *                 description: Título del documento
- *               idTipoDocumento:
- *                 type: integer
- *                 description: ID del tipo de documento
- *               contenido:
+ *                 description: Número de registro único del documento
+ *                 example: "REG-2023-001"
+ *               NumeroOficioDocumento:
+ *                 type: string
+ *                 description: Número de oficio del documento
+ *                 example: "OF-2023-001"
+ *               Contenido:
  *                 type: string
  *                 description: Contenido o descripción del documento
- *               prioridad:
- *                 type: integer
- *                 enum: [1, 2, 3]
- *                 description: Prioridad (1=Alta, 2=Media, 3=Baja)
- *               fechaVencimiento:
+ *                 example: "Solicitud de análisis forense actualizada"
+ *               Procedencia:
+ *                 type: string
+ *                 description: Procedencia o fuente del documento
+ *                 example: "Fiscalía Provincial"
+ *               FechaDocumento:
  *                 type: string
  *                 format: date
- *                 description: Fecha de vencimiento (opcional)
+ *                 description: Fecha del documento
+ *                 example: "2023-05-15"
+ *               OrigenDocumento:
+ *                 type: string
+ *                 enum: [INTERNO, EXTERNO]
+ *                 description: Origen del documento
+ *                 example: "EXTERNO"
+ *               Estado:
+ *                 type: string
+ *                 enum: [RECIBIDO, EN_PROCESO, COMPLETADO, ARCHIVADO]
+ *                 description: Estado actual del documento
+ *                 example: "EN_PROCESO"
+ *               Observaciones:
+ *                 type: string
+ *                 description: Observaciones adicionales
+ *                 example: "Documento en proceso de análisis"
+ *               IDAreaActual:
+ *                 type: integer
+ *                 description: ID del área actual donde se encuentra el documento
+ *                 example: 3
+ *               IDUsuarioAsignado:
+ *                 type: integer
+ *                 description: ID del usuario asignado al documento
+ *                 example: 2
  *               archivos:
  *                 type: array
  *                 items:

@@ -61,9 +61,12 @@ app.post('/api/auth/test-token', (req, res) => {
   const userId = req.body.id || 1;
   const payload = {
     id: userId,
-    email: 'test@oficri.com',
-    role: req.body.role || 'ADMIN',
-    name: 'Usuario de Prueba'
+    codigoCIP: req.body.codigoCIP || '12345678',
+    role: req.body.role || 'admin',
+    idArea: req.body.idArea || 1,
+    grado: req.body.grado || 'Teniente',
+    nombre: req.body.nombre || 'Usuario de Prueba',
+    apellidos: req.body.apellidos || 'Apellido Prueba'
   };
   
   const token = jwt.sign(
@@ -82,26 +85,29 @@ app.post('/api/auth/test-token', (req, res) => {
 
 // Endpoint de login
 app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
+  const { codigoCIP, password } = req.body;
   
   // Simular autenticación (en producción esto verificaría contra la BD)
-  if (email === 'admin@oficri.com' && password === 'Admin123!') {
+  if (codigoCIP === '12345678' && password === 'Admin123!') {
     const payload = {
       id: 1,
-      email: email,
+      codigoCIP: codigoCIP,
       role: 'admin',
-      name: 'Admin Usuario'
+      nombre: 'Admin',
+      apellidos: 'Usuario',
+      grado: 'Teniente',
+      idArea: 1
     };
     
     const token = jwt.sign(
       payload,
-      process.env.JWT_SECRET || 'your_jwt_secret_key_for_development_only',
+      process.env.JWT_SECRET || 'test_secret',
       { expiresIn: '1h' }
     );
     
     res.json({
       success: true,
-      message: 'Login exitoso',
+      message: 'Inicio de sesión exitoso',
       token,
       user: payload
     });
@@ -116,21 +122,272 @@ app.post('/api/auth/login', (req, res) => {
 // API de muestra
 const createEndpointExamples = () => {
   // Documentos
-  app.get('/api/documents', (req, res) => {
+  app.get('/api/documentos', (req, res) => {
+    // Recuperar parámetros de consulta
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const estado = req.query.estado;
+
+    // Datos de muestra
+    let documentos = [
+      { id: 1, nroRegistro: 'DOC-2023-001', numeroOficioDocumento: 'OF-2023-001', procedencia: 'Fiscalía', estado: 'RECIBIDO', fechaDocumento: '2023-01-15' },
+      { id: 2, nroRegistro: 'DOC-2023-002', numeroOficioDocumento: 'OF-2023-002', procedencia: 'Juzgado', estado: 'EN_PROCESO', fechaDocumento: '2023-02-10' },
+      { id: 3, nroRegistro: 'DOC-2023-003', numeroOficioDocumento: 'OF-2023-003', procedencia: 'Policía', estado: 'COMPLETADO', fechaDocumento: '2023-03-05' },
+      { id: 4, nroRegistro: 'DOC-2023-004', numeroOficioDocumento: 'OF-2023-004', procedencia: 'Ministerio', estado: 'ARCHIVADO', fechaDocumento: '2023-04-20' },
+      { id: 5, nroRegistro: 'DOC-2023-005', numeroOficioDocumento: 'OF-2023-005', procedencia: 'DININCRI', estado: 'RECIBIDO', fechaDocumento: '2023-05-12' }
+    ];
+
+    // Aplicar filtro por estado si se especifica
+    if (estado) {
+      documentos = documentos.filter(doc => doc.estado === estado);
+    }
+
+    // Aplicar búsqueda si se especifica
+    if (search) {
+      const searchLower = search.toLowerCase();
+      documentos = documentos.filter(doc => 
+        doc.nroRegistro.toLowerCase().includes(searchLower) || 
+        doc.numeroOficioDocumento.toLowerCase().includes(searchLower) ||
+        doc.procedencia.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Calcular paginación
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = documentos.slice(startIndex, endIndex);
+
     res.json({
       success: true,
-      data: [
-        { id: 1, title: 'Documento 1', estado: 'REGISTRADO' },
-        { id: 2, title: 'Documento 2', estado: 'EN_PROCESO' },
-        { id: 3, title: 'Documento 3', estado: 'FINALIZADO' }
-      ]
+      data: {
+        documents: results,
+        pagination: {
+          total: documentos.length,
+          totalPages: Math.ceil(documentos.length / limit),
+          currentPage: page,
+          perPage: limit
+        }
+      }
     });
   });
 
-  app.get('/api/documents/:id', (req, res) => {
-    res.json({
+  app.get('/api/documentos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    // Verificar autenticación
+    if (!req.user) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tiene permisos para ver este documento'
+      });
+    }
+    
+    // Si el ID es válido, devolver el documento
+    if (id && id > 0 && id <= 5) {
+      const estados = ['RECIBIDO', 'EN_PROCESO', 'COMPLETADO', 'ARCHIVADO'];
+      const estado = estados[id % estados.length];
+      
+      res.json({
+        success: true,
+        data: {
+          IDDocumento: id,
+          IDMesaPartes: 1,
+          IDAreaActual: 3,
+          IDUsuarioCreador: 1,
+          IDUsuarioAsignado: id === 3 ? 2 : null, // Solo asignado para algunos documentos
+          IDDocumentoPadre: id > 1 ? id - 1 : null, // Documentos excepto el 1 tienen padre
+          
+          // Campos directos del documento
+          NroRegistro: `DOC-2023-00${id}`,
+          NumeroOficioDocumento: `OF-2023-00${id}`,
+          FechaDocumento: `2023-0${id}-01`,
+          FechaRegistro: `2023-0${id}-01T08:30:00.000Z`,
+          OrigenDocumento: 'EXTERNO',
+          Estado: estado,
+          Procedencia: `Entidad ${id}`,
+          Contenido: `Contenido del documento ${id}`,
+          Observaciones: `Observaciones del documento ${id}`,
+          
+          // Campos adicionales informativos (para facilitar la UI)
+          MesaPartes: {
+            IDMesaPartes: 1,
+            Descripcion: 'Mesa Central',
+            CodigoIdentificacion: 'MP-001'
+          },
+          AreaActual: {
+            IDArea: 3,
+            NombreArea: 'Laboratorio Forense',
+            CodigoIdentificacion: 'LAB-001'
+          },
+          UsuarioCreador: {
+            IDUsuario: 1,
+            CodigoCIP: '12345678',
+            Nombres: 'Admin',
+            Apellidos: 'Usuario',
+            Grado: 'Teniente'
+          },
+          UsuarioAsignado: id === 3 ? {
+            IDUsuario: 2,
+            CodigoCIP: '87654321',
+            Nombres: 'Juan',
+            Apellidos: 'Perez',
+            Grado: 'Capitán'
+          } : null,
+          
+          // Información relacionada
+          Archivos: [
+            { 
+              IDArchivo: 1, 
+              NombreArchivo: 'documento.pdf', 
+              TipoArchivo: 'application/pdf', 
+              FechaSubida: '2023-01-15T10:30:00.000Z',
+              RutaArchivo: '/uploads/documentos/documento.pdf' 
+            }
+          ],
+          Derivaciones: [
+            { 
+              IDDerivacion: 1, 
+              FechaDerivacion: '2023-01-10T09:15:00.000Z', 
+              Estado: 'EN_PROCESO', 
+              IDAreaOrigen: 1,
+              IDAreaDestino: 3,
+              AreaOrigen: 'Mesa de Partes', 
+              AreaDestino: 'Laboratorio', 
+              IDUsuarioDerivador: 1,
+              UsuarioDerivador: 'Admin Usuario',
+              Observaciones: 'Derivación inicial del documento'
+            }
+          ]
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'Documento no encontrado'
+      });
+    }
+  });
+
+  // Crear nuevo documento
+  app.post('/api/documentos', (req, res) => {
+    // Verificar autenticación
+    if (!req.user) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tiene permisos para crear documentos'
+      });
+    }
+
+    // Validar datos obligatorios según la estructura de la tabla Documento
+    const { 
+      nroRegistro, 
+      numeroOficioDocumento, 
+      contenido, 
+      procedencia, 
+      fechaDocumento, 
+      origenDocumento = 'EXTERNO' 
+    } = req.body;
+
+    // Verificar campos obligatorios
+    if (!nroRegistro || !numeroOficioDocumento || !contenido || !procedencia) {
+      return res.status(400).json({
+        success: false,
+        message: 'Datos inválidos. Faltan campos obligatorios.'
+      });
+    }
+
+    // En un entorno real, aquí se insertaría en la base de datos
+    // Para el servidor de prueba, simularemos la creación
+    const nuevoDocumento = {
+      id: Date.now(), // Generar un ID único basado en timestamp
+      nroRegistro,
+      numeroOficioDocumento,
+      fechaDocumento: fechaDocumento || new Date().toISOString().split('T')[0],
+      origenDocumento,
+      estado: 'RECIBIDO', // Estado inicial
+      procedencia,
+      contenido,
+      idMesaPartes: req.body.idMesaPartes || 1,
+      idAreaActual: req.body.idArea || req.user.idArea || 1,
+      idUsuarioCreador: req.user.id,
+      fechaRegistro: new Date().toISOString(),
+      observaciones: req.body.observaciones || ''
+    };
+
+    console.log('Documento creado:', nuevoDocumento);
+
+    // Responder con éxito
+    res.status(201).json({
       success: true,
-      data: { id: parseInt(req.params.id), title: `Documento ${req.params.id}`, estado: 'REGISTRADO' }
+      message: 'Documento creado correctamente',
+      data: nuevoDocumento
+    });
+  });
+
+  // Actualizar documento existente
+  app.put('/api/documentos/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    // Verificar autenticación
+    if (!req.user) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tiene permisos para editar este documento'
+      });
+    }
+    
+    // Verificar que el documento existe
+    if (!id || id <= 0 || id > 5) {
+      return res.status(404).json({
+        success: false,
+        message: 'Documento no encontrado'
+      });
+    }
+    
+    // Extraer datos de la solicitud (solo los campos que existen en la tabla Documento)
+    const {
+      NumeroOficioDocumento, 
+      NroRegistro,
+      Contenido,
+      Procedencia,
+      OrigenDocumento,
+      Estado,
+      Observaciones,
+      FechaDocumento,
+      IDAreaActual,
+      IDUsuarioAsignado
+    } = req.body;
+    
+    // En un entorno real, aquí se actualizaría en la base de datos
+    // Para el servidor de prueba, simularemos la actualización
+    const documentoActualizado = {
+      IDDocumento: id,
+      IDMesaPartes: 1,
+      IDAreaActual: IDAreaActual || 3,
+      IDUsuarioCreador: 1,
+      IDUsuarioAsignado: IDUsuarioAsignado || (id === 3 ? 2 : null),
+      IDDocumentoPadre: id > 1 ? id - 1 : null,
+      
+      // Actualizar campos si han sido proporcionados, de lo contrario mantener valores por defecto
+      NroRegistro: NroRegistro || `DOC-2023-00${id}`,
+      NumeroOficioDocumento: NumeroOficioDocumento || `OF-2023-00${id}`,
+      FechaDocumento: FechaDocumento || `2023-0${id}-01`,
+      FechaRegistro: `2023-0${id}-01T08:30:00.000Z`, // No se modifica
+      OrigenDocumento: OrigenDocumento || 'EXTERNO',
+      Estado: Estado || ['RECIBIDO', 'EN_PROCESO', 'COMPLETADO', 'ARCHIVADO'][id % 4],
+      Procedencia: Procedencia || `Entidad ${id}`,
+      Contenido: Contenido || `Contenido del documento ${id}`,
+      Observaciones: Observaciones || `Observaciones del documento ${id}`
+    };
+    
+    console.log('Documento actualizado:', documentoActualizado);
+    
+    // Responder con éxito
+    res.status(200).json({
+      success: true,
+      message: 'Documento actualizado correctamente',
+      data: documentoActualizado
     });
   });
 

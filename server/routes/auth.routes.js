@@ -24,7 +24,7 @@ const {
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Iniciar sesión de usuario
+ *     summary: Iniciar sesión en el sistema
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -33,35 +33,56 @@ const {
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - codigoCIP
  *               - password
  *             properties:
- *               email:
+ *               codigoCIP:
  *                 type: string
- *                 format: email
- *                 description: Correo electrónico del usuario
+ *                 description: Código CIP del usuario para autenticación
+ *                 example: "12345678"
  *               password:
  *                 type: string
  *                 format: password
  *                 description: Contraseña del usuario
+ *                 example: "Admin123!"
  *     responses:
  *       200:
- *         description: Sesión iniciada correctamente
+ *         description: Inicio de sesión exitoso
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Inicio de sesión exitoso"
  *                 token:
  *                   type: string
  *                   description: Token JWT para autenticación
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refreshToken:
+ *                   type: string
+ *                   description: Token de actualización
+ *                   example: "refresh-token-12345"
  *                 user:
  *                   type: object
- *                   description: Datos del usuario autenticado
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     codigoCIP:
+ *                       type: string
+ *                       example: "12345678"
+ *                     role:
+ *                       type: string
+ *                       example: "admin"
  *       400:
  *         description: Datos inválidos
  *       401:
- *         description: Credenciales incorrectas
+ *         description: Credenciales inválidas
  *       429:
  *         description: Demasiados intentos fallidos
  *       500:
@@ -190,78 +211,7 @@ router.get('/verificar-token',
  * @swagger
  * /api/auth/solicitar-reset:
  *   post:
- *     summary: Solicitar restablecimiento de contraseña
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 description: Correo electrónico registrado
- *     responses:
- *       200:
- *         description: Solicitud enviada correctamente
- *       400:
- *         description: Datos inválidos
- *       404:
- *         description: Email no encontrado
- *       500:
- *         description: Error del servidor
- */
-router.post('/solicitar-reset', 
-  authController.solicitarResetPassword
-);
-
-/**
- * @swagger
- * /api/auth/reset-password:
- *   post:
- *     summary: Restablecer contraseña con token
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - token
- *               - password
- *             properties:
- *               token:
- *                 type: string
- *                 description: Token de restablecimiento
- *               password:
- *                 type: string
- *                 format: password
- *                 description: Nueva contraseña
- *     responses:
- *       200:
- *         description: Contraseña restablecida correctamente
- *       400:
- *         description: Datos inválidos
- *       401:
- *         description: Token inválido o expirado
- *       500:
- *         description: Error del servidor
- */
-router.post('/reset-password', 
-  validateSchema(resetPasswordSchema),
-  authController.resetPassword
-);
-
-/**
- * @swagger
- * /api/auth/cambiar-password:
- *   post:
- *     summary: Cambiar contraseña de usuario autenticado
+ *     summary: Solicitar restablecimiento de contraseña (Solo administradores)
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
@@ -272,13 +222,98 @@ router.post('/reset-password',
  *           schema:
  *             type: object
  *             required:
- *               - currentPassword
- *               - newPassword
+ *               - codigoCIP
  *             properties:
- *               currentPassword:
+ *               codigoCIP:
+ *                 type: string
+ *                 description: Código CIP del usuario
+ *     responses:
+ *       200:
+ *         description: Solicitud enviada correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       403:
+ *         description: No tiene permisos para esta acción
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.post('/solicitar-reset', 
+  verifyToken,
+  validatePermissions(2), // bit 1 (Editar)
+  authController.solicitarResetPassword
+);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Restablecer contraseña con token (Solo administradores)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *               - idUsuario
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Token de restablecimiento
+ *               password:
  *                 type: string
  *                 format: password
- *                 description: Contraseña actual
+ *                 description: Nueva contraseña
+ *               idUsuario:
+ *                 type: integer
+ *                 description: ID del usuario al que se restablecerá la contraseña
+ *     responses:
+ *       200:
+ *         description: Contraseña restablecida correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: Token inválido o expirado
+ *       403:
+ *         description: No tiene permisos para esta acción
+ *       500:
+ *         description: Error del servidor
+ */
+router.post('/reset-password', 
+  verifyToken,
+  validatePermissions(2), // bit 1 (Editar)
+  validateSchema(resetPasswordSchema),
+  authController.resetPassword
+);
+
+/**
+ * @swagger
+ * /api/auth/cambiar-password:
+ *   post:
+ *     summary: Cambiar contraseña de usuario (Solo administradores)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idUsuario
+ *               - newPassword
+ *             properties:
+ *               idUsuario:
+ *                 type: integer
+ *                 description: ID del usuario al que se cambiará la contraseña
  *               newPassword:
  *                 type: string
  *                 format: password
@@ -288,13 +323,16 @@ router.post('/reset-password',
  *         description: Contraseña cambiada correctamente
  *       400:
  *         description: Datos inválidos
- *       401:
- *         description: Contraseña actual incorrecta
+ *       403:
+ *         description: No tiene permisos para esta acción
+ *       404:
+ *         description: Usuario no encontrado
  *       500:
  *         description: Error del servidor
  */
 router.post('/cambiar-password', 
   verifyToken,
+  validatePermissions(2), // bit 1 (Editar)
   validateSchema(cambioPasswordSchema),
   authController.cambiarPassword
 );

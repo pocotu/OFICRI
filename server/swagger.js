@@ -198,9 +198,9 @@ const swaggerOptions = {
           properties: {
             IDArea: { type: 'integer', example: 1 },
             NombreArea: { type: 'string', example: 'Departamento de Investigación' },
-            CodigoIdentificacion: { type: 'string', example: 'DEP-INV' },
+            CodigoIdentificacion: { type: 'string', example: 'DEPINV' },
             TipoArea: { type: 'string', example: 'ESPECIALIZADA' },
-            Descripcion: { type: 'string', example: 'Área especializada en investigación forense' },
+            Descripcion: { type: 'string', example: 'Área dedicada a la investigación forense' },
             IsActive: { type: 'boolean', example: true }
           }
         },
@@ -299,6 +299,50 @@ const swaggerOptions = {
             IDUsuarioAsignado: {
               type: 'integer',
               example: 5
+            }
+          }
+        },
+        PermisoContextual: {
+          type: 'object',
+          properties: {
+            IDPermisoContextual: { type: 'integer', example: 1 },
+            IDRol: { type: 'integer', example: 2 },
+            IDArea: { type: 'integer', example: 3 },
+            TipoRecurso: { 
+              type: 'string', 
+              example: 'DOCUMENTO',
+              description: 'Tipo de recurso al que se aplica el permiso contextual',
+              enum: ['DOCUMENTO', 'USUARIO', 'AREA', 'GLOBAL']
+            },
+            ReglaContexto: { 
+              type: 'string', 
+              example: '{"condicion": "PROPIETARIO", "accion": "ELIMINAR"}',
+              description: 'Regla JSON con condiciones para la aplicación del permiso contextual'
+            },
+            Activo: { type: 'boolean', example: true },
+            FechaCreacion: { 
+              type: 'string', 
+              format: 'date-time', 
+              example: '2023-01-15T10:30:00',
+              description: 'Fecha y hora de creación del permiso contextual'
+            },
+            // Campos adicionales para mostrar en las vistas/endpoints
+            NombreRol: { type: 'string', example: 'Mesa de Partes' },
+            NombreArea: { type: 'string', example: 'Departamento de Investigación' },
+            DetalleRegla: { 
+              type: 'object',
+              properties: {
+                condicion: { 
+                  type: 'string', 
+                  example: 'PROPIETARIO',
+                  enum: ['PROPIETARIO', 'MISMA_AREA', 'ASIGNADO', 'SUPERVISOR']
+                },
+                accion: { 
+                  type: 'string', 
+                  example: 'ELIMINAR',
+                  enum: ['CREAR', 'EDITAR', 'ELIMINAR', 'VER', 'DERIVAR', 'AUDITAR', 'EXPORTAR', 'BLOQUEAR'] 
+                }
+              }
             }
           }
         }
