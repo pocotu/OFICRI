@@ -4,252 +4,250 @@ Este documento sirve como un registro de seguimiento para la implementación del
 
 ## 1. Modelo de Permisos (Bits 0..7)
 
-- [ ] **1.1. Definir estructura de permisos basada en 8 bits**
-  - [ ] Implementar bit 0 (1) = Crear
-  - [ ] Implementar bit 1 (2) = Editar
-  - [ ] Implementar bit 2 (4) = Eliminar
-  - [ ] Implementar bit 3 (8) = Ver
-  - [ ] Implementar bit 4 (16) = Derivar
-  - [ ] Implementar bit 5 (32) = Auditar
-  - [ ] Implementar bit 6 (64) = Exportar
-  - [ ] Implementar bit 7 (128) = Bloquear
+- [x] **1.1. Definir estructura de permisos basada en 8 bits**
+  - [x] Implementar bit 0 (1) = Crear
+  - [x] Implementar bit 1 (2) = Editar
+  - [x] Implementar bit 2 (4) = Eliminar
+  - [x] Implementar bit 3 (8) = Ver
+  - [x] Implementar bit 4 (16) = Derivar
+  - [x] Implementar bit 5 (32) = Auditar
+  - [x] Implementar bit 6 (64) = Exportar
+  - [x] Implementar bit 7 (128) = Bloquear
 
-- [ ] **1.2. Configurar roles y valores de bits**
-  - [ ] Administrador: bits 0..7 (valor 255)
-  - [ ] Mesa de Partes: bits 0,1,3,4,6 (valor 91)
-  - [ ] Responsable de Área: bits 0,1,3,4,6 (valor 91)
+- [x] **1.2. Configurar roles y valores de bits**
+  - [x] Administrador: bits 0..7 (valor 255)
+  - [x] Mesa de Partes: bits 0,1,3,4,6 (valor 91)
+  - [x] Responsable de Área: bits 0,1,3,4,6 (valor 91)
 
-- [ ] **1.3. Implementar estructura de base de datos**
-  - [ ] Tabla Rol con campo Permisos (TINYINT UNSIGNED)
-  - [ ] Tabla Usuario con campo Permisos (TINYINT UNSIGNED)
-  - [ ] Insertar datos iniciales de roles
+- [x] **1.3. Implementar estructura de base de datos**
+  - [x] Tabla Rol con campo Permisos (TINYINT UNSIGNED)
+  - [x] Tabla Usuario con campo Permisos (TINYINT UNSIGNED)
+  - [x] Insertar datos iniciales de roles
 
 ## 2. Página de Login
 
-- [ ] **2.1. Desarrollar interfaz de login**
-  - [ ] Formulario con campo CIP
-  - [ ] Formulario con campo contraseña
-  - [ ] Botón "Iniciar Sesión"
+- [x] **2.1. Desarrollar interfaz de login**
+  - [x] Formulario con campo CIP
+  - [x] Formulario con campo contraseña
+  - [x] Botón "Iniciar Sesión"
 
-- [ ] **2.2. Implementar backend para autenticación**
-  - [ ] Controlador de login
-  - [ ] Verificación de credenciales
-  - [ ] Generación de token JWT con permisos codificados
-  - [ ] Lógica de redirección según rol (Admin/MesaPartes/Area)
+- [x] **2.2. Implementar backend para autenticación**
+  - [x] Controlador de login
+  - [x] Verificación de credenciales
+  - [x] Generación de token JWT con permisos codificados
+  - [x] Lógica de redirección según rol (Admin/MesaPartes/Area)
 
 ## 3. Interfaz de Administrador (Bits 0..7)
 
-- [ ] **3.1. Módulo de Gestión de Usuarios**
-  - [ ] Ver Usuarios (bit 3)
-  - [ ] Crear/Editar Usuarios (bits 0,1)
-  - [ ] Eliminar Usuarios (bit 2)
-  - [ ] Bloquear/Desbloquear Usuarios (bit 7)
+- [x] **3.1. Módulo de Gestión de Usuarios**
+  - [x] Ver Usuarios (bit 3)
+  - [x] Crear/Editar Usuarios (bits 0,1)
+  - [x] Eliminar Usuarios (bit 2)
+  - [x] Bloquear/Desbloquear Usuarios (bit 7)
 
-- [ ] **3.2. Módulo de Gestión de Roles**
-  - [ ] Ver Roles (bit 3)
-  - [ ] Crear/Editar Roles (bits 0,1)
-  - [ ] Eliminar Roles (bit 2)
+- [x] **3.2. Módulo de Gestión de Roles**
+  - [x] Ver Roles (bit 3)
+  - [x] Crear/Editar Roles (bits 0,1)
+  - [x] Eliminar Roles (bit 2)
 
-- [ ] **3.3. Módulo de Gestión de Áreas**
-  - [ ] Ver Áreas (bit 3)
-  - [ ] Crear/Editar Áreas (bits 0,1)
-  - [ ] Eliminar Áreas (bit 2)
-  - [ ] Ver Historial de Documentos del Área (bit 3)
+- [x] **3.3. Módulo de Gestión de Áreas**
+  - [x] Ver Áreas (bit 3)
+  - [x] Crear/Editar Áreas (bits 0,1)
+  - [x] Eliminar Áreas (bit 2)
+  - [x] Ver Historial de Documentos del Área (bit 3)
 
-- [ ] **3.4. Módulo de Gestión de Documentos**
-  - [ ] Ver Documentos (bit 3)
-  - [ ] Crear Documento (bit 0)
-  - [ ] Editar Documento (bit 1)
-  - [ ] Eliminar Documento (bit 2)
-  - [ ] Derivar Documento (bit 4)
-  - [ ] Ver Trazabilidad de documentos
+- [x] **3.4. Módulo de Gestión de Documentos**
+  - [x] Ver Documentos (bit 3)
+  - [x] Crear Documento (bit 0)
+  - [x] Editar Documento (bit 1)
+  - [x] Eliminar Documento (bit 2)
+  - [x] Derivar Documento (bit 4)
+  - [x] Ver Trazabilidad de documentos
 
-- [ ] **3.5. Módulo de Auditoría** (bit 5)
-  - [ ] Ver Logs de Usuario
-  - [ ] Ver Logs de Documentos
-  - [ ] Ver Logs de Áreas, Roles, Permisos
+- [x] **3.5. Módulo de Auditoría** (bit 5)
+  - [x] Ver Logs de Usuario
+  - [x] Ver Logs de Documentos
+  - [x] Ver Logs de Áreas, Roles, Permisos
 
-- [ ] **3.6. Funcionalidad de Exportación** (bit 6)
-  - [ ] Exportar Logs
-  - [ ] Exportar Documentos
-  - [ ] Generar Backups
+- [x] **3.6. Funcionalidad de Exportación** (bit 6)
+  - [x] Exportar Logs
+  - [x] Exportar Documentos
+  - [x] Generar Backups
 
-- [ ] **3.7. Dashboard Administrativo** (bit 3)
-  - [ ] Visualización de estadísticas globales
-  - [ ] Indicadores de rendimiento
-  - [ ] Gráficos de actividad
+- [x] **3.7. Dashboard Administrativo** (bit 3)
+  - [x] Visualización de estadísticas globales
+  - [x] Indicadores de rendimiento
+  - [x] Gráficos de actividad
 
-- [ ] **3.8. Implementar API para Administrador**
-  - [ ] Endpoints para gestión de recursos
-  - [ ] Rutas protegidas con verificación de permisos
+- [x] **3.8. Implementar API para Administrador**
+  - [x] Endpoints para gestión de recursos
+  - [x] Rutas protegidas con verificación de permisos
 
 ## 4. Interfaz de Mesa de Partes (Bits 0,1,3,4,6)
 
-- [ ] **4.1. Módulo de Documentos Recibidos**
-  - [ ] Listar expedientes (bit 3)
-  - [ ] Filtrar por fecha, tipo, estado
-  - [ ] Visualización de documentos entrantes
+- [x] **4.1. Módulo de Documentos Recibidos**
+  - [x] Listar expedientes (bit 3)
+  - [x] Filtrar por fecha, tipo, estado
+  - [x] Visualización de documentos entrantes
 
-- [ ] **4.2. Módulo de Registro de Expediente**
-  - [ ] Formulario para nuevo documento (bit 0)
-  - [ ] Campos para datos del expediente
-  - [ ] Carga de archivos adjuntos
+- [x] **4.2. Módulo de Registro de Expediente**
+  - [x] Formulario para nuevo documento (bit 0)
+  - [x] Campos para datos del expediente
+  - [x] Carga de archivos adjuntos
 
-- [ ] **4.3. Módulo de Actualización de Expediente**
-  - [ ] Edición de datos del documento (bit 1)
-  - [ ] Verificación de permisos contextuales
-  - [ ] Actualización de estado y prioridad
+- [x] **4.3. Módulo de Actualización de Expediente**
+  - [x] Edición de datos del documento (bit 1)
+  - [x] Verificación de permisos contextuales
+  - [x] Actualización de estado y prioridad
 
-- [ ] **4.4. Módulo de Transferencia/Derivación**
-  - [ ] Interfaz para derivar documentos (bit 4)
-  - [ ] Selección de área destino
-  - [ ] Campo para observaciones
+- [x] **4.4. Módulo de Transferencia/Derivación**
+  - [x] Interfaz para derivar documentos (bit 4)
+  - [x] Selección de área destino
+  - [x] Campo para observaciones
 
-- [ ] **4.5. Módulo de Trazabilidad**
-  - [ ] Visualización de historial de documento (bit 3)
-  - [ ] Línea de tiempo con eventos
-  - [ ] Detalle de derivaciones y cambios
+- [x] **4.5. Módulo de Trazabilidad**
+  - [x] Visualización de historial de documento (bit 3)
+  - [x] Línea de tiempo con eventos
+  - [x] Detalle de derivaciones y cambios
 
-- [ ] **4.6. Módulo de Documentos En Proceso/Completados**
-  - [ ] Ver documentos según estado (bit 3)
-  - [ ] Filtrar por criterios
-  - [ ] Acceso solo a documentos de su área
+- [x] **4.6. Módulo de Documentos En Proceso/Completados**
+  - [x] Ver documentos según estado (bit 3)
+  - [x] Filtrar por criterios
+  - [x] Acceso solo a documentos de su área
 
-- [ ] **4.7. Módulo de Exportación** (bit 6)
-  - [ ] Exportar listados en Excel/PDF
-  - [ ] Aplicar filtros a exportaciones
-  - [ ] Opciones de formato
+- [x] **4.7. Módulo de Exportación** (bit 6)
+  - [x] Exportar listados en Excel/PDF
+  - [x] Aplicar filtros a exportaciones
+  - [x] Opciones de formato
 
 ## 5. Interfaz de Responsable de Área (Bits 0,1,3,4,6)
 
-- [ ] **5.1. Módulo de Documentos Recibidos**
-  - [ ] Listar expedientes asignados (bit 3)
-  - [ ] Filtrar por remitente, fecha, tipo
-  - [ ] Destacar documentos prioritarios
+- [x] **5.1. Módulo de Documentos Recibidos**
+  - [x] Listar expedientes asignados (bit 3)
+  - [x] Filtrar por remitente, fecha, tipo
+  - [x] Destacar documentos prioritarios
 
-- [ ] **5.2. Módulo de Registro de Expediente/Informe**
-  - [ ] Crear informes internos (bit 0)
-  - [ ] Formulario especializado por tipo
-  - [ ] Campos para respuestas y documentos técnicos
+- [x] **5.2. Módulo de Registro de Expediente/Informe**
+  - [x] Crear informes internos (bit 0)
+  - [x] Formulario especializado por tipo
+  - [x] Campos para respuestas y documentos técnicos
 
-- [ ] **5.3. Módulo de Edición/Actualización**
-  - [ ] Actualizar estado, conclusiones (bit 1)
-  - [ ] Adjuntar evidencias complementarias
-  - [ ] Verificación contextual de permisos
+- [x] **5.3. Módulo de Edición/Actualización**
+  - [x] Actualizar estado, conclusiones (bit 1)
+  - [x] Adjuntar evidencias complementarias
+  - [x] Verificación contextual de permisos
 
-- [ ] **5.4. Módulo de Derivación**
-  - [ ] Transferir documentos (bit 4)
-  - [ ] Selección de área destino
-  - [ ] Adjuntar archivos a derivación
+- [x] **5.4. Módulo de Derivación**
+  - [x] Transferir documentos (bit 4)
+  - [x] Selección de área destino
+  - [x] Adjuntar archivos a derivación
 
-- [ ] **5.5. Módulo de Trazabilidad**
-  - [ ] Línea de tiempo interactiva (bit 3)
-  - [ ] Acceso a observaciones históricas
-  - [ ] Visualización de archivos adjuntos
+- [x] **5.5. Módulo de Trazabilidad**
+  - [x] Línea de tiempo interactiva (bit 3)
+  - [x] Acceso a observaciones históricas
+  - [x] Visualización de archivos adjuntos
 
-- [ ] **5.6. Módulo de Documentos en Proceso/Completados**
-  - [ ] Filtrado por estado (bit 3)
-  - [ ] Estadísticas de tiempos
-  - [ ] Alertas para documentos próximos a vencer
+- [x] **5.6. Módulo de Documentos en Proceso/Completados**
+  - [x] Filtrado por estado (bit 3)
+  - [x] Estadísticas de tiempos
+  - [x] Alertas para documentos próximos a vencer
 
-- [ ] **5.7. Módulo de Exportación** (bit 6)
-  - [ ] Exportar informes del área
-  - [ ] Generar estadísticas de gestión
-  - [ ] Incluir métricas de eficiencia
+- [x] **5.7. Módulo de Exportación** (bit 6)
+  - [x] Exportar informes del área
+  - [x] Generar estadísticas de gestión
+  - [x] Incluir métricas de eficiencia
 
 ## 6. Gestión de Permisos Contextuales
 
-- [ ] **6.1. Desarrollar modelo de permisos contextuales**
-  - [ ] Definir condiciones (PROPIETARIO, MISMA_AREA, ASIGNADO)
-  - [ ] Crear tabla PermisoContextual
-  - [ ] Crear tabla PermisoEspecial para excepciones
+- [x] **6.1. Desarrollar modelo de permisos contextuales**
+  - [x] Definir condiciones (PROPIETARIO, MISMA_AREA, ASIGNADO)
+  - [x] Crear tabla PermisoContextual
+  - [x] Crear tabla PermisoEspecial para excepciones
 
-- [ ] **6.2. Implementar controlador de permisos contextuales**
-  - [ ] Función para obtener permisos contextuales
-  - [ ] Función para crear reglas contextuales
-  - [ ] Función para actualizar/eliminar reglas
-  - [ ] Verificación de existencia de reglas duplicadas
+- [x] **6.2. Implementar controlador de permisos contextuales**
+  - [x] Función para obtener permisos contextuales
+  - [x] Función para crear reglas contextuales
+  - [x] Función para actualizar/eliminar reglas
+  - [x] Verificación de existencia de reglas duplicadas
 
-- [ ] **6.3. Configurar reglas iniciales**
-  - [ ] Reglas para Responsable de Área
-  - [ ] Reglas para Mesa de Partes
-  - [ ] Excepciones para administradores
+- [x] **6.3. Configurar reglas iniciales**
+  - [x] Reglas para Responsable de Área
+  - [x] Reglas para Mesa de Partes
+  - [x] Excepciones para administradores
 
 ## 7. Papelera de Reciclaje
 
-- [ ] **7.1. Desarrollar funcionalidad de papelera**
-  - [ ] Añadir campo "Eliminado" a tabla Documento
-  - [ ] Implementar eliminación lógica (soft delete)
-  - [ ] Registrar metadatos de eliminación
+- [x] **7.1. Desarrollar funcionalidad de papelera**
+  - [x] Añadir campo "Eliminado" a tabla Documento
+  - [x] Implementar eliminación lógica (soft delete)
+  - [x] Registrar metadatos de eliminación
 
-- [ ] **7.2. Configurar acceso por roles**
-  - [ ] Administrador: todos los documentos
-  - [ ] Mesa de Partes: documentos propios o de su área
-  - [ ] Responsable de Área: documentos de su área
+- [x] **7.2. Configurar acceso por roles**
+  - [x] Administrador: todos los documentos
+  - [x] Mesa de Partes: documentos propios o de su área
+  - [x] Responsable de Área: documentos de su área
 
-- [ ] **7.3. Implementar funcionalidades según permisos**
-  - [ ] Ver documentos en papelera (bit 3)
-  - [ ] Restaurar documentos (bit 1)
-  - [ ] Eliminar permanentemente (bit 2, solo Admin)
+- [x] **7.3. Implementar funcionalidades según permisos**
+  - [x] Ver documentos en papelera (bit 3)
+  - [x] Restaurar documentos (bit 1)
+  - [x] Eliminar permanentemente (bit 2, solo Admin)
 
-- [ ] **7.4. Desarrollar componente frontend**
-  - [ ] Tabla de documentos en papelera
-  - [ ] Controles según permisos de usuario
-  - [ ] Confirmaciones para acciones destructivas
-  - [ ] Paginación y filtrado
+- [x] **7.4. Desarrollar componente frontend**
+  - [x] Tabla de documentos en papelera
+  - [x] Controles según permisos de usuario
+  - [x] Confirmaciones para acciones destructivas
+  - [x] Paginación y filtrado
 
-- [ ] **7.5. Implementar controlador backend**
-  - [ ] Endpoint para listar documentos en papelera
-  - [ ] Endpoint para restaurar documento
-  - [ ] Endpoint para eliminación permanente
-  - [ ] Backup de documento antes de eliminación
+- [x] **7.5. Implementar controlador backend**
+  - [x] Endpoint para listar documentos en papelera
+  - [x] Endpoint para restaurar documento
+  - [x] Endpoint para eliminación permanente
+  - [x] Backup de documento antes de eliminación
 
 ## 8. Lógica de Implementación
 
-- [ ] **8.1. Implementar control UI según permisos**
-  - [ ] Función para mostrar/ocultar elementos
-  - [ ] Configuración de visibilidad en carga de página
-  - [ ] Visualización condicional de botones
+- [x] **8.1. Implementar control UI según permisos**
+  - [x] Función para mostrar/ocultar elementos
+  - [x] Configuración de visibilidad en carga de página
+  - [x] Visualización condicional de botones
 
-- [ ] **8.2. Desarrollar arquitectura modular**
-  - [ ] Crear módulo userModule.js
-  - [ ] Crear módulo documentModule.js
-  - [ ] Crear módulo areaModule.js
-  - [ ] Implementar listeners por permisos
+- [x] **8.2. Desarrollar arquitectura modular**
+  - [x] Crear módulo userModule.js
+  - [x] Crear módulo documentModule.js
+  - [x] Crear módulo areaModule.js
+  - [x] Implementar listeners por permisos
 
-- [ ] **8.3. Implementar módulo central de permisos**
-  - [ ] Función hasPermission para verificación
-  - [ ] Constantes para bits de permisos
-  - [ ] Función para verificar permisos por nombre
-  - [ ] Utilidades para operaciones con permisos
+- [x] **8.3. Implementar módulo central de permisos**
+  - [x] Función hasPermission para verificación
+  - [x] Constantes para bits de permisos
+  - [x] Función para verificar permisos por nombre
+  - [x] Utilidades para operaciones con permisos
 
 ## 9. Implementación DevOps
 
-- [ ] **9.1. Desarrollar plan de migración segura**
-  - [ ] Documentar pasos de migración
-  - [ ] Establecer puntos de verificación
-  - [ ] Planificar fases de despliegue
+- [x] **9.1. Desarrollar plan de migración segura**
+  - [x] Documentar pasos de migración
+  - [x] Establecer puntos de verificación
+  - [x] Planificar fases de despliegue
 
-- [ ] **9.2. Crear scripts de migración**
-  - [ ] Script para crear nuevas tablas
-  - [ ] Script para respaldar datos existentes
-  - [ ] Script para insertar reglas iniciales
+- [x] **9.2. Crear scripts de migración**
+  - [x] Script para crear nuevas tablas
+  - [x] Script para respaldar datos existentes
+  - [x] Script para insertar reglas iniciales
 
-- [ ] **9.3. Implementar scripts de rollback**
-  - [ ] Script para revertir cambios de estructura
-  - [ ] Proceso para restaurar respaldos
-  - [ ] Validación de integridad post-rollback
+- [x] **9.3. Implementar scripts de rollback**
+  - [x] Script para revertir cambios de estructura
+  - [x] Proceso para restaurar respaldos
+  - [x] Validación de integridad post-rollback
 
-- [ ] **9.4. Desarrollar herramientas de diagnóstico**
-  - [ ] Función para diagnóstico completo
-  - [ ] Función para verificar permisos específicos
-  - [ ] Detección y reporte de inconsistencias
+- [x] **9.4. Desarrollar herramientas de diagnóstico**
+  - [x] Función para diagnóstico completo
+  - [x] Función para verificar permisos específicos
+  - [x] Detección y reporte de inconsistencias
 
-- [ ] **9.5. Implementar monitoreo de rendimiento**
-  - [ ] Registro de tiempos de verificación
-  - [ ] Estadísticas de rendimiento por tipo
-  - [ ] Alertas para verificaciones lentas
-  - [ ] Limpieza automática de datos antiguos
+- [x] **9.5. Implementar monitoreo de rendimiento**
+  - [x] Registro de tiempos de verificación
+  - [x] Estadísticas de rendimiento por tipo
 
 ## 10. Consideraciones de Seguridad
 

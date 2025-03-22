@@ -40,6 +40,10 @@ function runTests(entity) {
     const testFile = `${entity}.test.js`;
     const testPath = path.join(ENTITY_TEST_DIR, testFile);
     
+    // Imprimir información sobre la ruta del test
+    console.log(`Ruta completa del test: ${testPath}`);
+    console.log(`¿El archivo existe? ${fs.existsSync(testPath) ? 'Sí' : 'No'}`);
+    
     if (!fs.existsSync(testPath)) {
       console.error(`No se encontró el archivo de prueba para la entidad "${entity}"`);
       console.log('Entidades disponibles:');
@@ -51,9 +55,17 @@ function runTests(entity) {
     console.log('----------------------------------------');
     
     try {
-      execSync(`npx jest ${testPath} --forceExit`, { stdio: 'inherit' });
+      // Usar el patrón de prueba en lugar de la ruta completa
+      const testPattern = `server/tests/entity/${testFile}`;
+      const command = `npx jest ${testPattern} --forceExit`;
+      console.log(`Ejecutando comando: ${command}`);
+      execSync(command, { stdio: 'inherit' });
     } catch (error) {
       console.error(`Error al ejecutar las pruebas para ${entity}:`, error.message);
+      console.error(`Código de salida: ${error.status}`);
+      if (error.stderr) {
+        console.error(`Error estándar: ${error.stderr.toString()}`);
+      }
       process.exit(1);
     }
   } else {
@@ -64,7 +76,29 @@ function runTests(entity) {
     console.log('----------------------------------------\n');
     
     try {
-      execSync(`npx jest ${ENTITY_TEST_DIR} --forceExit`, { stdio: 'inherit' });
+      // Ejecutar cada prueba individualmente para garantizar que todas se ejecuten
+      let allPassed = true;
+      
+      for (const test of availableTests) {
+        console.log(`\nEjecutando pruebas para: ${test}`);
+        console.log('----------------------------------------');
+        
+        try {
+          const testPattern = `server/tests/entity/${test}.test.js`;
+          const command = `npx jest ${testPattern} --forceExit`;
+          console.log(`Ejecutando comando: ${command}`);
+          execSync(command, { stdio: 'inherit' });
+        } catch (error) {
+          console.error(`Error al ejecutar las pruebas para ${test}:`, error.message);
+          allPassed = false;
+          // Continuar con la siguiente prueba en lugar de salir inmediatamente
+        }
+      }
+      
+      if (!allPassed) {
+        console.error('\nAlgunas pruebas fallaron. Revisar los mensajes de error anteriores.');
+        process.exit(1);
+      }
     } catch (error) {
       console.error('Error al ejecutar todas las pruebas:', error.message);
       process.exit(1);
@@ -75,6 +109,8 @@ function runTests(entity) {
 // Mostrar mensaje informativo si es necesario
 if (!entityArg) {
   console.log('No se especificó una entidad, se ejecutarán todas las pruebas de entidades.');
+} else {
+  console.log(`Entidad a probar: ${entityArg}`);
 }
 
 // Ejecutar las pruebas

@@ -1,98 +1,108 @@
 /**
  * Document Routes
- * Implements document management endpoints
- * ISO/IEC 27001 compliant API
+ * Implementa endpoints para la gestión de documentos
+ * API conforme a ISO/IEC 27001
  */
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+
+// Configuración de multer para carga de archivos
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/documents');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+
+// Límites para la carga de archivos
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB
+    files: 5 // máximo 5 archivos por solicitud
+  },
+  fileFilter: function (req, file, cb) {
+    // Filtrar tipos de archivo permitidos
+    if (file.mimetype.startsWith('application/pdf') || 
+        file.mimetype.startsWith('image/') ||
+        file.mimetype.startsWith('application/msword') ||
+        file.mimetype.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+        file.mimetype.startsWith('application/vnd.ms-excel') ||
+        file.mimetype.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no permitido'), false);
+    }
+  }
+});
 
 // Import controllers
 const documentController = require('../controllers/document.controller');
 
 // Import middleware
-const { verifyToken, checkRole } = require('../middleware/auth');
-const { validate } = require('../middleware/validation');
-const { uploadMiddleware } = require('../middleware/file-handler');
-
-// Import validators
-const { 
-  createDocumentValidator,
-  updateDocumentValidator,
-  updateStatusValidator,
-  deriveDocumentValidator
-} = require('../middleware/validation/document.validator');
+const { verifyToken, validatePermissions } = require('../middleware/auth');
+const { validateSchema } = require('../middleware/validation');
+const { documentoSchema, derivacionSchema } = require('../middleware/validation/documento.validator');
 
 /**
  * @swagger
- * /api/documents:
+ * /api/documentos:
  *   get:
- *     summary: Obtener listado de documentos
+ *     summary: Listar todos los documentos
  *     tags: [Documentos]
- *     description: Retorna una lista paginada de documentos con opciones de filtrado
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Número de página
+ *         description: Página de resultados
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 10
- *         description: Número de documentos por página
+ *         description: Número de resultados por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Búsqueda por título o contenido
  *       - in: query
  *         name: estado
  *         schema:
  *           type: string
- *         description: Filtrar por estado de documento
- *       - in: query
- *         name: area
- *         schema:
- *           type: integer
- *         description: Filtrar por área actual
- *       - in: query
- *         name: searchTerm
- *         schema:
- *           type: string
- *         description: Término de búsqueda
- *     security:
- *       - bearerAuth: []
+ *           enum: [RECIBIDO, EN_PROCESO, COMPLETADO]
+ *         description: Filtrar por estado del documento
  *     responses:
  *       200:
- *         description: Lista de documentos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     documents:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Documento'
- *                     pagination:
- *                       $ref: '#/components/schemas/Pagination'
+ *         description: Lista paginada de documentos
+ *       403:
+ *         description: No tiene permisos para ver documentos
+ *       500:
+ *         description: Error del servidor
  */
 router.get('/', 
   verifyToken, 
-  documentController.getAllDocuments
+  validatePermissions(8), // bit 3 (Ver)
+  documentController.listarDocumentos
 );
 
 /**
  * @swagger
- * /api/documents/{id}:
+ * /api/documentos/{id}:
  *   get:
- *     summary: Obtener documento por ID
+ *     summary: Obtener un documento por ID
  *     tags: [Documentos]
- *     description: Obtener información detallada de un documento por su ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -100,271 +110,93 @@ router.get('/',
  *         schema:
  *           type: integer
  *         description: ID del documento
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Documento encontrado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/DocumentoDetalle'
+ *         description: Datos del documento
+ *       403:
+ *         description: No tiene permisos para ver este documento
  *       404:
  *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
  */
 router.get('/:id', 
   verifyToken, 
-  documentController.getDocumentById
+  validatePermissions(8), // bit 3 (Ver)
+  documentController.obtenerDocumento
 );
 
 /**
  * @swagger
- * /api/documents:
+ * /api/documentos:
  *   post:
- *     summary: Crear nuevo documento
+ *     summary: Crear un nuevo documento
  *     tags: [Documentos]
- *     description: Registrar un nuevo documento en el sistema
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/DocumentoCreacion'
- *     security:
- *       - bearerAuth: []
+ *             type: object
+ *             required:
+ *               - titulo
+ *               - idTipoDocumento
+ *               - contenido
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *                 description: Título del documento
+ *               idTipoDocumento:
+ *                 type: integer
+ *                 description: ID del tipo de documento
+ *               contenido:
+ *                 type: string
+ *                 description: Contenido o descripción del documento
+ *               idArea:
+ *                 type: integer
+ *                 description: ID del área destinataria (opcional)
+ *               prioridad:
+ *                 type: integer
+ *                 enum: [1, 2, 3]
+ *                 description: Prioridad (1=Alta, 2=Media, 3=Baja)
+ *               fechaVencimiento:
+ *                 type: string
+ *                 format: date
+ *                 description: Fecha de vencimiento (opcional)
+ *               archivos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Archivos adjuntos (máximo 5)
  *     responses:
  *       201:
- *         description: Documento creado exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Documento creado exitosamente
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 123
- *                     nroRegistro:
- *                       type: string
- *                       example: REG-2023-001
+ *         description: Documento creado correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       403:
+ *         description: No tiene permisos para crear documentos
+ *       500:
+ *         description: Error del servidor
  */
 router.post('/', 
   verifyToken, 
-  validate(createDocumentValidator),
-  documentController.createDocument
+  validatePermissions(1), // bit 0 (Crear)
+  upload.array('archivos', 5),
+  validateSchema(documentoSchema),
+  documentController.crearDocumento
 );
 
 /**
  * @swagger
- * /api/documents/{id}:
+ * /api/documentos/{id}:
  *   put:
- *     summary: Actualizar documento
+ *     summary: Actualizar un documento
  *     tags: [Documentos]
- *     description: Actualizar la información de un documento existente
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del documento
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/DocumentoActualizacion'
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Documento actualizado exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Documento actualizado exitosamente
- */
-router.put('/:id', 
-  verifyToken, 
-  validate(updateDocumentValidator),
-  documentController.updateDocument
-);
-
-/**
- * @swagger
- * /api/documents/{id}/status:
- *   patch:
- *     summary: Actualizar estado de documento
- *     tags: [Documentos]
- *     description: Actualizar el estado de un documento
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del documento
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               estado:
- *                 type: string
- *                 enum: [REGISTRADO, EN_PROCESO, OBSERVADO, FINALIZADO, ARCHIVADO, CANCELADO]
- *               observaciones:
- *                 type: string
- *               idUsuarioAsignado:
- *                 type: integer
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Estado del documento actualizado exitosamente
- */
-router.patch('/:id/status', 
-  verifyToken, 
-  validate(updateStatusValidator),
-  documentController.updateDocumentStatus
-);
-
-/**
- * @swagger
- * /api/documents/{id}:
- *   delete:
- *     summary: Eliminar documento
- *     tags: [Documentos]
- *     description: Eliminar un documento del sistema
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del documento
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Documento eliminado exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Documento eliminado exitosamente
- *       409:
- *         description: No se puede eliminar el documento porque tiene derivaciones
- */
-router.delete('/:id', 
-  verifyToken, 
-  checkRole(['admin']),
-  documentController.deleteDocument
-);
-
-/**
- * @swagger
- * /api/documents/{id}/derive:
- *   post:
- *     summary: Derivar documento a otra área
- *     tags: [Documentos]
- *     description: Derivar un documento a otra área especializada
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del documento
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               areaDestinoId:
- *                 type: integer
- *                 required: true
- *               observaciones:
- *                 type: string
- *               urgente:
- *                 type: boolean
- *                 default: false
- *               motivo:
- *                 type: string
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Documento derivado exitosamente
- */
-router.post('/:id/derive', 
-  verifyToken, 
-  validate(deriveDocumentValidator),
-  documentController.deriveDocument
-);
-
-/**
- * @swagger
- * /api/documents/{id}/history:
- *   get:
- *     summary: Obtener historial de documento
- *     tags: [Documentos]
- *     description: Obtener el historial completo de un documento (derivaciones y cambios de estado)
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del documento
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Historial del documento
- */
-router.get('/:id/history', 
-  verifyToken, 
-  documentController.getDocumentHistory
-);
-
-/**
- * @swagger
- * /api/documents/{id}/attachments:
- *   post:
- *     summary: Subir adjunto a documento
- *     tags: [Documentos]
- *     description: Subir un archivo adjunto al documento
  *     parameters:
  *       - in: path
  *         name: id
@@ -379,28 +211,138 @@ router.get('/:id/history',
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               titulo:
  *                 type: string
- *                 format: binary
- *     security:
- *       - bearerAuth: []
+ *                 description: Título del documento
+ *               idTipoDocumento:
+ *                 type: integer
+ *                 description: ID del tipo de documento
+ *               contenido:
+ *                 type: string
+ *                 description: Contenido o descripción del documento
+ *               prioridad:
+ *                 type: integer
+ *                 enum: [1, 2, 3]
+ *                 description: Prioridad (1=Alta, 2=Media, 3=Baja)
+ *               fechaVencimiento:
+ *                 type: string
+ *                 format: date
+ *                 description: Fecha de vencimiento (opcional)
+ *               archivos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Nuevos archivos adjuntos (máximo 5)
  *     responses:
- *       201:
- *         description: Archivo adjunto subido exitosamente
+ *       200:
+ *         description: Documento actualizado correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       403:
+ *         description: No tiene permisos para editar este documento
+ *       404:
+ *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
  */
-router.post('/:id/attachments', 
+router.put('/:id', 
   verifyToken, 
-  uploadMiddleware.single('file'),
-  documentController.uploadAttachment
+  validatePermissions(2), // bit 1 (Editar)
+  upload.array('archivos', 5),
+  validateSchema(documentoSchema),
+  documentController.actualizarDocumento
 );
 
 /**
  * @swagger
- * /api/documents/{id}/attachments/{attachmentId}:
- *   get:
- *     summary: Descargar adjunto de documento
+ * /api/documentos/{id}:
+ *   delete:
+ *     summary: Eliminar un documento
  *     tags: [Documentos]
- *     description: Descargar un archivo adjunto del documento
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del documento
+ *     responses:
+ *       200:
+ *         description: Documento eliminado correctamente
+ *       403:
+ *         description: No tiene permisos para eliminar este documento
+ *       404:
+ *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.delete('/:id', 
+  verifyToken, 
+  validatePermissions(4), // bit 2 (Eliminar)
+  documentController.eliminarDocumento
+);
+
+/**
+ * @swagger
+ * /api/documentos/{id}/derivar:
+ *   post:
+ *     summary: Derivar un documento a otra área
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del documento
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idAreaDestino
+ *               - observaciones
+ *             properties:
+ *               idAreaDestino:
+ *                 type: integer
+ *                 description: ID del área de destino
+ *               observaciones:
+ *                 type: string
+ *                 description: Observaciones de la derivación
+ *     responses:
+ *       200:
+ *         description: Documento derivado correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       403:
+ *         description: No tiene permisos para derivar documentos
+ *       404:
+ *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.post('/:id/derivar', 
+  verifyToken, 
+  validatePermissions(16), // bit 4 (Derivar)
+  validateSchema(derivacionSchema),
+  documentController.derivarDocumento
+);
+
+/**
+ * @swagger
+ * /api/documentos/{id}/archivos/{archivoId}:
+ *   get:
+ *     summary: Descargar un archivo de un documento
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -409,25 +351,252 @@ router.post('/:id/attachments',
  *           type: integer
  *         description: ID del documento
  *       - in: path
- *         name: attachmentId
+ *         name: archivoId
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID del archivo adjunto
- *     security:
- *       - bearerAuth: []
+ *         description: ID del archivo
  *     responses:
  *       200:
- *         description: Archivo adjunto
+ *         description: Archivo descargado correctamente
  *         content:
  *           application/octet-stream:
  *             schema:
  *               type: string
  *               format: binary
+ *       403:
+ *         description: No tiene permisos para descargar este archivo
+ *       404:
+ *         description: Archivo no encontrado
+ *       500:
+ *         description: Error del servidor
  */
-router.get('/:id/attachments/:attachmentId', 
+router.get('/:id/archivos/:archivoId', 
   verifyToken, 
-  documentController.downloadAttachment
+  validatePermissions(8), // bit 3 (Ver)
+  documentController.descargarArchivo
+);
+
+/**
+ * @swagger
+ * /api/documentos/{id}/archivos/{archivoId}:
+ *   delete:
+ *     summary: Eliminar un archivo de un documento
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del documento
+ *       - in: path
+ *         name: archivoId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del archivo
+ *     responses:
+ *       200:
+ *         description: Archivo eliminado correctamente
+ *       403:
+ *         description: No tiene permisos para eliminar este archivo
+ *       404:
+ *         description: Archivo no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.delete('/:id/archivos/:archivoId', 
+  verifyToken, 
+  validatePermissions(4), // bit 2 (Eliminar)
+  documentController.eliminarArchivo
+);
+
+/**
+ * @swagger
+ * /api/documentos/{id}/historial:
+ *   get:
+ *     summary: Obtener el historial de un documento
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del documento
+ *     responses:
+ *       200:
+ *         description: Historial del documento
+ *       403:
+ *         description: No tiene permisos para ver el historial
+ *       404:
+ *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/:id/historial', 
+  verifyToken, 
+  validatePermissions(8), // bit 3 (Ver)
+  documentController.obtenerHistorialDocumento
+);
+
+/**
+ * @swagger
+ * /api/documentos/exportar:
+ *   get:
+ *     summary: Exportar documentos en formato Excel o PDF
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: formato
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [excel, pdf]
+ *         description: Formato de exportación
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *           enum: [RECIBIDO, EN_PROCESO, COMPLETADO]
+ *         description: Filtrar por estado del documento
+ *       - in: query
+ *         name: fechaInicio
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha de inicio para filtrar
+ *       - in: query
+ *         name: fechaFin
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha de fin para filtrar
+ *     responses:
+ *       200:
+ *         description: Archivo exportado correctamente
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       403:
+ *         description: No tiene permisos para exportar documentos
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/exportar', 
+  verifyToken, 
+  validatePermissions(64), // bit 6 (Exportar)
+  documentController.exportarDocumentos
+);
+
+/**
+ * @swagger
+ * /api/documentos/papelera:
+ *   get:
+ *     summary: Listar documentos en papelera
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Página de resultados
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Número de resultados por página
+ *     responses:
+ *       200:
+ *         description: Lista paginada de documentos en papelera
+ *       403:
+ *         description: No tiene permisos para ver papelera
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/papelera', 
+  verifyToken, 
+  validatePermissions(8), // bit 3 (Ver)
+  documentController.listarDocumentosPapelera
+);
+
+/**
+ * @swagger
+ * /api/documentos/{id}/restaurar:
+ *   post:
+ *     summary: Restaurar documento desde papelera
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del documento
+ *     responses:
+ *       200:
+ *         description: Documento restaurado correctamente
+ *       403:
+ *         description: No tiene permisos para restaurar documentos
+ *       404:
+ *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.post('/:id/restaurar', 
+  verifyToken, 
+  validatePermissions(2), // bit 1 (Editar)
+  documentController.restaurarDocumento
+);
+
+/**
+ * @swagger
+ * /api/documentos/{id}/eliminar-permanente:
+ *   delete:
+ *     summary: Eliminar permanentemente un documento
+ *     tags: [Documentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del documento
+ *     responses:
+ *       200:
+ *         description: Documento eliminado permanentemente
+ *       403:
+ *         description: No tiene permisos para eliminar permanentemente
+ *       404:
+ *         description: Documento no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.delete('/:id/eliminar-permanente', 
+  verifyToken, 
+  validatePermissions(4), // bit 2 (Eliminar)
+  documentController.eliminarDocumentoPermanente
 );
 
 module.exports = router; 

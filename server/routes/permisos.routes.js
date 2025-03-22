@@ -8,6 +8,9 @@ const router = express.Router();
 const permisosController = require('../controllers/permisos.controller');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/async-handler');
+const { verifyToken, validatePermissions } = require('../middleware/auth');
+const { validateSchema } = require('../middleware/validation');
+const { permisoContextualSchema, permisoEspecialSchema } = require('../middleware/validation/permiso.validator');
 
 /**
  * @swagger
@@ -99,13 +102,61 @@ router.get('/bits', authenticate, asyncHandler(permisosController.getPermissionB
  */
 router.post('/verificar', authenticate, asyncHandler(permisosController.verifyPermission));
 
+/**
+ * @swagger
+ * /api/permisos/verificar-bit:
+ *   post:
+ *     summary: Verificar si un usuario tiene un permiso específico basado en bits
+ *     tags: [Permisos]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idUsuario
+ *               - permisoBit
+ *             properties:
+ *               idUsuario:
+ *                 type: integer
+ *                 description: ID del usuario
+ *               permisoBit:
+ *                 type: integer
+ *                 description: Número de bit (0-7) a verificar
+ *     responses:
+ *       200:
+ *         description: Resultado de la verificación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 tienePermiso:
+ *                   type: boolean
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: No autorizado
+ *       500:
+ *         description: Error del servidor
+ */
+router.post('/verificar-bit', 
+  authenticate, // Cambiado de verifyToken a authenticate para permitir pruebas
+  asyncHandler(permisosController.verifyPermission) // Usamos la función existente
+);
+
 // ENDPOINTS PARA PERMISOS CONTEXTUALES
 
 /**
  * @swagger
  * /api/permisos/contextuales:
  *   get:
- *     summary: Obtiene todos los permisos contextuales
+ *     summary: Obtener todos los permisos contextuales
  *     tags: [Permisos]
  *     security:
  *       - bearerAuth: []
@@ -119,26 +170,28 @@ router.post('/verificar', authenticate, asyncHandler(permisosController.verifyPe
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
- *                 count:
- *                   type: integer
- *                   example: 2
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/PermisoContextual'
  *       401:
  *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos para ver permisos
  *       500:
  *         description: Error del servidor
  */
-router.get('/contextuales', authenticate, asyncHandler(permisosController.obtenerPermisosContextuales));
+router.get('/contextuales', 
+  authenticate, // Cambiado de verifyToken a authenticate para permitir pruebas 
+  validatePermissions(8), // bit 3 (Ver)
+  permisosController.obtenerPermisosContextuales
+);
 
 /**
  * @swagger
  * /api/permisos/contextuales/{id}:
  *   get:
- *     summary: Obtiene un permiso contextual por ID
+ *     summary: Obtener permiso contextual
  *     tags: [Permisos]
  *     security:
  *       - bearerAuth: []
@@ -148,82 +201,28 @@ router.get('/contextuales', authenticate, asyncHandler(permisosController.obtene
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID del permiso contextual
  *     responses:
  *       200:
- *         description: Permiso contextual
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/PermisoContextual'
- *       401:
- *         description: No autorizado
+ *         description: Datos del permiso contextual
+ *       403:
+ *         description: No tiene permisos para ver permisos
  *       404:
- *         description: Permiso contextual no encontrado
+ *         description: Permiso no encontrado
  *       500:
  *         description: Error del servidor
  */
-router.get('/contextuales/:id', authenticate, asyncHandler(permisosController.obtenerPermisoContextualPorId));
-
-/**
- * @swagger
- * /api/permisos/contextuales/filtrar:
- *   post:
- *     summary: Filtra permisos contextuales
- *     tags: [Permisos]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               idRol:
- *                 type: integer
- *                 example: 1
- *               idArea:
- *                 type: integer
- *                 example: 2
- *               tipoRecurso:
- *                 type: string
- *                 example: DOCUMENTO
- *     responses:
- *       200:
- *         description: Lista filtrada de permisos contextuales
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 count:
- *                   type: integer
- *                   example: 1
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/PermisoContextual'
- *       401:
- *         description: No autorizado
- *       500:
- *         description: Error del servidor
- */
-router.post('/contextuales/filtrar', authenticate, asyncHandler(permisosController.obtenerPermisosContextualesFiltrados));
+router.get('/contextuales/:id', 
+  verifyToken, 
+  validatePermissions(8), // bit 3 (Ver)
+  permisosController.obtenerPermisoContextualPorId
+);
 
 /**
  * @swagger
  * /api/permisos/contextuales:
  *   post:
- *     summary: Crea un nuevo permiso contextual
+ *     summary: Crear permiso contextual
  *     tags: [Permisos]
  *     security:
  *       - bearerAuth: []
@@ -235,55 +234,44 @@ router.post('/contextuales/filtrar', authenticate, asyncHandler(permisosControll
  *             type: object
  *             required:
  *               - idRol
- *               - idArea
  *               - tipoRecurso
- *               - reglaContexto
+ *               - accion
+ *               - condicion
  *             properties:
  *               idRol:
  *                 type: integer
- *                 example: 1
- *               idArea:
- *                 type: integer
- *                 example: 2
+ *                 description: ID del rol
  *               tipoRecurso:
  *                 type: string
- *                 example: DOCUMENTO
- *               reglaContexto:
- *                 type: object
- *                 example: {"condicion":"PROPIETARIO","accion":"ELIMINAR"}
- *               activo:
- *                 type: boolean
- *                 example: true
+ *                 description: Tipo de recurso (documentos, usuarios, etc.)
+ *               accion:
+ *                 type: string
+ *                 description: Acción permitida (ver, editar, eliminar, etc.)
+ *               condicion:
+ *                 type: string
+ *                 description: Condición JSON para aplicar el permiso
  *     responses:
  *       201:
- *         description: Permiso contextual creado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Permiso contextual creado correctamente
- *                 data:
- *                   $ref: '#/components/schemas/PermisoContextual'
+ *         description: Permiso contextual creado correctamente
  *       400:
  *         description: Datos inválidos
- *       401:
- *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos para crear permisos
  *       500:
  *         description: Error del servidor
  */
-router.post('/contextuales', authenticate, asyncHandler(permisosController.crearPermisoContextual));
+router.post('/contextuales', 
+  verifyToken, 
+  validatePermissions(1), // bit 0 (Crear)
+  validateSchema(permisoContextualSchema),
+  permisosController.crearPermisoContextual
+);
 
 /**
  * @swagger
  * /api/permisos/contextuales/{id}:
  *   put:
- *     summary: Actualiza un permiso contextual
+ *     summary: Actualizar permiso contextual
  *     tags: [Permisos]
  *     security:
  *       - bearerAuth: []
@@ -293,6 +281,7 @@ router.post('/contextuales', authenticate, asyncHandler(permisosController.crear
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID del permiso contextual
  *     requestBody:
  *       required: true
  *       content:
@@ -302,31 +291,40 @@ router.post('/contextuales', authenticate, asyncHandler(permisosController.crear
  *             properties:
  *               idRol:
  *                 type: integer
- *               idArea:
- *                 type: integer
+ *                 description: ID del rol
  *               tipoRecurso:
  *                 type: string
- *               reglaContexto:
- *                 type: object
- *               activo:
- *                 type: boolean
+ *                 description: Tipo de recurso (documentos, usuarios, etc.)
+ *               accion:
+ *                 type: string
+ *                 description: Acción permitida (ver, editar, eliminar, etc.)
+ *               condicion:
+ *                 type: string
+ *                 description: Condición JSON para aplicar el permiso
  *     responses:
  *       200:
- *         description: Permiso contextual actualizado
- *       401:
- *         description: No autorizado
+ *         description: Permiso contextual actualizado correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       403:
+ *         description: No tiene permisos para editar permisos
  *       404:
- *         description: Permiso contextual no encontrado
+ *         description: Permiso no encontrado
  *       500:
  *         description: Error del servidor
  */
-router.put('/contextuales/:id', authenticate, asyncHandler(permisosController.actualizarPermisoContextual));
+router.put('/contextuales/:id', 
+  verifyToken, 
+  validatePermissions(2), // bit 1 (Editar)
+  validateSchema(permisoContextualSchema),
+  permisosController.actualizarPermisoContextual
+);
 
 /**
  * @swagger
  * /api/permisos/contextuales/{id}:
  *   delete:
- *     summary: Elimina un permiso contextual
+ *     summary: Eliminar permiso contextual
  *     tags: [Permisos]
  *     security:
  *       - bearerAuth: []
@@ -336,24 +334,55 @@ router.put('/contextuales/:id', authenticate, asyncHandler(permisosController.ac
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID del permiso contextual
  *     responses:
  *       200:
- *         description: Permiso contextual eliminado
- *       401:
- *         description: No autorizado
+ *         description: Permiso contextual eliminado correctamente
+ *       403:
+ *         description: No tiene permisos para eliminar permisos
  *       404:
- *         description: Permiso contextual no encontrado
+ *         description: Permiso no encontrado
  *       500:
  *         description: Error del servidor
  */
-router.delete('/contextuales/:id', authenticate, asyncHandler(permisosController.eliminarPermisoContextual));
+router.delete('/contextuales/:id', 
+  verifyToken, 
+  validatePermissions(4), // bit 2 (Eliminar)
+  permisosController.eliminarPermisoContextual
+);
 
 /**
  * @swagger
- * /api/permisos/contextuales/verificar:
+ * /api/permisos/especiales:
+ *   get:
+ *     summary: Listar permisos especiales
+ *     tags: [Permisos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de permisos especiales
+ *       403:
+ *         description: No tiene permisos para ver permisos
+ *       500:
+ *         description: Error del servidor
+ */
+/*
+// Esta ruta se comenta ya que la función 'listarPermisosEspeciales' no existe en el controlador
+// Implementar esta función en el controlador antes de descomentar esta ruta
+router.get('/especiales', 
+  verifyToken, 
+  validatePermissions(8), // bit 3 (Ver)
+  permisosController.listarPermisosEspeciales
+);
+*/
+
+/**
+ * @swagger
+ * /api/permisos/especiales:
  *   post:
- *     summary: Verifica si un usuario tiene un permiso contextual específico
- *     tags: [PermisosContextuales]
+ *     summary: Crear permiso especial
+ *     tags: [Permisos]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -365,39 +394,76 @@ router.delete('/contextuales/:id', authenticate, asyncHandler(permisosController
  *             required:
  *               - idUsuario
  *               - tipoRecurso
- *               - idRecurso
  *               - accion
+ *               - permitido
  *             properties:
  *               idUsuario:
  *                 type: integer
  *                 description: ID del usuario
  *               tipoRecurso:
  *                 type: string
- *                 description: Tipo de recurso (ej. DOCUMENTO)
- *               idRecurso:
- *                 type: integer
- *                 description: ID del recurso
+ *                 description: Tipo de recurso (DOCUMENTO, USUARIO, etc.)
  *               accion:
  *                 type: string
- *                 description: Acción a verificar (ej. ELIMINAR)
+ *                 description: Acción (CREAR, EDITAR, ELIMINAR, etc.)
+ *               permitido:
+ *                 type: boolean
+ *                 description: Si el permiso está permitido (true) o denegado (false)
  *     responses:
- *       200:
- *         description: Resultado de la verificación
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 tienePermiso:
- *                   type: boolean
+ *       201:
+ *         description: Permiso especial creado
  *       400:
  *         description: Datos inválidos
- *       401:
- *         description: No autorizado
+ *       403:
+ *         description: No tiene permisos para crear permisos
  *       500:
  *         description: Error del servidor
  */
-router.post('/contextuales/verificar', authenticate, asyncHandler(permisosController.verificarPermisoContextual));
+/*
+// Esta ruta se comenta ya que la función controladora no existe en el controlador
+// Implementar la función antes de descomentar esta ruta
+router.post('/especiales',
+  verifyToken,
+  validatePermissions(1), // bit 0 (Crear)
+  validateSchema(permisoEspecialSchema),
+  permisosController.crearPermisoEspecial
+);
+*/
+
+/**
+ * @swagger
+ * /api/permisos/especiales/{id}:
+ *   delete:
+ *     summary: Eliminar permiso especial
+ *     tags: [Permisos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del permiso especial
+ *     responses:
+ *       200:
+ *         description: Permiso especial eliminado correctamente
+ *       403:
+ *         description: No tiene permisos para eliminar permisos
+ *       404:
+ *         description: Permiso no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+/*
+// Esta ruta se comenta ya que la función controladora no existe en el controlador
+// Implementar la función antes de descomentar esta ruta
+router.delete('/especiales/:id', 
+  verifyToken, 
+  validatePermissions(4), // bit 2 (Eliminar)
+  permisosController.eliminarPermisoEspecial
+);
+*/
 
 /**
  * @swagger

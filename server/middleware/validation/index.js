@@ -32,6 +32,38 @@ const validate = (validations) => {
   };
 };
 
+/**
+ * Middleware para validar solicitudes usando esquemas Joi
+ * @param {Object} schema - Esquema Joi para validar la solicitud
+ * @returns {Function} Middleware function
+ */
+const validateSchema = (schema) => {
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.body, { 
+      abortEarly: false,
+      stripUnknown: true 
+    });
+    
+    if (error) {
+      const errorMessages = error.details.map(detail => ({
+        message: detail.message,
+        path: detail.path
+      }));
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Error de validación de datos',
+        errors: errorMessages
+      });
+    }
+    
+    // Actualizar req.body con los datos validados
+    req.body = value;
+    return next();
+  };
+};
+
 module.exports = {
-  validate
+  validate,
+  validateSchema
 }; 

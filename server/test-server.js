@@ -28,7 +28,13 @@ app.use((req, res, next) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret');
+      // Usamos la misma clave que el middleware real
+      // Normalmente la clave se obtiene de jwtConfig.secret, pero para las pruebas
+      // usamos directamente el valor 'test_secret' que es el mismo que se usa en permisos.test.js
+      const secret = process.env.JWT_SECRET || 'test_secret';
+      console.log('JWT Secret para verificación:', secret !== undefined ? 'DEFINED' : 'UNDEFINED');
+      
+      const decoded = jwt.verify(token, secret);
       req.user = decoded;
       
       // En modo test, siempre agregamos permisos completos

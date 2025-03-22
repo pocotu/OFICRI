@@ -328,6 +328,65 @@ const getResource = async (type, id) => {
   return null;
 };
 
+/**
+ * Middleware para verificar permisos basados en bits
+ * @param {number} requiredBit - Bit de permiso requerido (0-7)
+ * @returns {function} Middleware que verifica el bit especificado
+ */
+const validatePermissions = (requiredBit) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'No autorizado - Usuario no autenticado'
+        });
+      }
+
+      // Permitir acceso a usuarios con rol de administrador (permisos totales)
+      if (req.user.role === 'ADMIN' || req.user.userPermisos === 255) {
+        return next();
+      }
+
+      // Obtener permisos del usuario (del token)
+      const userPermisos = req.user.permisos || 0;
+      
+      // Verificar si el bit específico está activo
+      const hasBitPermission = (userPermisos & (1 << requiredBit)) !== 0;
+      
+      if (!hasBitPermission) {
+        logger.warn('Permiso de bit insuficiente:', {
+          userId: req.user.id,
+          permisos: userPermisos,
+          requiredBit,
+          path: req.path,
+          method: req.method
+        });
+        
+        return res.status(403).json({
+          success: false,
+          message: 'Prohibido - No tiene el permiso necesario'
+        });
+      }
+      
+      next();
+    } catch (error) {
+      logger.error('Error al verificar permisos por bits:', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.id,
+        path: req.path
+      });
+      
+      res.status(500).json({
+        success: false,
+        message: 'Error al verificar permisos',
+        error: 'Error interno del servidor'
+      });
+    }
+  };
+};
+
 module.exports = {
   authMiddleware,
   verifyToken,
@@ -335,5 +394,6 @@ module.exports = {
   checkPermissions,
   checkResourceOwnership,
   authenticate,
-  authorize
+  authorize,
+  validatePermissions
 }; 

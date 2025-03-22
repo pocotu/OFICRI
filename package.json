@@ -7,6 +7,7 @@
     "start": "node start.js",
     "dev": "nodemon start.js",
     "mock": "node server/mock-server.js",
+    "swagger": "node swagger-server.js",
     "start:client": "webpack serve --mode development",
     "build:client": "webpack --mode production",
     "test": "jest --runInBand",

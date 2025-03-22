@@ -5,6 +5,8 @@
 
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const path = require('path');
+const { logger } = require('./utils/logger');
 
 // Opciones básicas de Swagger
 const swaggerOptions = {
@@ -19,7 +21,7 @@ const swaggerOptions = {
       },
       servers: [
         {
-          url: 'http://localhost:3001',
+          url: 'http://localhost:3000',
           description: 'Servidor de desarrollo'
         }
       ]
@@ -309,7 +311,10 @@ const swaggerOptions = {
     ]
   },
   // Rutas a escanear para los comentarios de anotación Swagger
-  apis: ['./server/routes/*.js', './server/routes-swagger.js']
+  apis: [
+    path.resolve(__dirname, './routes/*.js'),
+    path.resolve(__dirname, './routes-swagger.js')
+  ]
 };
 
 // Generar especificación Swagger
@@ -317,20 +322,30 @@ const swaggerSpec = swaggerJsDoc(swaggerOptions);
 
 // Función para configurar Swagger en Express
 const setupSwagger = (app) => {
-  // Ruta para documentación Swagger
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    explorer: true,
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: "OFICRI API Documentation"
-  }));
+  try {
+    // Añadir una ruta básica para probar que Swagger está disponible
+    app.get('/swagger-test', (req, res) => {
+      res.status(200).send('Swagger está configurado correctamente. Por favor visita /api-docs para ver la documentación.');
+    });
 
-  // Endpoint para obtener la especificación en formato JSON
-  app.get('/api-docs.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-  });
+    // Ruta para documentación Swagger - estos son dos pasos separados ahora
+    app.use('/api-docs', swaggerUi.serve);
+    app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
+      explorer: true,
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: "OFICRI API Documentation"
+    }));
 
-  console.log('📚 Documentación Swagger disponible en /api-docs');
+    // Endpoint para obtener la especificación en formato JSON
+    app.get('/api-docs.json', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerSpec);
+    });
+
+    logger.info('📚 Documentación Swagger disponible en /api-docs');
+  } catch (error) {
+    logger.error(`Error al configurar Swagger: ${error.message}`);
+  }
 };
 
 module.exports = { setupSwagger }; 
