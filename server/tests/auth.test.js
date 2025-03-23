@@ -4,17 +4,11 @@
  */
 
 const request = require('supertest');
-const express = require('express');
-const bodyParser = require('body-parser');
+const { app, startServer, stopServer } = require('../test-server');
 const { logger } = require('../utils/logger');
 const db = require('../config/database');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-
-// Crear una aplicación Express específica para estas pruebas
-const app = express();
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 // Asegurarnos de que JWT_SECRET tenga un valor para las pruebas
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-auth-tests';
@@ -91,122 +85,26 @@ const invalidCredentials = {
   password: 'WrongPassword'
 };
 
-// Implementar rutas directamente para las pruebas
-app.post('/api/auth/login', (req, res) => {
-  const { codigoCIP, password } = req.body;
-  
-  console.log(`Login attempt with codigoCIP: ${codigoCIP}`);
-  
-  if (codigoCIP === '12345678' && password === 'Admin123!') {
-    // Credenciales válidas
-    const user = {
-      id: 1,
-      codigoCIP: codigoCIP,
-      role: 'admin'
-    };
-    
-    const token = jwt.sign(
-      { id: user.id, codigoCIP: user.codigoCIP, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-    
-    const refreshToken = 'test-refresh-token-' + Date.now();
-    
-    res.status(200).json({
-      success: true,
-      message: 'Inicio de sesión exitoso',
-      token: token,
-      refreshToken: refreshToken,
-      user: user
-    });
-  } else {
-    // Credenciales inválidas
-    res.status(401).json({
-      success: false,
-      message: 'Credenciales inválidas'
-    });
-  }
-});
-
-app.post('/api/auth/refresh-token', (req, res) => {
-  const { refreshToken } = req.body;
-  
-  if (!refreshToken) {
-    return res.status(400).json({
-      success: false,
-      message: 'No se proporcionó token de refresco'
-    });
-  }
-  
-  // En una implementación real, verificaríamos el token
-  // Para pruebas, simplemente generamos uno nuevo
-  const newToken = jwt.sign(
-    { id: 1, codigoCIP: '12345678', role: 'admin' },
-    process.env.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
-  
-  res.status(200).json({
-    success: true,
-    message: 'Token refrescado exitosamente',
-    data: {
-      accessToken: newToken,
-      expiresIn: 3600
-    }
-  });
-});
-
-app.get('/api/auth/check', (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      message: 'No se proporcionó token de autenticación'
-    });
-  }
-  
-  const token = authHeader.split(' ')[1];
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    res.status(200).json({
-      success: true,
-      message: 'Token válido',
-      data: {
-        user: {
-          id: decoded.id,
-          codigoCIP: decoded.codigoCIP,
-          role: decoded.role
-        }
-      }
-    });
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: 'Token inválido o expirado'
-    });
-  }
-});
-
-app.post('/api/auth/logout', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Sesión cerrada exitosamente'
-  });
-});
+// Nota: No estamos implementando rutas directamente porque ya están en el test-server
 
 describe('Pruebas de autenticación', () => {
   let authToken;
   let refreshToken;
+  let server;
 
   beforeAll(async () => {
+    // Iniciar el servidor de pruebas
+    server = await startServer();
+    
     // Configuración inicial si es necesaria
     logger.info('Iniciando pruebas de autenticación');
     console.log('JWT_SECRET set to:', process.env.JWT_SECRET ? 'DEFINED' : 'UNDEFINED');
   });
 
   afterAll(async () => {
+    // Detener el servidor de pruebas
+    await stopServer();
+    
     // Cerrar conexión a la base de datos
     try {
       await db.closePool();

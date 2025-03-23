@@ -56,6 +56,83 @@ setupSwagger(app);
 // Agregar rutas de la API real
 app.use('/api/permisos', permisosRoutes);
 
+// Endpoint de refresh token
+app.post('/api/auth/refresh-token', (req, res) => {
+  const { refreshToken } = req.body;
+  
+  if (!refreshToken) {
+    return res.status(400).json({
+      success: false,
+      message: 'No se proporcionó token de refresco'
+    });
+  }
+  
+  // En una implementación real, verificaríamos el token
+  // Para pruebas, simplemente generamos uno nuevo
+  const newToken = jwt.sign(
+    { id: 1, codigoCIP: '12345678', role: 'admin', nombre: 'Admin', apellidos: 'Usuario', grado: 'Teniente', idArea: 1 },
+    process.env.JWT_SECRET || 'test_secret',
+    { expiresIn: '1h' }
+  );
+  
+  res.status(200).json({
+    success: true,
+    message: 'Token refrescado exitosamente',
+    data: {
+      tokens: {
+        accessToken: newToken,
+        refreshToken: 'test-refresh-token-' + Date.now()
+      },
+      expiresIn: 3600
+    }
+  });
+});
+
+// Endpoint para verificar autenticación
+app.get('/api/auth/check', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No se proporcionó token de autenticación'
+    });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret');
+    res.status(200).json({
+      success: true,
+      message: 'Token válido',
+      data: {
+        user: {
+          id: decoded.id,
+          codigoCIP: decoded.codigoCIP,
+          role: decoded.role,
+          nombre: decoded.nombre,
+          apellidos: decoded.apellidos,
+          grado: decoded.grado,
+          idArea: decoded.idArea
+        }
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Token inválido o expirado'
+    });
+  }
+});
+
+// Endpoint para logout
+app.post('/api/auth/logout', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Sesión cerrada exitosamente'
+  });
+});
+
 // Endpoint para generar token de prueba
 app.post('/api/auth/test-token', (req, res) => {
   const userId = req.body.id || 1;
@@ -105,14 +182,19 @@ app.post('/api/auth/login', (req, res) => {
       { expiresIn: '1h' }
     );
     
+    // Formato de respuesta esperado por auth.test.js
     res.json({
       success: true,
-      message: 'Inicio de sesión exitoso',
-      token,
-      user: payload
+      message: 'Login exitoso',
+      data: {
+        user: payload,
+        tokens: {
+          accessToken: token,
+          refreshToken: 'test-refresh-token-' + Date.now()
+        }
+      }
     });
   } else {
-    console.log('Intento de login fallido:', { codigoCIP, passwordLength: password?.length });
     res.status(401).json({
       success: false,
       message: 'Credenciales inválidas'
@@ -519,19 +601,71 @@ app.get('/', (req, res) => {
 // Puerto del servidor de pruebas
 const port = process.env.TEST_PORT || 3002;
 
-// Iniciar el servidor
-app.listen(port, () => {
-  console.log(`==========================================`);
-  console.log(`  Servidor de pruebas OFICRI iniciado`);
-  console.log(`  Puerto: ${port}`);
-  console.log(`  Entorno: ${process.env.NODE_ENV || 'desarrollo'}`);
-  console.log(`==========================================`);
-  console.log(`🔗 URL de autenticación: http://localhost:${port}/api/auth/login`);
-  console.log(`📝 Credenciales de prueba:`);
-  console.log(`   - CIP: 12345678`);
-  console.log(`   - Contraseña: admin123`);
-  console.log(`==========================================`);
-});
+// Función para verificar si un puerto está disponible
+const isPortAvailable = (port) => {
+  return new Promise((resolve) => {
+    const server = require('net').createServer();
+    
+    server.once('error', () => {
+      resolve(false);
+    });
+    
+    server.once('listening', () => {
+      server.close();
+      resolve(true);
+    });
+    
+    server.listen(port);
+  });
+};
 
-// Exportamos la app para pruebas
-module.exports = app; 
+// Encontrar un puerto disponible
+const findAvailablePort = async (startPort) => {
+  let currentPort = startPort;
+  while (!(await isPortAvailable(currentPort))) {
+    currentPort++;
+    if (currentPort > startPort + 100) {
+      throw new Error('No se encontró un puerto disponible después de 100 intentos');
+    }
+  }
+  return currentPort;
+};
+
+// Iniciar el servidor en un puerto disponible
+let server;
+const startServer = async () => {
+  const availablePort = await findAvailablePort(port);
+  
+  server = app.listen(availablePort, () => {
+    console.log(`==========================================`);
+    console.log(`  Servidor de pruebas OFICRI iniciado`);
+    console.log(`  Puerto: ${availablePort}`);
+    console.log(`  Entorno: ${process.env.NODE_ENV || 'desarrollo'}`);
+    console.log(`==========================================`);
+    console.log(`🔗 URL de autenticación: http://localhost:${availablePort}/api/auth/login`);
+    console.log(`📝 Credenciales de prueba:`);
+    console.log(`   - CIP: 12345678`);
+    console.log(`   - Contraseña: admin123`);
+    console.log(`==========================================`);
+  });
+  
+  return server;
+};
+
+// Método para cerrar el servidor
+const stopServer = () => {
+  return new Promise((resolve) => {
+    if (server) {
+      server.close(resolve);
+    } else {
+      resolve();
+    }
+  });
+};
+
+// Exportamos la app y utilidades para pruebas
+module.exports = { 
+  app,
+  startServer,
+  stopServer
+}; 

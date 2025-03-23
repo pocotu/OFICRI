@@ -99,20 +99,20 @@ async function verifyPassword(password, hash) {
 }
 
 // Ruta principal para verificación
-app.get('/', (req, res) => {
+  app.get('/', (req, res) => {
   res.json({
     message: 'Servidor OFICRI funcionando correctamente',
     version: '1.0',
-    endpoints: {
+      endpoints: {
       login: '/api/auth/login',
       status: '/status',
-      api: '/api',
+        api: '/api',
       health: '/health',
       docs: '/api-docs'
-    }
+      }
+    });
   });
-});
-
+  
 // Verificación de estado (como health check del original)
 app.get(['/status', '/health'], async (req, res) => {
   const dbConnected = await testDatabaseConnection();
@@ -174,7 +174,7 @@ app.post('/api/auth/login', async (req, res) => {
     } else {
       try {
         isValidPassword = await verifyPassword(password, user.PasswordHash);
-      } catch (error) {
+  } catch (error) {
         console.error('Error al verificar contraseña:', error);
       }
     }
@@ -463,9 +463,9 @@ app.use((err, req, res, next) => {
     success: false,
     message: 'Error interno del servidor',
     error: process.env.NODE_ENV === 'production' ? 'Error interno' : err.message
-  });
-});
-
+          });
+        });
+        
 // Ruta para manejar 404
 app.use((req, res) => {
   res.status(404).json({
@@ -484,9 +484,9 @@ app.get('/api/mesapartes', (req, res) => {
       { id: 2, descripcion: 'Mesa de Partes Secundaria', codigo: 'MP-SEC', isActive: true },
       { id: 3, descripcion: 'Mesa de Partes Digital', codigo: 'MP-DIG', isActive: true }
     ]
-  });
-});
-
+          });
+        });
+        
 // Endpoint detallado para un documento específico
 app.get('/api/documentos/:id', (req, res) => {
   const id = parseInt(req.params.id);

@@ -3,7 +3,7 @@
  */
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
-const app = require('../test-server');
+const { app, startServer, stopServer } = require('../test-server');
 const db = require('../config/database');
 const { logger } = require('../utils/logger');
 
@@ -14,6 +14,7 @@ process.env.JWT_SECRET = 'test_secret';
 
 // Datos de prueba
 let token;
+let server;
 // Usamos valores mock para las pruebas
 let testUsuarioId = 1; // ID de usuario simulado
 let testRolId = 1;     // ID de rol simulado
@@ -22,6 +23,9 @@ let testAreaId = 1;    // ID de área simulada
 // Configuración inicial
 beforeAll(async () => {
   try {
+    // Iniciar el servidor con puerto dinámico
+    server = await startServer();
+    
     // Generar token manualmente para las pruebas
     token = jwt.sign(
       { 
@@ -44,9 +48,12 @@ beforeAll(async () => {
 // Limpieza después de las pruebas
 afterAll(async () => {
   try {
+    // Detener el servidor
+    await stopServer();
+    // Cerrar la conexión a la base de datos
     await db.close();
   } catch (error) {
-    logger.error(`Error al cerrar la conexión: ${error.message}`);
+    logger.error(`Error al finalizar las pruebas: ${error.message}`);
   }
 });
 

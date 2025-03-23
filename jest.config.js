@@ -38,6 +38,9 @@ module.exports = {
   // Verbosidad
   verbose: true,
 
+  // Ejecutar las pruebas en orden específico
+  testSequencer: '<rootDir>/server/tests/customSequencer.js',
+
   // Reporteros
   reporters: [
     'default',
@@ -48,6 +51,18 @@ module.exports = {
       titleTemplate: '{title}'
     }]
   ],
+
+  // Priorización de pruebas
+  // 1. Pruebas unitarias primero (más rápidas)
+  // 2. Pruebas de middleware
+  // 3. Pruebas de integración/API
+  // 4. Pruebas de entidades (acceden a base de datos)
+  testPathPriorities: {
+    '<rootDir>/server/tests/unit/': 1,
+    '<rootDir>/server/tests/middleware/': 2,
+    '<rootDir>/server/tests/api/': 3,
+    '<rootDir>/server/tests/entity/': 4
+  },
 
   // Configuración de módulos
   moduleNameMapper: {
