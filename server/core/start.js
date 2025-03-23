@@ -14,7 +14,7 @@ console.log('Cargando configuración desde archivo .env principal');
 const { createLogger, format, transports } = require('winston');
 const path = require('path');
 const { exec, spawn } = require('child_process');
-const logger = require('./server/utils/logger');
+const logger = require('../utils/logger');
 
 // Configurar logger para este script
 const loggerWinston = createLogger({
@@ -73,15 +73,14 @@ if (process.env.NODE_ENV === 'development' && process.env.USE_SIMPLE_SERVER !== 
 async function main() {
   displayServerInfo();
   
-  // En desarrollo, omitir verificación de admin para arranque más rápido
-  if (process.env.NODE_ENV === 'development') {
-    loggerWinston.info('Modo desarrollo: omitiendo verificación de usuario admin');
-    startServer();
-    return;
-  }
+  // Siempre verificar el usuario admin (incluso en desarrollo)
+  loggerWinston.info('Verificando usuario administrador...');
   
-  // En producción, verificar usuario admin primero
-  const crearAdmin = spawn('node', ['server/crear-admin.js']);
+  // Usar path absoluto para ejecutar el script
+  const scriptPath = path.resolve(__dirname, '../scripts/crear-admin.js');
+  loggerWinston.info(`Ejecutando script: ${scriptPath}`);
+  
+  const crearAdmin = spawn('node', [scriptPath]);
   
   crearAdmin.stdout.on('data', (data) => {
     loggerWinston.info(`crear-admin: ${data}`);
@@ -94,6 +93,8 @@ async function main() {
   crearAdmin.on('close', (code) => {
     if (code !== 0) {
       loggerWinston.warn(`crear-admin proceso terminado con código ${code}`);
+    } else {
+      loggerWinston.info('Verificación de usuario admin completada');
     }
     startServer();
   });
@@ -104,20 +105,20 @@ function startServer() {
   // Si se especifica USE_SIMPLE_SERVER=true o estamos en desarrollo (por defecto), usar servidor simple
   if (process.env.USE_SIMPLE_SERVER === 'true') {
     loggerWinston.info('Iniciando servidor simplificado...');
-    require('./server/simple-server');
+    require('../server');
     return;
   }
   
   // Intentar iniciar servidor completo
   try {
     loggerWinston.info('Iniciando servidor completo...');
-    require('./server/server');
+    require('../server');
   } catch (error) {
     loggerWinston.error(`Error al iniciar servidor completo: ${error.message}`);
     loggerWinston.info('Intentando iniciar servidor simplificado como respaldo...');
     
     try {
-      require('./server/simple-server');
+      require('../server');
     } catch (fallbackError) {
       loggerWinston.error(`Error crítico, no se pudo iniciar ningún servidor: ${fallbackError.message}`);
       process.exit(1);

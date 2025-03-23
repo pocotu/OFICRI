@@ -13,7 +13,7 @@ console.log('Cargando configuración desde archivo .env principal');
 
 // Configurar conexión MySQL de prueba
 const mysql = require('mysql2/promise');
-const logger = require('./server/utils/logger');
+const logger = require('./utils/logger');
 
 // Mostrar información del servidor
 function displayServerInfo() {
@@ -68,7 +68,7 @@ async function main() {
   // Iniciar servidor simplificado (modo rápido)
   try {
     logger.info('Iniciando servidor en modo rápido...');
-    require('./server/simple-server');
+    require('./server');
   } catch (err) {
     logger.error(`Error al iniciar servidor: ${err.message}`);
     process.exit(1);

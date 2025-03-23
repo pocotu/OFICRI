@@ -11,8 +11,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { setupSwagger } = require('./server/swagger');
-const { logger } = require('./server/utils/logger');
+const { setupSwagger } = require('./swagger');
+const { logger } = require('./utils/logger');
 
 // Crear la aplicación Express
 const app = express();

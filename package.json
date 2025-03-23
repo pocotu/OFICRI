@@ -4,14 +4,14 @@
   "description": "Sistema de Gestión para OFICRI Cusco - ISO/IEC 27001 compliant",
   "main": "server/server.js",
   "scripts": {
-    "start": "node start.js",
-    "dev": "set NODE_ENV=development&& nodemon --env-file=.env start.js",
-    "quick": "set NODE_ENV=development&& node --env-file=.env dev.js",
-    "dev:simple": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=true&& nodemon --env-file=.env start.js",
-    "dev:full": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=false&& nodemon --env-file=.env start.js",
+    "start": "node server/core/start.js",
+    "dev": "set NODE_ENV=development&& nodemon --env-file=.env server/core/start.js",
+    "quick": "set NODE_ENV=development&& node --env-file=.env server/dev.js",
+    "dev:simple": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=true&& nodemon --env-file=.env server/core/start.js",
+    "dev:full": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=false&& nodemon --env-file=.env server/core/start.js",
     "mock": "node server/mock-server.js",
-    "simple": "set NODE_ENV=development&& node --env-file=.env server/simple-server.js",
-    "swagger": "node swagger-server.js",
+    "simple": "set NODE_ENV=development&& node --env-file=.env server/server.js",
+    "swagger": "node server/swagger-server.js",
     "start:client": "webpack serve --mode development",
     "build:client": "webpack --mode production",
     "test": "jest --runInBand",
@@ -59,7 +59,7 @@
     "watch": [
       "server/",
       ".env",
-      "start.js"
+      "server/core/start.js"
     ],
     "env": {
       "NODE_ENV": "development"

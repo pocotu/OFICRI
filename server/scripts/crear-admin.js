@@ -19,7 +19,7 @@ const {
 } = require('../utils/database-helpers');
 
 // Cargar variables de entorno
-loadEnv(path.resolve(__dirname, '../../.env'));
+loadEnv();
 
 // Configurar logger
 const logger = createLogger({
