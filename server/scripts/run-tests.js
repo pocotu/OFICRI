@@ -126,4 +126,45 @@ testProcess.on('close', (code) => {
 testProcess.on('error', (err) => {
   console.error('Error al ejecutar las pruebas:', err);
   process.exit(1);
-}); 
+});
+
+async function cleanupAfterTests() {
+  try {
+    const db = require('../config/database');
+    const { logger } = require('../utils/logger');
+    
+    logger.info('Limpiando datos de prueba...');
+    
+    // Desactivar temporalmente las restricciones de clave foránea
+    await db.executeQuery('SET FOREIGN_KEY_CHECKS = 0');
+    
+    // Eliminar usuarios de prueba
+    await db.executeQuery('DELETE FROM UsuarioLog WHERE IDUsuario IN (SELECT IDUsuario FROM Usuario WHERE CodigoCIP IN (?, ?, ?))', 
+      ['TESTPAP123', 'TEST-USER-1', 'TEST-USER-2']);
+    await db.executeQuery('DELETE FROM Usuario WHERE CodigoCIP IN (?, ?, ?)', 
+      ['TESTPAP123', 'TEST-USER-1', 'TEST-USER-2']);
+    
+    // Reactivar restricciones de clave foránea
+    await db.executeQuery('SET FOREIGN_KEY_CHECKS = 1');
+    
+    logger.info('Limpieza de datos de prueba completada.');
+    
+    // Cerrar la conexión a la base de datos
+    await db.closePool();
+  } catch (error) {
+    console.error('Error durante la limpieza:', error);
+  }
+}
+
+// Ejecutar las pruebas y luego limpiar
+runTests()
+  .then(async () => {
+    console.log('Pruebas completadas, iniciando limpieza...');
+    await cleanupAfterTests();
+  })
+  .catch(async (error) => {
+    console.error('Error al ejecutar las pruebas:', error);
+    console.log('Iniciando limpieza a pesar del error...');
+    await cleanupAfterTests();
+    process.exit(1);
+  }); 

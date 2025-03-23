@@ -21,6 +21,21 @@ async function setupTestData() {
     logger.info('Desactivando verificadores de clave foránea...');
     await db.executeQuery('SET FOREIGN_KEY_CHECKS = 0');
     
+    // Limpiar usuarios de prueba anteriores
+    logger.info('Limpiando usuarios de prueba anteriores...');
+    try {
+      // Eliminar usuarios específicos de prueba por su CodigoCIP
+      await db.executeQuery('DELETE FROM UsuarioLog WHERE IDUsuario IN (SELECT IDUsuario FROM Usuario WHERE CodigoCIP IN (?, ?, ?))', 
+        ['TESTPAP123', 'TEST-USER-1', 'TEST-USER-2']);
+      await db.executeQuery('DELETE FROM Usuario WHERE CodigoCIP IN (?, ?, ?)', 
+        ['TESTPAP123', 'TEST-USER-1', 'TEST-USER-2']);
+      
+      logger.info('Usuarios de prueba anteriores eliminados');
+    } catch (cleanupError) {
+      logger.warn(`Advertencia al limpiar usuarios: ${cleanupError.message}`);
+      // Continuamos con la ejecución del script incluso si hay error en la limpieza
+    }
+    
     // Crear área de prueba
     logger.info('Creando área de prueba...');
     await db.executeQuery(

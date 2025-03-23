@@ -76,6 +76,12 @@ describe('Pruebas de Entidad Usuario', () => {
         await db.executeQuery('DELETE FROM UsuarioLog WHERE IDUsuario = ?', [testUserId]);
         // Luego eliminar el usuario
         await db.executeQuery('DELETE FROM Usuario WHERE IDUsuario = ?', [testUserId]);
+      } else {
+        // Aún si no tenemos el ID, intentamos limpiar basado en CodigoCIP
+        await db.executeQuery('DELETE FROM UsuarioLog WHERE IDUsuario IN (SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?)', 
+          [testUserData.CodigoCIP]);
+        await db.executeQuery('DELETE FROM Usuario WHERE CodigoCIP = ?', [testUserData.CodigoCIP]);
+        logger.info(`Usuario TEST123456 eliminado por CIP`);
       }
       
       // Reactivar las restricciones de clave foránea

@@ -100,7 +100,17 @@ describe('Pruebas de Papelera de Reciclaje', () => {
         await db.executeQuery('DELETE FROM MesaPartes WHERE IDMesaPartes = ?', [testMesaPartesId]);
       }
       
-      // No eliminamos el usuario para no afectar otras pruebas
+      // Eliminar el usuario TESTPAP123 después de las pruebas
+      try {
+        // Primero eliminar todos los registros relacionados
+        await db.executeQuery('DELETE FROM UsuarioLog WHERE IDUsuario IN (SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?)', ['TESTPAP123']);
+        await db.executeQuery('DELETE FROM PermisoContextualLog WHERE IDUsuario IN (SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?)', ['TESTPAP123']);
+        // Finalmente eliminar el usuario
+        await db.executeQuery('DELETE FROM Usuario WHERE CodigoCIP = ?', ['TESTPAP123']);
+        logger.info('Usuario TESTPAP123 eliminado después de las pruebas');
+      } catch (userDeleteError) {
+        logger.error(`Error al eliminar usuario TESTPAP123: ${userDeleteError.message}`);
+      }
       
       // Reactivar las restricciones de clave foránea
       await db.executeQuery('SET FOREIGN_KEY_CHECKS = 1');
