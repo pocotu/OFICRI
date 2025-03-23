@@ -6,13 +6,18 @@
 // Redirigir las importaciones de 'punycode' al módulo punycode2
 require('module').Module._cache['punycode'] = require('./punycode-shim');
 
-// Importar y ejecutar el script de creación de admin
+// Cargar variables de entorno desde .env
+require('dotenv').config();
+console.log('Cargando configuración desde archivo .env principal');
+
+// Importar dependencias
 const { createLogger, format, transports } = require('winston');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
+const logger = require('./server/utils/logger');
 
 // Configurar logger para este script
-const logger = createLogger({
+const loggerWinston = createLogger({
   level: 'info',
   format: format.combine(
     format.timestamp({
@@ -35,77 +40,93 @@ const logger = createLogger({
   ]
 });
 
-// Función para mostrar la información detallada del servidor
-function mostrarInformacionServidor() {
-  const PORT = process.env.PORT || 3000;
+// Mostrar información del servidor
+function displayServerInfo() {
+  const port = process.env.PORT || 3000;
+  const environment = process.env.NODE_ENV || 'development';
+  const dbHost = process.env.DB_HOST || 'localhost';
+  const dbName = process.env.DB_DATABASE || 'oficri_sistema';
   
-  // Usar console.log directamente para asegurar que se muestre
-  console.log('\n\n');
-  console.log('======================================================================');
-  console.log('                      OFICRI API SERVER INICIADO                      ');
-  console.log('======================================================================');
-  console.log('\n');
-  console.log('📌 ENLACES PRINCIPALES:');
-  console.log('------------------------');
-  console.log(`🌐 Servidor:             http://localhost:${PORT}`);
-  console.log(`🔍 Estado:               http://localhost:${PORT}/health`);
-  console.log(`🚀 API Base:             http://localhost:${PORT}/api`);
-  console.log(`📚 Documentación API:    http://localhost:${PORT}/api-docs`);
-  console.log('\n');
-  
-  console.log('📑 ENDPOINTS PRINCIPALES:');
-  console.log('------------------------');
-  console.log(`🔐 Autenticación:        http://localhost:${PORT}/api/auth/login`);
-  console.log(`📄 Documentos:           http://localhost:${PORT}/api/documents`);
-  console.log(`👤 Usuarios:             http://localhost:${PORT}/api/users`);
-  console.log(`🏢 Áreas:                http://localhost:${PORT}/api/areas`);
-  console.log(`🔑 Permisos:             http://localhost:${PORT}/api/permisos`);
-  console.log(`📨 Mesa de Partes:       http://localhost:${PORT}/api/mesapartes`);
-  console.log('\n');
-  
-  console.log('🧪 COMANDOS DE PRUEBA:');
-  console.log('------------------------');
-  console.log('▶️ Tests de autenticación:      npm run test:auth');
-  console.log('▶️ Tests de entidades:          npm run test:entity');
-  console.log('▶️ Test específico (documento): npm run test:entity:documento');
-  console.log('\n');
-  
-  console.log('📋 SWAGGER Y DOCUMENTACIÓN:');
-  console.log('------------------------');
-  console.log('1. Documentación principal:');
-  console.log(`   📚 http://localhost:${PORT}/api-docs`);
-  console.log('2. Documentación alternativa:');
-  console.log('   📚 http://localhost:3002/api-docs  (ejecutar: npm run swagger)');
-  console.log('\n');
-  
-  console.log('======================================================================');
-  console.log('                SERVIDOR LISTO PARA RECIBIR SOLICITUDES               ');
-  console.log('======================================================================');
-  console.log('\n');
+  loggerWinston.info('===== INFORMACIÓN DEL SERVIDOR =====');
+  loggerWinston.info(`Entorno: ${environment}`);
+  loggerWinston.info(`Puerto: ${port}`);
+  loggerWinston.info(`Base de datos: ${dbName} (${dbHost})`);
+  loggerWinston.info('Enlaces principales:');
+  loggerWinston.info(`- API: http://localhost:${port}/api`);
+  loggerWinston.info(`- Documentación: http://localhost:${port}/api-docs`);
+  loggerWinston.info('Comandos de prueba:');
+  loggerWinston.info('- Verificar usuario: curl http://localhost:' + port + '/api/check-auth');
+  loggerWinston.info('====================================');
 }
 
-// Ejecutar la creación del admin utilizando child_process
-logger.info('Verificando usuario administrador...');
-const scriptPath = path.join(__dirname, 'server', 'scripts', 'crear-admin.js');
+// En modo desarrollo, usar servidor simple por defecto a menos que se especifique lo contrario
+if (process.env.NODE_ENV === 'development' && process.env.USE_SIMPLE_SERVER !== 'false') {
+  process.env.USE_SIMPLE_SERVER = 'true';
+  loggerWinston.info('Modo desarrollo: usando servidor simplificado por defecto');
+} else if (process.env.USE_SIMPLE_SERVER === 'true') {
+  loggerWinston.info('Usando servidor simplificado según configuración');
+} else {
+  loggerWinston.info('Usando servidor completo según configuración');
+}
 
-exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-  if (error) {
-    logger.error(`Error al ejecutar script de admin: ${error.message}`);
+// Función principal
+async function main() {
+  displayServerInfo();
+  
+  // En desarrollo, omitir verificación de admin para arranque más rápido
+  if (process.env.NODE_ENV === 'development') {
+    loggerWinston.info('Modo desarrollo: omitiendo verificación de usuario admin');
+    startServer();
+    return;
   }
   
-  if (stdout) {
-    logger.info(`Salida del script: ${stdout.trim()}`);
+  // En producción, verificar usuario admin primero
+  const crearAdmin = spawn('node', ['server/crear-admin.js']);
+  
+  crearAdmin.stdout.on('data', (data) => {
+    loggerWinston.info(`crear-admin: ${data}`);
+  });
+  
+  crearAdmin.stderr.on('data', (data) => {
+    loggerWinston.error(`crear-admin error: ${data}`);
+  });
+  
+  crearAdmin.on('close', (code) => {
+    if (code !== 0) {
+      loggerWinston.warn(`crear-admin proceso terminado con código ${code}`);
+    }
+    startServer();
+  });
+}
+
+// Iniciar el servidor
+function startServer() {
+  // Si se especifica USE_SIMPLE_SERVER=true o estamos en desarrollo (por defecto), usar servidor simple
+  if (process.env.USE_SIMPLE_SERVER === 'true') {
+    loggerWinston.info('Iniciando servidor simplificado...');
+    require('./server/simple-server');
+    return;
   }
   
-  if (stderr) {
-    logger.warn(`Errores del script: ${stderr.trim()}`);
+  // Intentar iniciar servidor completo
+  try {
+    loggerWinston.info('Iniciando servidor completo...');
+    require('./server/server');
+  } catch (error) {
+    loggerWinston.error(`Error al iniciar servidor completo: ${error.message}`);
+    loggerWinston.info('Intentando iniciar servidor simplificado como respaldo...');
+    
+    try {
+      require('./server/simple-server');
+    } catch (fallbackError) {
+      loggerWinston.error(`Error crítico, no se pudo iniciar ningún servidor: ${fallbackError.message}`);
+      process.exit(1);
+    }
   }
-  
-  logger.info('Iniciando servidor...');
-  
-  // Importar y ejecutar el servidor
-  require('./server/server');
-  
-  // Mostrar información después de iniciar el servidor (con un pequeño retraso)
-  setTimeout(mostrarInformacionServidor, 1000);
+}
+
+// Ejecutar
+main().catch(err => {
+  loggerWinston.error(`Error en el proceso principal: ${err.message}`);
+  process.exit(1);
 }); 

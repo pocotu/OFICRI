@@ -5,8 +5,12 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node start.js",
-    "dev": "nodemon start.js",
+    "dev": "set NODE_ENV=development&& nodemon --env-file=.env start.js",
+    "quick": "set NODE_ENV=development&& node --env-file=.env dev.js",
+    "dev:simple": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=true&& nodemon --env-file=.env start.js",
+    "dev:full": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=false&& nodemon --env-file=.env start.js",
     "mock": "node server/mock-server.js",
+    "simple": "set NODE_ENV=development&& node --env-file=.env server/simple-server.js",
     "swagger": "node swagger-server.js",
     "start:client": "webpack serve --mode development",
     "build:client": "webpack --mode production",
@@ -42,6 +46,26 @@
     "init:db": "node server/scripts/init-database.js",
     "db:crear-admin": "node server/scripts/crear-admin.js",
     "db:limpiar": "node server/scripts/limpiar-db.js"
+  },
+  "nodemonConfig": {
+    "verbose": true,
+    "ignore": [
+      ".git",
+      "node_modules/**/node_modules",
+      "public",
+      "logs",
+      "coverage"
+    ],
+    "watch": [
+      "server/",
+      ".env",
+      "start.js"
+    ],
+    "env": {
+      "NODE_ENV": "development"
+    },
+    "ext": "js,json,sql",
+    "delay": "500"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

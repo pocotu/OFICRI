@@ -88,7 +88,7 @@ app.post('/api/auth/login', (req, res) => {
   const { codigoCIP, password } = req.body;
   
   // Simular autenticación (en producción esto verificaría contra la BD)
-  if (codigoCIP === '12345678' && password === 'Admin123!') {
+  if (codigoCIP === '12345678' && (password === 'Admin123!' || password === 'admin123')) {
     const payload = {
       id: 1,
       codigoCIP: codigoCIP,
@@ -112,6 +112,7 @@ app.post('/api/auth/login', (req, res) => {
       user: payload
     });
   } else {
+    console.log('Intento de login fallido:', { codigoCIP, passwordLength: password?.length });
     res.status(401).json({
       success: false,
       message: 'Credenciales inválidas'
@@ -515,15 +516,22 @@ app.get('/', (req, res) => {
   `);
 });
 
-// NO iniciamos el servidor, solo exportamos la app para tests
-// Si no estamos en modo test, iniciamos el servidor
-if (process.env.NODE_ENV !== 'test') {
-  const PORT = process.env.PORT || 3002;
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor de prueba corriendo en http://localhost:${PORT}`);
-    console.log(`📚 Documentación completa de API en http://localhost:${PORT}/api-docs`);
-  });
-}
+// Puerto del servidor de pruebas
+const port = process.env.TEST_PORT || 3002;
+
+// Iniciar el servidor
+app.listen(port, () => {
+  console.log(`==========================================`);
+  console.log(`  Servidor de pruebas OFICRI iniciado`);
+  console.log(`  Puerto: ${port}`);
+  console.log(`  Entorno: ${process.env.NODE_ENV || 'desarrollo'}`);
+  console.log(`==========================================`);
+  console.log(`🔗 URL de autenticación: http://localhost:${port}/api/auth/login`);
+  console.log(`📝 Credenciales de prueba:`);
+  console.log(`   - CIP: 12345678`);
+  console.log(`   - Contraseña: admin123`);
+  console.log(`==========================================`);
+});
 
 // Exportamos la app para pruebas
 module.exports = app; 

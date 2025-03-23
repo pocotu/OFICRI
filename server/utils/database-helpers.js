@@ -227,6 +227,34 @@ function getDefaultPermissions() {
   ];
 }
 
+/**
+ * Forzar reconexión a la base de datos
+ * @returns {Promise<boolean>}
+ */
+async function forceReconnect() {
+  const config = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'kali',
+    database: process.env.DB_NAME || 'Oficri_sistema',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  };
+  
+  try {
+    const tempConnection = await mysql.createConnection(config);
+    await tempConnection.query('SELECT 1');
+    console.log('Reconexión forzada a la base de datos exitosa');
+    await tempConnection.end();
+    return true;
+  } catch (error) {
+    console.error('Error al forzar la reconexión:', error.message);
+    return false;
+  }
+}
+
 module.exports = {
   loadEnv,
   executeQuery,
@@ -236,5 +264,6 @@ module.exports = {
   getDefaultAreas,
   getDefaultPermissions,
   hashPassword,
-  verifyPassword
+  verifyPassword,
+  forceReconnect
 }; 

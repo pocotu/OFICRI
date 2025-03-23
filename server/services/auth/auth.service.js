@@ -656,6 +656,239 @@ async function updatePassword(userId, newPassword) {
   }
 }
 
+/**
+ * Check if a user exists by CIP code
+ * @param {string} codigoCIP - User CIP code
+ * @returns {Promise<boolean>} True if user exists
+ */
+async function checkUserExists(codigoCIP) {
+  try {
+    const users = await executeQuery(`
+      SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?
+    `, [codigoCIP]);
+    
+    return users.length > 0;
+  } catch (error) {
+    logger.error('Error al verificar existencia de usuario', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Register a new user
+ * @param {Object} userData - User data
+ * @returns {Promise<Object>} Registration result
+ */
+async function registerUser(userData) {
+  try {
+    const { codigoCIP, nombres, apellidos, grado, password, idRol, idArea } = userData;
+    
+    // Validate password against policy
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      const error = new Error(passwordValidation.message);
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    // Insert user
+    const result = await executeQuery(`
+      INSERT INTO Usuario (
+        CodigoCIP, Nombres, Apellidos, Grado, 
+        PasswordHash, IDArea, IDRol
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      codigoCIP,
+      nombres,
+      apellidos,
+      grado,
+      hashedPassword,
+      idArea,
+      idRol
+    ]);
+    
+    return {
+      success: true,
+      userId: result.insertId
+    };
+  } catch (error) {
+    logger.error('Error al registrar usuario', { error: error.message });
+    
+    // Check for duplicate key (codigoCIP already exists)
+    if (error.code === 'ER_DUP_ENTRY') {
+      const err = new Error('El código CIP ya está registrado');
+      err.statusCode = 409;
+      throw err;
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Block a user account
+ * @param {number} userId - User ID to block
+ * @param {number} adminId - Admin user ID performing the action
+ * @returns {Promise<Object>} Block result
+ */
+async function blockUser(userId, adminId) {
+  try {
+    if (userId === adminId) {
+      const error = new Error('No puede bloquear su propia cuenta');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    // Check if user exists
+    const users = await executeQuery(`
+      SELECT IDUsuario, CodigoCIP, Bloqueado, IDRol
+      FROM Usuario
+      WHERE IDUsuario = ?
+    `, [userId]);
+    
+    if (users.length === 0) {
+      const error = new Error('Usuario no encontrado');
+      error.statusCode = 404;
+      throw error;
+    }
+    
+    const user = users[0];
+    
+    // Check if user is already blocked
+    if (user.Bloqueado) {
+      return {
+        success: true,
+        message: 'El usuario ya estaba bloqueado'
+      };
+    }
+    
+    // Cannot block admin users (role ID 1)
+    if (user.IDRol === 1) {
+      const error = new Error('No se puede bloquear un usuario administrador');
+      error.statusCode = 403;
+      throw error;
+    }
+    
+    // Block user
+    await executeQuery(`
+      UPDATE Usuario 
+      SET Bloqueado = TRUE, UltimoBloqueo = NOW() 
+      WHERE IDUsuario = ?
+    `, [userId]);
+    
+    // Close all active sessions for this user
+    await executeQuery(`
+      DELETE FROM Session WHERE IDUsuario = ?
+    `, [userId]);
+    
+    return {
+      success: true,
+      message: 'Usuario bloqueado correctamente'
+    };
+  } catch (error) {
+    logger.error('Error al bloquear usuario', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Unblock a user account
+ * @param {number} userId - User ID to unblock
+ * @param {number} adminId - Admin user ID performing the action
+ * @returns {Promise<Object>} Unblock result
+ */
+async function unblockUser(userId, adminId) {
+  try {
+    // Check if user exists
+    const users = await executeQuery(`
+      SELECT IDUsuario, CodigoCIP, Bloqueado
+      FROM Usuario
+      WHERE IDUsuario = ?
+    `, [userId]);
+    
+    if (users.length === 0) {
+      const error = new Error('Usuario no encontrado');
+      error.statusCode = 404;
+      throw error;
+    }
+    
+    const user = users[0];
+    
+    // Check if user is already unblocked
+    if (!user.Bloqueado) {
+      return {
+        success: true,
+        message: 'El usuario ya estaba desbloqueado'
+      };
+    }
+    
+    // Unblock user
+    await executeQuery(`
+      UPDATE Usuario 
+      SET Bloqueado = FALSE, IntentosFallidos = 0, UltimoBloqueo = NULL 
+      WHERE IDUsuario = ?
+    `, [userId]);
+    
+    return {
+      success: true,
+      message: 'Usuario desbloqueado correctamente'
+    };
+  } catch (error) {
+    logger.error('Error al desbloquear usuario', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Get active sessions for a user
+ * @param {number} userId - User ID
+ * @returns {Promise<Array>} List of active sessions
+ */
+async function getActiveSessions(userId) {
+  try {
+    const sessions = await executeQuery(`
+      SELECT 
+        IDSession, FechaInicio, UltimoAcceso, Expiracion, IPOrigen
+      FROM Session
+      WHERE IDUsuario = ? AND Expiracion > NOW()
+      ORDER BY UltimoAcceso DESC
+    `, [userId]);
+    
+    return sessions;
+  } catch (error) {
+    logger.error('Error al obtener sesiones activas', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Close all active sessions for a user
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} Close result
+ */
+async function closeAllSessions(userId) {
+  try {
+    const result = await executeQuery(`
+      DELETE FROM Session 
+      WHERE IDUsuario = ?
+    `, [userId]);
+    
+    return {
+      success: true,
+      message: 'Sesiones cerradas correctamente',
+      count: result.affectedRows
+    };
+  } catch (error) {
+    logger.error('Error al cerrar sesiones', { error: error.message });
+    throw error;
+  }
+}
+
+// Export all functions
 module.exports = {
   login,
   logout,
@@ -664,6 +897,13 @@ module.exports = {
   requestPasswordReset,
   resetPassword,
   changePassword,
+  validatePassword,
   getUserByCIP,
-  updatePassword
+  updatePassword,
+  checkUserExists,
+  registerUser,
+  blockUser,
+  unblockUser,
+  getActiveSessions,
+  closeAllSessions
 }; 

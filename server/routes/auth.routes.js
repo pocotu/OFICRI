@@ -249,10 +249,8 @@ router.post('/solicitar-reset',
  * @swagger
  * /api/auth/reset-password:
  *   post:
- *     summary: Restablecer contraseña con token (Solo administradores)
+ *     summary: Restablecer contraseña con token
  *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -261,34 +259,24 @@ router.post('/solicitar-reset',
  *             type: object
  *             required:
  *               - token
- *               - password
- *               - idUsuario
+ *               - newPassword
  *             properties:
  *               token:
  *                 type: string
  *                 description: Token de restablecimiento
- *               password:
+ *               newPassword:
  *                 type: string
  *                 format: password
  *                 description: Nueva contraseña
- *               idUsuario:
- *                 type: integer
- *                 description: ID del usuario al que se restablecerá la contraseña
  *     responses:
  *       200:
  *         description: Contraseña restablecida correctamente
  *       400:
- *         description: Datos inválidos
- *       401:
- *         description: Token inválido o expirado
- *       403:
- *         description: No tiene permisos para esta acción
+ *         description: Datos inválidos o token expirado
  *       500:
  *         description: Error del servidor
  */
 router.post('/reset-password', 
-  verifyToken,
-  validatePermissions(2), // bit 1 (Editar)
   validateSchema(resetPasswordSchema),
   authController.resetPassword
 );

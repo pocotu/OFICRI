@@ -10162,3 +10162,367 @@
 {"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-22T21:28:19.779Z"}
 {"level":"info","message":"🔒 Servidor seguro de documentación corriendo en http://localhost:3002","timestamp":"2025-03-22T21:28:19.786Z"}
 {"level":"info","message":"📚 Documentación completa de API en http://localhost:3002/api-docs","timestamp":"2025-03-22T21:28:19.786Z"}
+{"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-22T21:43:44.216Z"}
+{"level":"info","message":"🔒 Servidor seguro de documentación corriendo en http://localhost:3002","timestamp":"2025-03-22T21:43:44.222Z"}
+{"level":"info","message":"📚 Documentación completa de API en http://localhost:3002/api-docs","timestamp":"2025-03-22T21:43:44.223Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-22T21:43:54.568Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-22T21:43:54.572Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-22T21:43:54.902Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-22T21:43:55.206Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:09:23.016Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:09:23.019Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:09:23.385Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:09:23.763Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:18:43.971Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:18:43.974Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:18:44.253Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:18:44.563Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:22:00.856Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:22:00.860Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:22:01.134Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:22:01.423Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:24:23.600Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:24:23.604Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:24:23.902Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:24:24.198Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:24:37.364Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:24:37.368Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:24:37.632Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:24:37.906Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:46:24.180Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:46:24.183Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:46:24.462Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:46:24.758Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:47:06.047Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:47:06.052Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:47:06.304Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:47:06.556Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:48:37.010Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:48:37.014Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:48:37.267Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:48:37.531Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:48:49.470Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:48:49.473Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T04:48:49.732Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T04:48:49.993Z"}
+{"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-23T04:49:02.109Z"}
+{"level":"info","message":"🔒 Servidor seguro de documentación corriendo en http://localhost:3002","timestamp":"2025-03-23T04:49:02.116Z"}
+{"level":"info","message":"📚 Documentación completa de API en http://localhost:3002/api-docs","timestamp":"2025-03-23T04:49:02.116Z"}
+{"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-23T04:52:57.405Z"}
+{"level":"info","message":"🔒 Servidor seguro de documentación corriendo en http://localhost:3002","timestamp":"2025-03-23T04:52:57.413Z"}
+{"level":"info","message":"📚 Documentación completa de API en http://localhost:3002/api-docs","timestamp":"2025-03-23T04:52:57.414Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:21:54.913Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:21:54.916Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:21:55.167Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:21:55.425Z"}
+{"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-23T05:22:01.277Z"}
+{"level":"info","message":"🔒 Servidor seguro de documentación corriendo en http://localhost:3002","timestamp":"2025-03-23T05:22:01.284Z"}
+{"level":"info","message":"📚 Documentación completa de API en http://localhost:3002/api-docs","timestamp":"2025-03-23T05:22:01.284Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:32:31.780Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:32:31.784Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:32:32.065Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:32:32.353Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:04.314Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:04.317Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:04.588Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:33:04.868Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:19.654Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:19.657Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:19.965Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:33:20.290Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:22.120Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:22.124Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:22.379Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:33:22.676Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:48.564Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:48.568Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:33:48.845Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:33:49.116Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:36:07.815Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:36:07.819Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:36:08.081Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:36:08.371Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:36:24.166Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:36:24.169Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:36:24.428Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:36:24.712Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:05.769Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:05.773Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:06.056Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:37:06.345Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:21.599Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:21.603Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:21.870Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:37:22.153Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:34.245Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:34.249Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:34.530Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:37:34.806Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:58.035Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:58.039Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:37:58.320Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:37:58.616Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:20.910Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:20.914Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:21.200Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:38:21.558Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:22.739Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:22.743Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:23.002Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:38:23.266Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:54.128Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:54.131Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:38:54.410Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:38:54.669Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:40:55.405Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:40:55.409Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:40:55.656Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:40:55.902Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:41:42.471Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:41:42.476Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:41:42.719Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:41:42.967Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:53:32.109Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:53:32.113Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:53:32.379Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:53:32.647Z"}
+{"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-23T05:54:52.419Z"}
+{"level":"info","message":"🔒 Servidor seguro de documentación corriendo en http://localhost:3002","timestamp":"2025-03-23T05:54:52.426Z"}
+{"level":"info","message":"📚 Documentación completa de API en http://localhost:3002/api-docs","timestamp":"2025-03-23T05:54:52.427Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:55:06.658Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:55:06.661Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T05:55:06.910Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T05:55:07.212Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T15:31:51.365Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T15:31:51.369Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T15:31:51.715Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T15:31:52.079Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T15:39:23.648Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T15:41:02.967Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T15:41:02.971Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=oficri_sistema","timestamp":"2025-03-23T15:41:03.223Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T15:41:03.476Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:23:57.513Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:23:57.517Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:23:57.781Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:23:58.061Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:31:39.136Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:31:39.139Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:31:39.402Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:31:54.969Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:31:54.972Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:31:55.244Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:31:55.535Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:32:54.633Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:32:54.637Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=oficri_sistema","timestamp":"2025-03-23T16:32:55.018Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:32:55.304Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:40.896Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:41.053Z"}
+{"duration":"22ms","level":"info","message":"Request completed","method":"POST","path":"/api/auth/login","status":404,"timestamp":"2025-03-23T16:45:41.056Z"}
+{"level":"error","message":"Failed to obtain auth token for document API tests","timestamp":"2025-03-23T16:45:41.063Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:41.074Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:41.976Z"}
+{"level":"info","message":"📚 Documentación Swagger disponible en /api-docs","timestamp":"2025-03-23T16:45:42.159Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:42.234Z"}
+{"level":"debug","message":"Executing query [m8lvd71teayslugsa2]: SELECT * FROM v_permisos_contextuales","params":"[]","timestamp":"2025-03-23T16:45:42.257Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:42.288Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:42.903Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:42.952Z"}
+{"level":"error","message":"Error al conectar a la base de datos: Pool is closed.","stack":"Error: Pool is closed.\n    at D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\pool.js:55:21\n    at PoolConnection.<anonymous> (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:818:13)\n    at Object.onceWrapper (node:events:628:26)\n    at PoolConnection.emit (node:events:513:28)\n    at ClientHandshake.<anonymous> (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:137:14)\n    at ClientHandshake.emit (node:events:513:28)\n    at ClientHandshake.execute (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\commands\\command.js:49:10)\n    at PoolConnection.handlePacket (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:475:34)\n    at PacketParser.onPacket (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:93:12)\n    at PacketParser.executeStart (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\packet_parser.js:75:16)\n    at Socket.<anonymous> (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:100:25)\n    at Socket.emit (node:events:513:28)\n    at addChunk (node:internal/streams/readable:559:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)\n    at Socket.Readable.push (node:internal/streams/readable:390:5)\n    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)","timestamp":"2025-03-23T16:45:42.955Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:43.147Z"}
+{"level":"info","message":"Iniciando pruebas de autenticación","timestamp":"2025-03-23T16:45:43.161Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:43.191Z"}
+{"authTokenExists":true,"level":"info","message":"Estado de tokens después del login:","refreshTokenExists":true,"timestamp":"2025-03-23T16:45:43.203Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:43.229Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:43.332Z"}
+{"level":"debug","message":"Executing query [m8lvd7vqonrrz5k8y5d]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:43.335Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:43.349Z"}
+{"level":"debug","message":"Executing query [m8lvd7w74unqynx9ma7]: SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?","params":"[\"TESTPAP123\"]","timestamp":"2025-03-23T16:45:43.351Z"}
+{"level":"info","message":"Usando usuario existente ID: 2","timestamp":"2025-03-23T16:45:43.353Z"}
+{"level":"debug","message":"Executing query [m8lvd7wa65fn7gimf4]: INSERT INTO MesaPartes (Descripcion, IsActive, CodigoIdentificacion) VALUES (?, ?, ?)","params":"[\"Mesa Papelera\",1,\"MP-TEST\"]","timestamp":"2025-03-23T16:45:43.354Z"}
+{"level":"debug","message":"Executing query [m8lvd7wgz2m6l8a22d]: INSERT INTO Documento (IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento, FechaDocumento, Estado) VALUES (?, ?, ?, ?, ?, ?, ?)","params":"[15,888,2,\"DOC-TEST-001\",\"OFICIO-TEST-001\",\"2025-03-23T16:45:43.360Z\",\"ACTIVO\"]","timestamp":"2025-03-23T16:45:43.360Z"}
+{"level":"info","message":"Preparación completa - Usuario ID: 2, Área ID: 888, Rol ID: 888, Documento ID: 15","timestamp":"2025-03-23T16:45:43.366Z"}
+{"level":"debug","message":"Executing query [m8lvd7wowtwwomi5xn9]: CALL sp_papelera_reciclaje(?, ?, ?)","params":"[15,2,\"MOVER_PAPELERA\"]","timestamp":"2025-03-23T16:45:43.368Z"}
+{"code":"ER_BAD_NULL_ERROR","error":"Column 'IDUsuario' cannot be null","level":"error","message":"Database query error [m8lvd7wowtwwomi5xn9]","params":"[15,2,\"MOVER_PAPELERA\"]","query":"CALL sp_papelera_reciclaje(?, ?, ?)","timestamp":"2025-03-23T16:45:43.376Z"}
+{"level":"warn","message":"Error al llamar al procedimiento sp_papelera_reciclaje: Column 'IDUsuario' cannot be null. Realizando actualización manual...","timestamp":"2025-03-23T16:45:43.377Z"}
+{"level":"debug","message":"Executing query [m8lvd7wybkuw6o0m13g]: UPDATE Documento SET \n            Estado = 'PAPELERA', \n            Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Movido a papelera por test en ', NOW()) \n          WHERE IDDocumento = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.378Z"}
+{"code":"ER_BAD_NULL_ERROR","error":"Column 'IDUsuario' cannot be null","level":"error","message":"Database query error [m8lvd7wybkuw6o0m13g]","params":"[15]","query":"UPDATE Documento SET \n            Estado = 'PAPELERA', \n            Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Movido a papelera por test en ', NOW()) \n          WHERE IDDocumento = ?","timestamp":"2025-03-23T16:45:43.381Z"}
+{"level":"error","message":"Error al mover documento a papelera: Column 'IDUsuario' cannot be null","timestamp":"2025-03-23T16:45:43.382Z"}
+{"level":"info","message":"Continuando con la prueba a pesar del error...","timestamp":"2025-03-23T16:45:43.383Z"}
+{"level":"debug","message":"Executing query [m8lvd7x4w9k2cs6i5s]: CALL sp_papelera_reciclaje(?, ?, ?)","params":"[15,2,\"RESTAURAR\"]","timestamp":"2025-03-23T16:45:43.385Z"}
+{"level":"debug","message":"Executing query [m8lvd7xb1a2ihnasds9]: SELECT Estado FROM Documento WHERE IDDocumento = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.391Z"}
+{"level":"debug","message":"Executing query [m8lvd7xe52sac8aidpx]: CALL sp_papelera_reciclaje(?, ?, ?)","params":"[15,2,\"MOVER_PAPELERA\"]","timestamp":"2025-03-23T16:45:43.394Z"}
+{"code":"ER_BAD_NULL_ERROR","error":"Column 'IDUsuario' cannot be null","level":"error","message":"Database query error [m8lvd7xe52sac8aidpx]","params":"[15,2,\"MOVER_PAPELERA\"]","query":"CALL sp_papelera_reciclaje(?, ?, ?)","timestamp":"2025-03-23T16:45:43.397Z"}
+{"level":"warn","message":"Error al llamar al procedimiento sp_papelera_reciclaje: Column 'IDUsuario' cannot be null. Realizando actualización manual...","timestamp":"2025-03-23T16:45:43.398Z"}
+{"level":"debug","message":"Executing query [m8lvd7xiqehsvru7j3]: UPDATE Documento SET \n            Estado = 'PAPELERA', \n            Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Movido a papelera por test en ', NOW()) \n          WHERE IDDocumento = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.398Z"}
+{"code":"ER_BAD_NULL_ERROR","error":"Column 'IDUsuario' cannot be null","level":"error","message":"Database query error [m8lvd7xiqehsvru7j3]","params":"[15]","query":"UPDATE Documento SET \n            Estado = 'PAPELERA', \n            Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Movido a papelera por test en ', NOW()) \n          WHERE IDDocumento = ?","timestamp":"2025-03-23T16:45:43.400Z"}
+{"level":"error","message":"Error al eliminar permanentemente documento: Column 'IDUsuario' cannot be null","timestamp":"2025-03-23T16:45:43.401Z"}
+{"level":"info","message":"Continuando con la prueba a pesar del error...","timestamp":"2025-03-23T16:45:43.401Z"}
+{"level":"debug","message":"Executing query [m8lvd7xmagdail8tskh]: INSERT INTO Documento (IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento, FechaDocumento, Estado) VALUES (?, ?, ?, ?, ?, ?, ?)","params":"[15,888,2,\"DOC-TEST-002\",\"OFICIO-TEST-002\",\"2025-03-23T16:45:43.402Z\",\"ACTIVO\"]","timestamp":"2025-03-23T16:45:43.402Z"}
+{"level":"debug","message":"Executing query [m8lvd7xp5ionshg5dk]: INSERT INTO PermisoContextual (IDRol, IDArea, TipoRecurso, ReglaContexto, Activo) VALUES (?, ?, ?, ?, ?)","params":"[888,888,\"DOCUMENTO\",\"{\\\"condicion\\\":\\\"PROPIETARIO\\\",\\\"accion\\\":\\\"ELIMINAR\\\"}\",true]","timestamp":"2025-03-23T16:45:43.405Z"}
+{"level":"debug","message":"Executing query [m8lvd7xrgxl1goiwza]: SELECT fn_verificar_permiso_contextual(?, ?, ?, ?) AS tienePermiso","params":"[2,\"DOCUMENTO\",16,\"ELIMINAR\"]","timestamp":"2025-03-23T16:45:43.407Z"}
+{"level":"debug","message":"Executing query [m8lvd7xv8259leu3adq]: DELETE FROM Documento WHERE IDDocumento = ?","params":"[16]","timestamp":"2025-03-23T16:45:43.411Z"}
+{"level":"debug","message":"Executing query [m8lvd7xyqu7kxqucsg]: DELETE FROM PermisoContextual WHERE IDRol = ? AND IDArea = ? AND TipoRecurso = ?","params":"[888,888,\"DOCUMENTO\"]","timestamp":"2025-03-23T16:45:43.414Z"}
+{"level":"debug","message":"Executing query [m8lvd7y2psmbmmlctah]: DELETE FROM MesaPartes WHERE IDMesaPartes = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.419Z"}
+{"level":"debug","message":"Executing query [m8lvd7y6xip3g0784o]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:43.422Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:43.423Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:43.698Z"}
+{"level":"debug","message":"Executing query [m8lvd85xcz266979pet]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:43.701Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:43.711Z"}
+{"level":"debug","message":"Executing query [m8lvd868vdg30o9bqjs]: SELECT IDArea FROM AreaEspecializada LIMIT 1","params":"[]","timestamp":"2025-03-23T16:45:43.712Z"}
+{"level":"debug","message":"Executing query [m8lvd86bt7ye4s4xpvf]: DELETE FROM Dosaje WHERE NumeroRegistro = ?","params":"[\"TEST-DOSAJE-1742748343700\"]","timestamp":"2025-03-23T16:45:43.715Z"}
+{"level":"debug","message":"Executing query [m8lvd86cwzb7q0e7of]: INSERT INTO Dosaje (\n          IDArea, NumeroRegistro, FechaIngreso, OficioDoc, NumeroOficio,\n          TipoDosaje, Nombres, Apellidos, DocumentoIdentidad, Procedencia,\n          ResultadoCualitativo, ResultadoCuantitativo, UnidadMedida, MetodoAnalisis,\n          Responsable, Observaciones, IsActive\n        ) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)","params":"[1,\"TEST-DOSAJE-1742748343700\",\"TEST-OFICIO-1742748343700\",8603,\"ETÍLICO\",\"Persona\",\"De Prueba\",\"12345678\",\"Pruebas Automatizadas\",\"POSITIVO\",1.25,\"g/L\",\"Espectrofotometría\",\"Técnico de prueba\",\"Registro creado para pruebas automatizadas\",true]","timestamp":"2025-03-23T16:45:43.717Z"}
+{"level":"debug","message":"Executing query [m8lvd86j828whg43cu3]: SELECT * FROM Dosaje WHERE IDDosaje = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.723Z"}
+{"level":"debug","message":"Executing query [m8lvd86npbi3g7t62ok]: SELECT * FROM Dosaje WHERE NumeroRegistro = ?","params":"[\"TEST-DOSAJE-1742748343700\"]","timestamp":"2025-03-23T16:45:43.727Z"}
+{"level":"debug","message":"Executing query [m8lvd86siwwwpy507d]: UPDATE Dosaje SET ResultadoCualitativo = ?, Observaciones = ? WHERE IDDosaje = ?","params":"[\"NEGATIVO\",\"Registro de dosaje actualizado en pruebas\",15]","timestamp":"2025-03-23T16:45:43.732Z"}
+{"level":"debug","message":"Executing query [m8lvd86v6u14mrwlstr]: SELECT * FROM Dosaje WHERE IDDosaje = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.735Z"}
+{"level":"debug","message":"Executing query [m8lvd86w2lfsb5zxw4t]: UPDATE Dosaje SET IsActive = FALSE WHERE IDDosaje = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.736Z"}
+{"level":"debug","message":"Executing query [m8lvd86yt3fgn3uttbh]: SELECT * FROM Dosaje WHERE IDDosaje = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.739Z"}
+{"level":"debug","message":"Executing query [m8lvd871sde7tgxid9]: DELETE FROM Dosaje WHERE IDDosaje = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.741Z"}
+{"level":"debug","message":"Executing query [m8lvd8744dxegsgq6bb]: SELECT * FROM Dosaje WHERE IDDosaje = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.744Z"}
+{"level":"debug","message":"Executing query [m8lvd875th84uwhn0l]: CALL sp_insertar_dosaje(?, ?, ?, ?, ?, ?, ?, ?, ?)","params":"[1,\"TEST-SP-DOSAJE-1742748343745\",\"TEST-SP-OFICIO-1742748343745\",8962,\"ETÍLICO-SP\",\"Persona SP\",\"De Prueba SP\",\"Prueba SP\",\"Técnico SP\"]","timestamp":"2025-03-23T16:45:43.745Z"}
+{"level":"debug","message":"Executing query [m8lvd878y1s1b719nck]: SELECT * FROM Dosaje WHERE NumeroRegistro = ?","params":"[\"TEST-SP-DOSAJE-1742748343745\"]","timestamp":"2025-03-23T16:45:43.748Z"}
+{"level":"debug","message":"Executing query [m8lvd879k4f5ub2xhtr]: DELETE FROM Dosaje WHERE NumeroRegistro = ?","params":"[\"TEST-SP-DOSAJE-1742748343745\"]","timestamp":"2025-03-23T16:45:43.749Z"}
+{"level":"debug","message":"Executing query [m8lvd87b57a6trwjueo]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:43.751Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:43.752Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:43.850Z"}
+{"level":"debug","message":"Executing query [m8lvd8a50dg4mit67th9]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:43.853Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:43.862Z"}
+{"level":"debug","message":"Executing query [m8lvd8afkh0gkl4q0qo]: SELECT IDArea FROM AreaEspecializada LIMIT 1","params":"[]","timestamp":"2025-03-23T16:45:43.863Z"}
+{"level":"debug","message":"Executing query [m8lvd8ahlu06j65jyur]: DELETE FROM ForenseDigital WHERE NumeroRegistro = ?","params":"[\"TEST-FORENSE-1742748343852\"]","timestamp":"2025-03-23T16:45:43.865Z"}
+{"level":"debug","message":"Executing query [m8lvd8ai5hcb3et7abd]: INSERT INTO ForenseDigital (\n          IDArea, NumeroRegistro, FechaIngreso, OficioDoc, NumeroOficio,\n          TipoPericia, Nombres, Apellidos, DelitoInvestigado,\n          DispositivoTipo, DispositivoMarca, DispositivoModelo, DispositivoNumeroSerie, MetodoExtraccion,\n          Responsable, Observaciones, IsActive\n        ) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)","params":"[1,\"TEST-FORENSE-1742748343852\",\"TEST-OFI-FORENSE-1742748343852\",8468,\"EXTRACCIÓN DE INFORMACIÓN\",\"Investigador\",\"De Prueba\",\"PRUEBA AUTOMATIZADA\",\"CELULAR\",\"TEST BRAND\",\"TEST MODEL\",\"SN-1742748343852\",\"MANUAL\",\"Perito de prueba\",\"Registro creado para pruebas automatizadas\",true]","timestamp":"2025-03-23T16:45:43.866Z"}
+{"level":"debug","message":"Executing query [m8lvd8apenaa45aow34]: SELECT * FROM ForenseDigital WHERE IDForenseDigital = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.873Z"}
+{"level":"debug","message":"Executing query [m8lvd8as4zl0zlj1unf]: SELECT * FROM ForenseDigital WHERE NumeroRegistro = ?","params":"[\"TEST-FORENSE-1742748343852\"]","timestamp":"2025-03-23T16:45:43.876Z"}
+{"level":"debug","message":"Executing query [m8lvd8auekyvzwm0awn]: UPDATE ForenseDigital SET TipoPericia = ?, Observaciones = ? WHERE IDForenseDigital = ?","params":"[\"ANALISIS DE METADATOS\",\"Registro forense actualizado en pruebas\",15]","timestamp":"2025-03-23T16:45:43.878Z"}
+{"level":"debug","message":"Executing query [m8lvd8axvkvgxguepq8]: SELECT * FROM ForenseDigital WHERE IDForenseDigital = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.881Z"}
+{"level":"debug","message":"Executing query [m8lvd8az4wk3lycvaq7]: UPDATE ForenseDigital SET IsActive = FALSE WHERE IDForenseDigital = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.883Z"}
+{"level":"debug","message":"Executing query [m8lvd8b1xbwekcgbr7]: SELECT * FROM ForenseDigital WHERE IDForenseDigital = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.885Z"}
+{"level":"debug","message":"Executing query [m8lvd8b4jrulzfx18b]: DELETE FROM ForenseDigital WHERE IDForenseDigital = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.888Z"}
+{"level":"debug","message":"Executing query [m8lvd8b7elu1mreo1lv]: SELECT * FROM ForenseDigital WHERE IDForenseDigital = ?","params":"[15]","timestamp":"2025-03-23T16:45:43.891Z"}
+{"level":"debug","message":"Executing query [m8lvd8b9fb7lgoqqm8d]: CALL sp_insertar_forense_digital(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)","params":"[1,\"TEST-SP-FORENSE-1742748343893\",\"TEST-SP-OFI-FORENSE-1742748343893\",7403,\"EXTRACCIÓN DE DATOS\",\"Investigador SP\",\"De Prueba SP\",\"PRUEBA SP\",\"LAPTOP\",\"Perito SP\"]","timestamp":"2025-03-23T16:45:43.893Z"}
+{"level":"debug","message":"Executing query [m8lvd8bcob3huovpddm]: SELECT * FROM ForenseDigital WHERE NumeroRegistro = ?","params":"[\"TEST-SP-FORENSE-1742748343893\"]","timestamp":"2025-03-23T16:45:43.896Z"}
+{"level":"debug","message":"Executing query [m8lvd8bdkvojmc4b4br]: DELETE FROM ForenseDigital WHERE NumeroRegistro = ?","params":"[\"TEST-SP-FORENSE-1742748343893\"]","timestamp":"2025-03-23T16:45:43.897Z"}
+{"level":"debug","message":"Executing query [m8lvd8bh4zb6iwiqgtv]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:43.901Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:43.902Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.001Z"}
+{"level":"debug","message":"Executing query [m8lvd8eb4n9716dntgt]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:44.003Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.014Z"}
+{"level":"debug","message":"Executing query [m8lvd8eokkg1ll03cnh]: SELECT IDMesaPartes FROM MesaPartes LIMIT 1","params":"[]","timestamp":"2025-03-23T16:45:44.016Z"}
+{"level":"info","message":"No se encontraron Mesas de Partes. Se requiere al menos una Mesa de Partes para las pruebas.","timestamp":"2025-03-23T16:45:44.017Z"}
+{"level":"debug","message":"Executing query [m8lvd8eq527puzvhnyr]: SELECT IDArea FROM AreaEspecializada LIMIT 2","params":"[]","timestamp":"2025-03-23T16:45:44.018Z"}
+{"level":"debug","message":"Executing query [m8lvd8ern4l58es3i2k]: SELECT IDUsuario FROM Usuario LIMIT 2","params":"[]","timestamp":"2025-03-23T16:45:44.020Z"}
+{"level":"debug","message":"Executing query [m8lvd8eubalvx32i6i]: SELECT IDDocumento FROM Documento LIMIT 1","params":"[]","timestamp":"2025-03-23T16:45:44.022Z"}
+{"level":"warn","message":"No se pueden ejecutar todas las pruebas de Derivación debido a la falta de datos necesarios.","timestamp":"2025-03-23T16:45:44.023Z"}
+{"level":"debug","message":"Executing query [m8lvd8ewo3pf0wd2b1]: DELETE FROM Derivacion WHERE IDDocumento = ? AND IDAreaOrigen = ? AND IDAreaDestino = ?","params":"[13,1,888]","timestamp":"2025-03-23T16:45:44.024Z"}
+{"level":"debug","message":"Executing query [m8lvd8expitcx472f1c]: INSERT INTO Derivacion (\n          IDDocumento, IDMesaPartes, IDAreaOrigen, IDAreaDestino, \n          IDUsuarioDeriva, EstadoDerivacion, Observacion\n        ) VALUES (?, ?, ?, ?, ?, ?, ?)","params":"[13,null,1,888,1,\"PENDIENTE\",\"Derivación creada para pruebas automatizadas\"]","timestamp":"2025-03-23T16:45:44.025Z"}
+{"level":"debug","message":"Executing query [m8lvd8f1cbdgckuv2wf]: SELECT * FROM Derivacion WHERE IDDerivacion = ?","params":"[7]","timestamp":"2025-03-23T16:45:44.029Z"}
+{"level":"debug","message":"Executing query [m8lvd8f3t0isn4r3ctr]: UPDATE Derivacion SET EstadoDerivacion = ?, Observacion = ?, FechaRecepcion = ?, IDUsuarioRecibe = ? WHERE IDDerivacion = ?","params":"[\"RECIBIDO\",\"Derivación actualizada en pruebas\",\"2025-03-23 16:45:44\",2,7]","timestamp":"2025-03-23T16:45:44.031Z"}
+{"level":"debug","message":"Executing query [m8lvd8f55xxt9eo35sc]: SELECT * FROM Derivacion WHERE IDDerivacion = ?","params":"[7]","timestamp":"2025-03-23T16:45:44.033Z"}
+{"level":"debug","message":"Executing query [m8lvd8f8i180v62if1r]: SELECT * FROM Derivacion WHERE EstadoDerivacion = ? LIMIT 10","params":"[\"PENDIENTE\"]","timestamp":"2025-03-23T16:45:44.036Z"}
+{"level":"debug","message":"Executing query [m8lvd8f9t3fwycyityg]: SELECT * FROM Derivacion WHERE IDAreaDestino = ? LIMIT 10","params":"[888]","timestamp":"2025-03-23T16:45:44.037Z"}
+{"level":"debug","message":"Executing query [m8lvd8fbvofyr7jw75]: DELETE FROM Derivacion WHERE IDDerivacion = ?","params":"[7]","timestamp":"2025-03-23T16:45:44.039Z"}
+{"level":"debug","message":"Executing query [m8lvd8fdi7za00rhmc]: SELECT * FROM Derivacion WHERE IDDerivacion = ?","params":"[7]","timestamp":"2025-03-23T16:45:44.041Z"}
+{"level":"debug","message":"Executing query [m8lvd8femr6rzc2nwg]: DELETE FROM Documento WHERE IDDocumento = ?","params":"[13]","timestamp":"2025-03-23T16:45:44.042Z"}
+{"level":"debug","message":"Executing query [m8lvd8fhu8knlboz3w]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:44.045Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.144Z"}
+{"level":"debug","message":"Executing query [m8lvd8ib9hbs7xnhmo]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:44.147Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.155Z"}
+{"level":"debug","message":"Executing query [m8lvd8ils4jed89f95d]: DELETE FROM MesaPartes WHERE CodigoIdentificacion = ?","params":"[\"TEST-MP-1742748344146\"]","timestamp":"2025-03-23T16:45:44.157Z"}
+{"level":"debug","message":"Executing query [m8lvd8inbf8twdqypa5]: INSERT INTO MesaPartes (Descripcion, CodigoIdentificacion, IsActive) VALUES (?, ?, ?)","params":"[\"Mesa de Partes de Prueba Automatizada\",\"TEST-MP-1742748344146\",true]","timestamp":"2025-03-23T16:45:44.159Z"}
+{"level":"debug","message":"Executing query [m8lvd8ius9y7fgdpt68]: SELECT * FROM MesaPartes WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.166Z"}
+{"level":"debug","message":"Executing query [m8lvd8iwd3cnjice0zw]: SELECT * FROM MesaPartes WHERE CodigoIdentificacion = ?","params":"[\"TEST-MP-1742748344146\"]","timestamp":"2025-03-23T16:45:44.168Z"}
+{"level":"debug","message":"Executing query [m8lvd8iy5o3b9vg0k35]: UPDATE MesaPartes SET Descripcion = ? WHERE IDMesaPartes = ?","params":"[\"Mesa de Partes Actualizada\",16]","timestamp":"2025-03-23T16:45:44.170Z"}
+{"level":"debug","message":"Executing query [m8lvd8j0l8gytqs43c]: SELECT * FROM MesaPartes WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.172Z"}
+{"level":"debug","message":"Executing query [m8lvd8j2qnjcsa6yec]: UPDATE MesaPartes SET IsActive = FALSE WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.174Z"}
+{"level":"debug","message":"Executing query [m8lvd8j5j11avexnet]: SELECT * FROM MesaPartes WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.177Z"}
+{"level":"debug","message":"Executing query [m8lvd8j6b1wmbkn5lyt]: SELECT COUNT(*) as count FROM Documento WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.178Z"}
+{"level":"debug","message":"Executing query [m8lvd8j71y67bqkryb1]: DELETE FROM MesaPartes WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.179Z"}
+{"level":"debug","message":"Executing query [m8lvd8jbexrx440plan]: SELECT * FROM MesaPartes WHERE IDMesaPartes = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.183Z"}
+{"level":"debug","message":"Executing query [m8lvd8jcuk9dtxax2i]: SELECT * FROM MesaPartes WHERE IsActive = TRUE","params":"[]","timestamp":"2025-03-23T16:45:44.184Z"}
+{"level":"debug","message":"Executing query [m8lvd8jd8rtrk9y5kqy]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:44.185Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:44.186Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.284Z"}
+{"level":"debug","message":"Executing query [m8lvd8m7a5tkjdxvlp4]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:44.287Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.298Z"}
+{"level":"debug","message":"Executing query [m8lvd8mkix5pw56b5s]: SELECT IDArea FROM AreaEspecializada WHERE CodigoIdentificacion = ?","params":"[\"TEST-AUTO-AREA-1742748344286\"]","timestamp":"2025-03-23T16:45:44.300Z"}
+{"level":"debug","message":"Executing query [m8lvd8mmcsepwphf6a]: DELETE FROM AreaEspecializada WHERE CodigoIdentificacion = ?","params":"[\"TEST-AUTO-AREA-1742748344286\"]","timestamp":"2025-03-23T16:45:44.302Z"}
+{"level":"debug","message":"Executing query [m8lvd8mn4m8ds8ydbeo]: INSERT INTO AreaEspecializada (NombreArea, CodigoIdentificacion, TipoArea, Descripcion, IsActive) VALUES (?, ?, ?, ?, ?)","params":"[\"Área de Prueba Automatizada\",\"TEST-AUTO-AREA-1742748344286\",\"ESPECIALIZADA\",\"Área creada para pruebas automatizadas\",true]","timestamp":"2025-03-23T16:45:44.303Z"}
+{"level":"debug","message":"Executing query [m8lvd8ms8o8xoen2a1n]: SELECT * FROM AreaEspecializada WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.308Z"}
+{"level":"debug","message":"Executing query [m8lvd8mues5o5sa2gj6]: SELECT * FROM AreaEspecializada WHERE CodigoIdentificacion = ?","params":"[\"TEST-AUTO-AREA-1742748344286\"]","timestamp":"2025-03-23T16:45:44.310Z"}
+{"level":"debug","message":"Executing query [m8lvd8mvldglhubjar]: UPDATE AreaEspecializada SET NombreArea = ?, Descripcion = ? WHERE IDArea = ?","params":"[\"Área Actualizada\",\"Descripción actualizada para pruebas\",1006]","timestamp":"2025-03-23T16:45:44.311Z"}
+{"level":"debug","message":"Executing query [m8lvd8myommigw9nuz]: SELECT * FROM AreaEspecializada WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.314Z"}
+{"level":"debug","message":"Executing query [m8lvd8n0j5p1aa4flj]: UPDATE AreaEspecializada SET IsActive = FALSE WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.316Z"}
+{"level":"debug","message":"Executing query [m8lvd8n2jdu6sby4c6r]: SELECT * FROM AreaEspecializada WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.318Z"}
+{"level":"debug","message":"Executing query [m8lvd8n4udmgy9h2ql]: SELECT COUNT(*) as count FROM Usuario WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.320Z"}
+{"level":"debug","message":"Executing query [m8lvd8n5x4veln26c3h]: DELETE FROM AreaEspecializada WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.321Z"}
+{"level":"debug","message":"Executing query [m8lvd8n8p45jxfwg9ej]: SELECT * FROM AreaEspecializada WHERE IDArea = ?","params":"[1006]","timestamp":"2025-03-23T16:45:44.324Z"}
+{"level":"debug","message":"Executing query [m8lvd8n9q41jnv5xvu]: SELECT * FROM AreaEspecializada WHERE IsActive = TRUE","params":"[]","timestamp":"2025-03-23T16:45:44.325Z"}
+{"level":"debug","message":"Executing query [m8lvd8na2s1wvbjh30v]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:44.326Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:44.327Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.425Z"}
+{"level":"debug","message":"Executing query [m8lvd8q3ea7aelfbw1o]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:44.427Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.436Z"}
+{"level":"debug","message":"Executing query [m8lvd8qe4xzroowhf5e]: SELECT IDArea FROM AreaEspecializada WHERE IDArea = 999","params":"[]","timestamp":"2025-03-23T16:45:44.438Z"}
+{"level":"debug","message":"Executing query [m8lvd8qgu5qek6h2gvt]: SELECT IDRol FROM Rol WHERE IDRol = 999","params":"[]","timestamp":"2025-03-23T16:45:44.440Z"}
+{"level":"info","message":"Usando Área ID: 999 y Rol ID: 999 para las pruebas de PermisoContextual","timestamp":"2025-03-23T16:45:44.441Z"}
+{"level":"debug","message":"Executing query [m8lvd8qivf5lh3m676]: DELETE FROM PermisoContextualLog WHERE IDPermisoContextual IN (SELECT IDPermisoContextual FROM PermisoContextual WHERE IDRol = ? AND IDArea = ?)","params":"[999,999]","timestamp":"2025-03-23T16:45:44.442Z"}
+{"level":"debug","message":"Executing query [m8lvd8qkg8ilp7p5amw]: DELETE FROM PermisoContextual WHERE IDRol = ? AND IDArea = ?","params":"[999,999]","timestamp":"2025-03-23T16:45:44.444Z"}
+{"level":"debug","message":"Executing query [m8lvd8qlb58fvfvxz3w]: INSERT INTO PermisoContextual (IDRol, IDArea, TipoRecurso, ReglaContexto, Activo) VALUES (?, ?, ?, ?, ?)","params":"[999,999,\"DOCUMENTO\",\"{\\\"condicion\\\":\\\"PROPIETARIO\\\",\\\"accion\\\":\\\"ELIMINAR\\\"}\",true]","timestamp":"2025-03-23T16:45:44.445Z"}
+{"level":"debug","message":"Executing query [m8lvd8qpnq24pvbttcf]: SELECT * FROM PermisoContextual WHERE IDPermisoContextual = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.449Z"}
+{"level":"debug","message":"Executing query [m8lvd8qrx0lqtr9y76f]: SELECT * FROM v_permisos_contextuales WHERE IDPermisoContextual = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.451Z"}
+{"level":"debug","message":"Executing query [m8lvd8qu7bihoel74ky]: UPDATE PermisoContextual SET ReglaContexto = ? WHERE IDPermisoContextual = ?","params":"[\"{\\\"condicion\\\":\\\"MISMA_AREA\\\",\\\"accion\\\":\\\"ELIMINAR\\\"}\",16]","timestamp":"2025-03-23T16:45:44.454Z"}
+{"level":"debug","message":"Executing query [m8lvd8qwk9e418u58xi]: SELECT * FROM PermisoContextual WHERE IDPermisoContextual = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.456Z"}
+{"level":"debug","message":"Executing query [m8lvd8qx1kciauuv8g9]: DELETE FROM PermisoContextual WHERE IDPermisoContextual = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.457Z"}
+{"level":"debug","message":"Executing query [m8lvd8r0axnh6huoasi]: SELECT * FROM PermisoContextual WHERE IDPermisoContextual = ?","params":"[16]","timestamp":"2025-03-23T16:45:44.460Z"}
+{"level":"debug","message":"Executing query [m8lvd8r29oww7vgqe06]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:44.462Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:44.463Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.559Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.599Z"}
+{"level":"debug","message":"Executing query [m8lvd8uw708t25zlnlo]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:44.600Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.610Z"}
+{"level":"debug","message":"Executing query [m8lvd8v7nvbudgs74g]: SELECT IDArea FROM AreaEspecializada WHERE IDArea = 999","params":"[]","timestamp":"2025-03-23T16:45:44.611Z"}
+{"level":"debug","message":"Executing query [m8lvd8v8e2kpo80l6fg]: SELECT IDRol FROM Rol WHERE IDRol = 999","params":"[]","timestamp":"2025-03-23T16:45:44.612Z"}
+{"level":"info","message":"Usando Área ID: 999 y Rol ID: 999 para las pruebas de Usuario","timestamp":"2025-03-23T16:45:44.613Z"}
+{"level":"debug","message":"Executing query [m8lvd8vamw50jz3vgt]: DELETE FROM UsuarioLog WHERE IDUsuario IN (SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?)","params":"[\"TEST123456\"]","timestamp":"2025-03-23T16:45:44.614Z"}
+{"level":"debug","message":"Executing query [m8lvd8vbv8ink5btd7]: DELETE FROM Usuario WHERE CodigoCIP = ?","params":"[\"TEST123456\"]","timestamp":"2025-03-23T16:45:44.615Z"}
+{"level":"debug","message":"Executing query [m8lvd8vcfxjb5xxvl4w]: DELETE FROM Usuario WHERE CodigoCIP = ?","params":"[\"TEST123456\"]","timestamp":"2025-03-23T16:45:44.616Z"}
+{"level":"debug","message":"Executing query [m8lvd8vcw3aez7mmuwf]: INSERT INTO Usuario (CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?)","params":"[\"TEST123456\",\"Usuario\",\"De Prueba\",\"Suboficial\",\"$2a$10$mBpQoMfPGGjYV2NzvL.YHeTw0znNqptBsYKrn.zxr5Hd2zQvmCv9q\",999,999]","timestamp":"2025-03-23T16:45:44.616Z"}
+{"level":"debug","message":"Executing query [m8lvd8vgtn5xczo0sv]: SELECT * FROM Usuario WHERE IDUsuario = ?","params":"[10]","timestamp":"2025-03-23T16:45:44.620Z"}
+{"level":"debug","message":"Executing query [m8lvd8vi4855toalvhd]: SELECT * FROM Usuario WHERE CodigoCIP = ?","params":"[\"TEST123456\"]","timestamp":"2025-03-23T16:45:44.622Z"}
+{"level":"debug","message":"Executing query [m8lvd8vkawm9lp1fl0o]: UPDATE Usuario SET Nombres = ? WHERE IDUsuario = ?","params":"[\"NombreActualizado\",10]","timestamp":"2025-03-23T16:45:44.624Z"}
+{"level":"debug","message":"Executing query [m8lvd8vn3luu9tzv2l2]: SELECT * FROM Usuario WHERE IDUsuario = ?","params":"[10]","timestamp":"2025-03-23T16:45:44.627Z"}
+{"level":"debug","message":"Executing query [m8lvd8vony9x0epcbfe]: DELETE FROM Usuario WHERE IDUsuario = ?","params":"[10]","timestamp":"2025-03-23T16:45:44.628Z"}
+{"level":"debug","message":"Executing query [m8lvd8vsle51db3ha8]: SELECT * FROM Usuario WHERE IDUsuario = ?","params":"[10]","timestamp":"2025-03-23T16:45:44.632Z"}
+{"level":"debug","message":"Executing query [m8lvd8vvhwdfyj7rb7o]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:44.635Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:44.636Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.736Z"}
+{"level":"debug","message":"Executing query [m8lvd8yq8zd0etu24bk]: SET FOREIGN_KEY_CHECKS = 0","params":"[]","timestamp":"2025-03-23T16:45:44.738Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.750Z"}
+{"level":"debug","message":"Executing query [m8lvd8z3szvlrszrjik]: SELECT IDArea FROM AreaEspecializada LIMIT 1","params":"[]","timestamp":"2025-03-23T16:45:44.751Z"}
+{"level":"debug","message":"Executing query [m8lvd8z5rpyn6vpumd]: DELETE FROM QuimicaToxicologiaForense WHERE NumeroRegistro = ?","params":"[\"TEST-QUIMICA-1742748344738\"]","timestamp":"2025-03-23T16:45:44.753Z"}
+{"level":"debug","message":"Executing query [m8lvd8z7i1iyxvdzrg]: INSERT INTO QuimicaToxicologiaForense (\n          IDArea, NumeroRegistro, FechaIngreso, OficioDoc, NumeroOficio,\n          Examen, Nombres, Apellidos, DelitoInfraccion, Como,\n          Responsable, Observaciones, IsActive\n        ) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)","params":"[1,\"TEST-QUIMICA-1742748344738\",\"TEST-OFI-QUIMICA-1742748344738\",4755,\"TOXICOLOGÍA\",\"Sujeto\",\"De Prueba\",\"PRUEBA AUTOMATIZADA\",\"SUSTANCIA INCAUTADA\",\"Químico de prueba\",\"Registro creado para pruebas automatizadas\",true]","timestamp":"2025-03-23T16:45:44.755Z"}
+{"level":"debug","message":"Executing query [m8lvd8zbgi45h0wm1sl]: SELECT * FROM QuimicaToxicologiaForense WHERE IDQuimicaToxForense = ?","params":"[8]","timestamp":"2025-03-23T16:45:44.759Z"}
+{"level":"debug","message":"Executing query [m8lvd8zdls06w1nyibj]: SELECT * FROM QuimicaToxicologiaForense WHERE NumeroRegistro = ?","params":"[\"TEST-QUIMICA-1742748344738\"]","timestamp":"2025-03-23T16:45:44.761Z"}
+{"level":"debug","message":"Executing query [m8lvd8zebas2jumdpr]: UPDATE QuimicaToxicologiaForense SET Examen = ?, Observaciones = ? WHERE IDQuimicaToxForense = ?","params":"[\"ANÁLISIS QUÍMICO\",\"Registro químico actualizado en pruebas\",8]","timestamp":"2025-03-23T16:45:44.763Z"}
+{"level":"debug","message":"Executing query [m8lvd8zh1vw9egvomjt]: SELECT * FROM QuimicaToxicologiaForense WHERE IDQuimicaToxForense = ?","params":"[8]","timestamp":"2025-03-23T16:45:44.765Z"}
+{"level":"debug","message":"Executing query [m8lvd8zjfxxldacrgq]: UPDATE QuimicaToxicologiaForense SET IsActive = FALSE WHERE IDQuimicaToxForense = ?","params":"[8]","timestamp":"2025-03-23T16:45:44.767Z"}
+{"level":"debug","message":"Executing query [m8lvd8zmmos8afa9qf]: SELECT * FROM QuimicaToxicologiaForense WHERE IDQuimicaToxForense = ?","params":"[8]","timestamp":"2025-03-23T16:45:44.770Z"}
+{"level":"debug","message":"Executing query [m8lvd8zn7pxgfr6m3e7]: DELETE FROM QuimicaToxicologiaForense WHERE IDQuimicaToxForense = ?","params":"[8]","timestamp":"2025-03-23T16:45:44.771Z"}
+{"level":"debug","message":"Executing query [m8lvd8zqwza0z5mowvo]: SELECT * FROM QuimicaToxicologiaForense WHERE IDQuimicaToxForense = ?","params":"[8]","timestamp":"2025-03-23T16:45:44.774Z"}
+{"level":"debug","message":"Executing query [m8lvd8zrmslzt4nty9]: SET FOREIGN_KEY_CHECKS = 1","params":"[]","timestamp":"2025-03-23T16:45:44.775Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:44.776Z"}
+{"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-23T16:45:44.872Z"}
+{"level":"info","message":"Conexión a la base de datos establecida","timestamp":"2025-03-23T16:45:44.884Z"}
+{"level":"debug","message":"Executing query [m8lvd92vbkrjdwcvqt9]: SELECT 1 as test","params":"[]","timestamp":"2025-03-23T16:45:44.888Z"}
+{"level":"debug","message":"Executing query [m8lvd92x4uq98zqt52l]: SELECT * FROM tabla_que_no_existe","params":"[]","timestamp":"2025-03-23T16:45:44.889Z"}
+{"code":"ER_NO_SUCH_TABLE","error":"Table 'oficri_sistema.tabla_que_no_existe' doesn't exist","level":"error","message":"Database query error [m8lvd92x4uq98zqt52l]","params":"[]","query":"SELECT * FROM tabla_que_no_existe","timestamp":"2025-03-23T16:45:44.891Z"}
+{"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-23T16:45:44.892Z"}
+{"level":"info","message":"Usando Documento ID: 1 para las pruebas de DocumentoArchivo","timestamp":"2025-03-23T16:45:44.970Z"}
+{"level":"info","message":"Usando Mesa de Partes ID: 1, Área ID: 1 y Usuario ID: 1 para las pruebas de Documento","timestamp":"2025-03-23T16:45:45.071Z"}
+{"level":"info","message":"Test info message","timestamp":"2025-03-23T16:45:45.169Z"}
+{"level":"error","message":"Test error message","timestamp":"2025-03-23T16:45:45.170Z"}
+{"level":"warn","message":"Test warning message","timestamp":"2025-03-23T16:45:45.170Z"}
+{"level":"debug","message":"Test debug message","timestamp":"2025-03-23T16:45:45.170Z"}
+{"action":"test","level":"info","message":"Test message with object","timestamp":"2025-03-23T16:45:45.171Z","user":{"id":1,"name":"Test User","roles":["admin","user"]}}
+{"action":"test","error":{},"level":"error","message":"Test error with object","timestamp":"2025-03-23T16:45:45.171Z","user":{"id":1,"name":"Test User","roles":["admin","user"]}}
