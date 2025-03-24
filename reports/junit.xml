@@ -1,73 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="278" failures="0" errors="0" time="7.29">
-  <testsuite name="Pruebas de API Básicas" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:57" time="0.62" tests="3">
-    <testcase classname="Pruebas de API Básicas" name="La ruta /health debería responder correctamente" time="0.02">
+<testsuites name="jest tests" tests="278" failures="0" errors="0" time="14.848">
+  <testsuite name="Pruebas de API Básicas" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:07" time="1.126" tests="3">
+    <testcase classname="Pruebas de API Básicas" name="La ruta /health debería responder correctamente" time="0.025">
     </testcase>
-    <testcase classname="Pruebas de API Básicas" name="La ruta /api/health debería responder correctamente" time="0.004">
+    <testcase classname="Pruebas de API Básicas" name="La ruta /api/health debería responder correctamente" time="0.005">
     </testcase>
     <testcase classname="Pruebas de API Básicas" name="Debería manejar correctamente rutas inexistentes" time="0.005">
     </testcase>
   </testsuite>
-  <testsuite name="Area Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:58" time="0.08" tests="6">
-    <testcase classname="Area Controller getAllAreas" name="should get all areas with pagination and return 200 status" time="0.002">
+  <testsuite name="Area Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:08" time="0.078" tests="6">
+    <testcase classname="Area Controller getAllAreas" name="should get all areas with pagination and return 200 status" time="0.001">
     </testcase>
-    <testcase classname="Area Controller getAllAreas" name="should handle database errors and return 500 status" time="0.015">
+    <testcase classname="Area Controller getAllAreas" name="should handle database errors and return 500 status" time="0.013">
     </testcase>
-    <testcase classname="Area Controller getAreaById" name="should get an area by id and return 200 status" time="0.002">
+    <testcase classname="Area Controller getAreaById" name="should get an area by id and return 200 status" time="0.001">
     </testcase>
-    <testcase classname="Area Controller getAreaById" name="should return 404 if area not found" time="0.001">
+    <testcase classname="Area Controller getAreaById" name="should return 404 if area not found" time="0">
     </testcase>
     <testcase classname="Area Controller getAreaById" name="should return 400 for invalid id" time="0">
     </testcase>
     <testcase classname="Area Controller getAreaById" name="should handle database errors and return 500 status" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad AreaEspecializada" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:58" time="0.255" tests="7">
-    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería crear una nueva área especializada" time="0.01">
+  <testsuite name="Pruebas de Entidad AreaEspecializada" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:09" time="0.281" tests="7">
+    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería crear una nueva área especializada" time="0.007">
     </testcase>
     <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería obtener un área por ID" time="0.003">
     </testcase>
     <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería obtener un área por código de identificación" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería actualizar datos de un área" time="0.006">
+    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería actualizar datos de un área" time="0.005">
     </testcase>
     <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería desactivar un área" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería eliminar físicamente un área" time="0.008">
+    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería eliminar físicamente un área" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería listar todas las áreas activas" time="0.002">
+    <testcase classname="Pruebas de Entidad AreaEspecializada" name="Debería listar todas las áreas activas" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Auth Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:58" time="0.194" tests="8">
-    <testcase classname="Auth Controller login" name="debe devolver error 400 si faltan credenciales" time="0.001">
+  <testsuite name="Auth Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:09" time="0.844" tests="8">
+    <testcase classname="Auth Controller login" name="debe devolver error 400 si faltan credenciales" time="0.002">
     </testcase>
     <testcase classname="Auth Controller login" name="debe devolver token válido en caso de login exitoso" time="0.001">
     </testcase>
-    <testcase classname="Auth Controller login" name="debe manejar errores de autenticación" time="0.026">
+    <testcase classname="Auth Controller login" name="debe manejar errores de autenticación" time="0.019">
     </testcase>
-    <testcase classname="Auth Controller refreshToken" name="debe rechazar peticiones sin token de refresco" time="0.001">
+    <testcase classname="Auth Controller refreshToken" name="debe rechazar peticiones sin token de refresco" time="0">
     </testcase>
     <testcase classname="Auth Controller refreshToken" name="debe refrescar tokens cuando se proporciona un refreshToken válido" time="0.001">
     </testcase>
-    <testcase classname="Auth Controller refreshToken" name="debe manejar errores en la actualización del token" time="0">
+    <testcase classname="Auth Controller refreshToken" name="debe manejar errores en la actualización del token" time="0.002">
     </testcase>
-    <testcase classname="Auth Controller logout" name="debe procesar el logout correctamente" time="0.002">
+    <testcase classname="Auth Controller logout" name="debe procesar el logout correctamente" time="0.003">
     </testcase>
     <testcase classname="Auth Controller logout" name="debe manejar errores durante el logout" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Auth Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:58" time="0.105" tests="12">
-    <testcase classname="Auth Middleware authMiddleware" name="debe permitir rutas públicas sin verificar token" time="0.001">
+  <testsuite name="Auth Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:10" time="0.135" tests="12">
+    <testcase classname="Auth Middleware authMiddleware" name="debe permitir rutas públicas sin verificar token" time="0.004">
     </testcase>
     <testcase classname="Auth Middleware authMiddleware" name="debe permitir rutas de autenticación sin verificar token" time="0">
     </testcase>
-    <testcase classname="Auth Middleware authMiddleware" name="debe rechazar peticiones sin token" time="0">
+    <testcase classname="Auth Middleware authMiddleware" name="debe rechazar peticiones sin token" time="0.001">
     </testcase>
-    <testcase classname="Auth Middleware authMiddleware" name="debe rechazar peticiones con formato de token incorrecto" time="0">
+    <testcase classname="Auth Middleware authMiddleware" name="debe rechazar peticiones con formato de token incorrecto" time="0.001">
     </testcase>
     <testcase classname="Auth Middleware authMiddleware" name="debe aceptar peticiones con token válido" time="0.001">
     </testcase>
-    <testcase classname="Auth Middleware authMiddleware" name="debe rechazar peticiones con token inválido" time="0.001">
+    <testcase classname="Auth Middleware authMiddleware" name="debe rechazar peticiones con token inválido" time="0">
     </testcase>
     <testcase classname="Auth Middleware checkRole" name="debe permitir acceso a usuarios con el rol correcto" time="0">
     </testcase>
@@ -75,42 +75,42 @@
     </testcase>
     <testcase classname="Auth Middleware checkRole" name="debe manejar peticiones sin información de usuario" time="0">
     </testcase>
-    <testcase classname="Auth Middleware checkPermissions" name="debe permitir acceso a usuarios con los permisos requeridos" time="0">
+    <testcase classname="Auth Middleware checkPermissions" name="debe permitir acceso a usuarios con los permisos requeridos" time="0.001">
     </testcase>
-    <testcase classname="Auth Middleware checkPermissions" name="debe rechazar acceso a usuarios sin los permisos requeridos" time="0">
+    <testcase classname="Auth Middleware checkPermissions" name="debe rechazar acceso a usuarios sin los permisos requeridos" time="0.001">
     </testcase>
     <testcase classname="Auth Middleware checkPermissions" name="debe manejar peticiones sin información de usuario" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de autenticación" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:59" time="0.786" tests="5">
-    <testcase classname="Pruebas de autenticación" name="Debería rechazar un login con credenciales inválidas" time="0.046">
+  <testsuite name="Pruebas de autenticación" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:10" time="1.881" tests="5">
+    <testcase classname="Pruebas de autenticación" name="Debería rechazar un login con credenciales inválidas" time="0.059">
     </testcase>
-    <testcase classname="Pruebas de autenticación" name="Debería procesar un login con credenciales válidas" time="0.022">
+    <testcase classname="Pruebas de autenticación" name="Debería procesar un login con credenciales válidas" time="0.018">
     </testcase>
-    <testcase classname="Pruebas de autenticación" name="Debería procesar solicitud de refresh token" time="0.01">
+    <testcase classname="Pruebas de autenticación" name="Debería procesar solicitud de refresh token" time="0.009">
     </testcase>
-    <testcase classname="Pruebas de autenticación" name="Debería procesar verificación de autenticación" time="0.017">
+    <testcase classname="Pruebas de autenticación" name="Debería procesar verificación de autenticación" time="0.019">
     </testcase>
     <testcase classname="Pruebas de autenticación" name="Debería procesar cierre de sesión" time="0.013">
     </testcase>
   </testsuite>
-  <testsuite name="Database Helpers" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:59" time="0.11" tests="7">
+  <testsuite name="Database Helpers" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:12" time="0.134" tests="7">
     <testcase classname="Database Helpers hashPassword" name="debe hashear una contraseña correctamente" time="0.001">
     </testcase>
-    <testcase classname="Database Helpers hashPassword" name="debe manejar contraseñas vacías" time="0.001">
+    <testcase classname="Database Helpers hashPassword" name="debe manejar contraseñas vacías" time="0">
     </testcase>
     <testcase classname="Database Helpers verifyPassword" name="debe verificar una contraseña correcta" time="0">
     </testcase>
-    <testcase classname="Database Helpers verifyPassword" name="debe rechazar una contraseña incorrecta" time="0">
+    <testcase classname="Database Helpers verifyPassword" name="debe rechazar una contraseña incorrecta" time="0.001">
     </testcase>
-    <testcase classname="Database Helpers getDefaultRoles" name="debe devolver un array con los roles predeterminados" time="0.003">
+    <testcase classname="Database Helpers getDefaultRoles" name="debe devolver un array con los roles predeterminados" time="0.001">
     </testcase>
-    <testcase classname="Database Helpers getDefaultAreas" name="debe devolver un array con las áreas predeterminadas" time="0.002">
+    <testcase classname="Database Helpers getDefaultAreas" name="debe devolver un array con las áreas predeterminadas" time="0.001">
     </testcase>
-    <testcase classname="Database Helpers getDefaultPermissions" name="debe devolver un array con los permisos predeterminados" time="0.003">
+    <testcase classname="Database Helpers getDefaultPermissions" name="debe devolver un array con los permisos predeterminados" time="0.004">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Base de Datos" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:18:59" time="0.114" tests="5">
+  <testsuite name="Pruebas de Base de Datos" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:12" time="0.116" tests="5">
     <testcase classname="Pruebas de Base de Datos" name="La configuración de base de datos está definida" time="0">
     </testcase>
     <testcase classname="Pruebas de Base de Datos" name="El pool de conexiones está definido" time="0">
@@ -119,109 +119,109 @@
     </testcase>
     <testcase classname="Pruebas de Base de Datos" name="La función executeQuery debería ejecutar consultas SQL" time="0.001">
     </testcase>
-    <testcase classname="Pruebas de Base de Datos" name="Debería manejar errores de sintaxis SQL correctamente" time="0.003">
+    <testcase classname="Pruebas de Base de Datos" name="Debería manejar errores de sintaxis SQL correctamente" time="0.004">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad Derivacion" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:00" time="0.127" tests="6">
+  <testsuite name="Pruebas de Entidad Derivacion" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:12" time="0.124" tests="6">
     <testcase classname="Pruebas de Entidad Derivacion" name="Debería crear una nueva derivación" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad Derivacion" name="Debería obtener una derivación por ID" time="0.001">
+    <testcase classname="Pruebas de Entidad Derivacion" name="Debería obtener una derivación por ID" time="0">
     </testcase>
-    <testcase classname="Pruebas de Entidad Derivacion" name="Debería actualizar el estado de una derivación" time="0">
+    <testcase classname="Pruebas de Entidad Derivacion" name="Debería actualizar el estado de una derivación" time="0.001">
     </testcase>
-    <testcase classname="Pruebas de Entidad Derivacion" name="Debería listar derivaciones pendientes" time="0.002">
+    <testcase classname="Pruebas de Entidad Derivacion" name="Debería listar derivaciones pendientes" time="0.003">
     </testcase>
-    <testcase classname="Pruebas de Entidad Derivacion" name="Debería listar derivaciones por área de destino" time="0.002">
+    <testcase classname="Pruebas de Entidad Derivacion" name="Debería listar derivaciones por área de destino" time="0.001">
     </testcase>
-    <testcase classname="Pruebas de Entidad Derivacion" name="Debería eliminar una derivación" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="Document Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:00" time="0.067" tests="3">
-    <testcase classname="Document Controller getAllDocuments" name="should get all documents with default pagination" time="0.001">
-    </testcase>
-    <testcase classname="Document Controller getAllDocuments" name="should apply filters when provided in query params" time="0">
-    </testcase>
-    <testcase classname="Document Controller getAllDocuments" name="should handle database errors" time="0.015">
+    <testcase classname="Pruebas de Entidad Derivacion" name="Debería eliminar una derivación" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Document API" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:00" time="1.49" tests="12">
-    <testcase classname="Document API POST /api/documents" name="should create a new document when valid data is provided" time="0.001">
+  <testsuite name="Document Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:12" time="0.07" tests="3">
+    <testcase classname="Document Controller getAllDocuments" name="should get all documents with default pagination" time="0.002">
+    </testcase>
+    <testcase classname="Document Controller getAllDocuments" name="should apply filters when provided in query params" time="0.001">
+    </testcase>
+    <testcase classname="Document Controller getAllDocuments" name="should handle database errors" time="0.018">
+    </testcase>
+  </testsuite>
+  <testsuite name="Document API" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:12" time="6.591" tests="12">
+    <testcase classname="Document API POST /api/documents" name="should create a new document when valid data is provided" time="0">
     </testcase>
     <testcase classname="Document API POST /api/documents" name="should return 400 when required data is missing" time="0">
     </testcase>
     <testcase classname="Document API GET /api/documents" name="should return a list of documents" time="0">
     </testcase>
-    <testcase classname="Document API GET /api/documents" name="should filter documents by estado parameter" time="0">
+    <testcase classname="Document API GET /api/documents" name="should filter documents by estado parameter" time="0.001">
     </testcase>
     <testcase classname="Document API GET /api/documents/:id" name="should return a document when valid ID is provided" time="0">
     </testcase>
-    <testcase classname="Document API GET /api/documents/:id" name="should return 404 when document does not exist" time="0.001">
+    <testcase classname="Document API GET /api/documents/:id" name="should return 404 when document does not exist" time="0">
     </testcase>
-    <testcase classname="Document API PUT /api/documents/:id" name="should update a document when valid data is provided" time="0">
+    <testcase classname="Document API PUT /api/documents/:id" name="should update a document when valid data is provided" time="0.001">
     </testcase>
     <testcase classname="Document API PATCH /api/documents/:id/status" name="should update document status when valid data is provided" time="0">
     </testcase>
     <testcase classname="Document API PATCH /api/documents/:id/status" name="should return 400 when invalid status is provided" time="0">
     </testcase>
-    <testcase classname="Document API GET /api/documents/:id/history" name="should return document history" time="0">
+    <testcase classname="Document API GET /api/documents/:id/history" name="should return document history" time="0.001">
     </testcase>
     <testcase classname="Document API POST /api/documents/:id/derive" name="should derive a document to another area" time="0">
     </testcase>
     <testcase classname="Document API DELETE /api/documents/:id" name="should delete a document if it has no dependencies" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad Documento" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:01" time="0.089" tests="6">
+  <testsuite name="Pruebas de Entidad Documento" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:19" time="0.091" tests="6">
     <testcase classname="Pruebas de Entidad Documento" name="Debería crear un nuevo documento" time="0.003">
     </testcase>
-    <testcase classname="Pruebas de Entidad Documento" name="Debería obtener un documento por ID" time="0.002">
+    <testcase classname="Pruebas de Entidad Documento" name="Debería obtener un documento por ID" time="0.001">
     </testcase>
     <testcase classname="Pruebas de Entidad Documento" name="Debería obtener un documento por número de registro" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad Documento" name="Debería actualizar estado de un documento" time="0.003">
+    <testcase classname="Pruebas de Entidad Documento" name="Debería actualizar estado de un documento" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad Documento" name="Debería cambiar el área de un documento" time="0.003">
+    <testcase classname="Pruebas de Entidad Documento" name="Debería cambiar el área de un documento" time="0.002">
     </testcase>
     <testcase classname="Pruebas de Entidad Documento" name="Debería eliminar un documento" time="0.003">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad DocumentoArchivo" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:01" time="0.089" tests="6">
+  <testsuite name="Pruebas de Entidad DocumentoArchivo" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:19" time="0.093" tests="6">
     <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería crear un nuevo archivo de documento" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería obtener un archivo por ID" time="0.002">
+    <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería obtener un archivo por ID" time="0.001">
     </testcase>
     <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería obtener archivos por ID de documento" time="0.001">
     </testcase>
-    <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería actualizar datos de un archivo" time="0.002">
+    <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería actualizar datos de un archivo" time="0.003">
     </testcase>
-    <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería eliminar un archivo" time="0.002">
+    <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería eliminar un archivo" time="0.003">
     </testcase>
     <testcase classname="Pruebas de Entidad DocumentoArchivo" name="Debería probar el procedimiento almacenado sp_subir_archivo_documento" time="0.008">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad Dosaje" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:01" time="0.146" tests="7">
-    <testcase classname="Pruebas de Entidad Dosaje" name="Debería crear un nuevo registro de dosaje" time="0.007">
+  <testsuite name="Pruebas de Entidad Dosaje" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:19" time="0.145" tests="7">
+    <testcase classname="Pruebas de Entidad Dosaje" name="Debería crear un nuevo registro de dosaje" time="0.008">
     </testcase>
-    <testcase classname="Pruebas de Entidad Dosaje" name="Debería obtener un registro de dosaje por ID" time="0.004">
+    <testcase classname="Pruebas de Entidad Dosaje" name="Debería obtener un registro de dosaje por ID" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad Dosaje" name="Debería obtener un registro de dosaje por número de registro" time="0.001">
+    <testcase classname="Pruebas de Entidad Dosaje" name="Debería obtener un registro de dosaje por número de registro" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad Dosaje" name="Debería actualizar datos de un registro de dosaje" time="0.004">
+    <testcase classname="Pruebas de Entidad Dosaje" name="Debería actualizar datos de un registro de dosaje" time="0.005">
     </testcase>
     <testcase classname="Pruebas de Entidad Dosaje" name="Debería desactivar un registro de dosaje" time="0.004">
     </testcase>
     <testcase classname="Pruebas de Entidad Dosaje" name="Debería eliminar físicamente un registro de dosaje" time="0.004">
     </testcase>
-    <testcase classname="Pruebas de Entidad Dosaje" name="Debería probar el procedimiento almacenado sp_insertar_dosaje" time="0.008">
+    <testcase classname="Pruebas de Entidad Dosaje" name="Debería probar el procedimiento almacenado sp_insertar_dosaje" time="0.007">
     </testcase>
   </testsuite>
-  <testsuite name="Error Handler Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:02" time="0.06" tests="18">
+  <testsuite name="Error Handler Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:19" time="0.059" tests="18">
     <testcase classname="Error Handler Middleware Main Error Handler" name="debe manejar errores generales con código de estado personalizado" time="0.002">
     </testcase>
-    <testcase classname="Error Handler Middleware Main Error Handler" name="debe usar código 500 para errores sin código de estado" time="0">
+    <testcase classname="Error Handler Middleware Main Error Handler" name="debe usar código 500 para errores sin código de estado" time="0.001">
     </testcase>
     <testcase classname="Error Handler Middleware Main Error Handler" name="debe incluir stack trace en modo desarrollo" time="0">
     </testcase>
-    <testcase classname="Error Handler Middleware Validation Error Handler" name="debe manejar errores de validación" time="0.001">
+    <testcase classname="Error Handler Middleware Validation Error Handler" name="debe manejar errores de validación" time="0">
     </testcase>
     <testcase classname="Error Handler Middleware Validation Error Handler" name="debe pasar el error al siguiente middleware si no es un error de validación" time="0.001">
     </testcase>
@@ -231,28 +231,28 @@
     </testcase>
     <testcase classname="Error Handler Middleware DB Error Handler" name="debe manejar errores de duplicación de base de datos" time="0.001">
     </testcase>
-    <testcase classname="Error Handler Middleware DB Error Handler" name="debe manejar errores de referencia inválida" time="0.002">
+    <testcase classname="Error Handler Middleware DB Error Handler" name="debe manejar errores de referencia inválida" time="0">
     </testcase>
-    <testcase classname="Error Handler Middleware DB Error Handler" name="debe manejar errores de campos requeridos" time="0.001">
+    <testcase classname="Error Handler Middleware DB Error Handler" name="debe manejar errores de campos requeridos" time="0">
     </testcase>
-    <testcase classname="Error Handler Middleware DB Error Handler" name="debe pasar el error al siguiente middleware si no es un error de base de datos" time="0">
+    <testcase classname="Error Handler Middleware DB Error Handler" name="debe pasar el error al siguiente middleware si no es un error de base de datos" time="0.001">
     </testcase>
-    <testcase classname="Error Handler Middleware File Error Handler" name="debe manejar errores de archivo no encontrado" time="0.001">
+    <testcase classname="Error Handler Middleware File Error Handler" name="debe manejar errores de archivo no encontrado" time="0">
     </testcase>
-    <testcase classname="Error Handler Middleware File Error Handler" name="debe manejar errores de permiso denegado" time="0.001">
+    <testcase classname="Error Handler Middleware File Error Handler" name="debe manejar errores de permiso denegado" time="0">
     </testcase>
-    <testcase classname="Error Handler Middleware File Error Handler" name="debe pasar el error al siguiente middleware si no es un error de archivo" time="0">
+    <testcase classname="Error Handler Middleware File Error Handler" name="debe pasar el error al siguiente middleware si no es un error de archivo" time="0.001">
     </testcase>
     <testcase classname="Error Handler Middleware Joi Error Handler" name="debe manejar errores de validación de Joi" time="0.001">
     </testcase>
-    <testcase classname="Error Handler Middleware Joi Error Handler" name="debe pasar el error al siguiente middleware si no es un error de Joi" time="0">
+    <testcase classname="Error Handler Middleware Joi Error Handler" name="debe pasar el error al siguiente middleware si no es un error de Joi" time="0.001">
     </testcase>
     <testcase classname="Error Handler Middleware JSON Syntax Error Handler" name="debe manejar errores de sintaxis JSON" time="0">
     </testcase>
-    <testcase classname="Error Handler Middleware JSON Syntax Error Handler" name="debe pasar el error al siguiente middleware si no es un error de sintaxis JSON" time="0.001">
+    <testcase classname="Error Handler Middleware JSON Syntax Error Handler" name="debe pasar el error al siguiente middleware si no es un error de sintaxis JSON" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad ForenseDigital" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:02" time="0.139" tests="7">
+  <testsuite name="Pruebas de Entidad ForenseDigital" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:19" time="0.139" tests="7">
     <testcase classname="Pruebas de Entidad ForenseDigital" name="Debería crear un nuevo registro forense digital" time="0.007">
     </testcase>
     <testcase classname="Pruebas de Entidad ForenseDigital" name="Debería obtener un registro forense digital por ID" time="0.003">
@@ -265,89 +265,89 @@
     </testcase>
     <testcase classname="Pruebas de Entidad ForenseDigital" name="Debería eliminar físicamente un registro forense digital" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad ForenseDigital" name="Debería probar el procedimiento almacenado sp_insertar_forense_digital" time="0.007">
+    <testcase classname="Pruebas de Entidad ForenseDigital" name="Debería probar el procedimiento almacenado sp_insertar_forense_digital" time="0.009">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Estructura Básica" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:02" time="0.59" tests="3">
-    <testcase classname="Pruebas de Estructura Básica" name="La aplicación Express está definida" time="0">
+  <testsuite name="Pruebas de Estructura Básica" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:19" time="0.586" tests="3">
+    <testcase classname="Pruebas de Estructura Básica" name="La aplicación Express está definida" time="0.001">
     </testcase>
     <testcase classname="Pruebas de Estructura Básica" name="La conexión a la base de datos está definida" time="0.001">
     </testcase>
-    <testcase classname="Pruebas de Estructura Básica" name="El logger está definido" time="0.002">
+    <testcase classname="Pruebas de Estructura Básica" name="El logger está definido" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas del Logger" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:02" time="0.076" tests="4">
-    <testcase classname="Pruebas del Logger" name="El logger está definido correctamente" time="0.001">
+  <testsuite name="Pruebas del Logger" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:20" time="0.074" tests="4">
+    <testcase classname="Pruebas del Logger" name="El logger está definido correctamente" time="0">
     </testcase>
-    <testcase classname="Pruebas del Logger" name="El logger tiene los métodos necesarios" time="0.001">
+    <testcase classname="Pruebas del Logger" name="El logger tiene los métodos necesarios" time="0">
     </testcase>
-    <testcase classname="Pruebas del Logger" name="El logger puede registrar mensajes sin lanzar errores" time="0.003">
+    <testcase classname="Pruebas del Logger" name="El logger puede registrar mensajes sin lanzar errores" time="0.004">
     </testcase>
     <testcase classname="Pruebas del Logger" name="El logger puede registrar objetos complejos sin lanzar errores" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Logger Module" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.049" tests="4">
+  <testsuite name="Logger Module" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:20" time="0.049" tests="4">
     <testcase classname="Logger Module" name="debe crear un logger con configuración por defecto" time="0.002">
     </testcase>
     <testcase classname="Logger Module" name="debe usar el nivel de log especificado en LOG_LEVEL" time="0">
     </testcase>
     <testcase classname="Logger Module" name="debe agregar transporte de archivo si LOG_FILE está definido" time="0">
     </testcase>
-    <testcase classname="Logger Module" name="los métodos del logger deben funcionar correctamente" time="0.002">
+    <testcase classname="Logger Module" name="los métodos del logger deben funcionar correctamente" time="0.003">
     </testcase>
   </testsuite>
-  <testsuite name="Logs Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.054" tests="12">
+  <testsuite name="Logs Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:20" time="0.052" tests="12">
     <testcase classname="Logs Controller getLogs" name="should get logs with default pagination" time="0.001">
     </testcase>
-    <testcase classname="Logs Controller getLogs" name="should handle service errors" time="0.001">
+    <testcase classname="Logs Controller getLogs" name="should handle service errors" time="0">
     </testcase>
     <testcase classname="Logs Controller getFileSystemLogs" name="should get file system logs" time="0">
     </testcase>
-    <testcase classname="Logs Controller getFileSystemLogs" name="should handle service errors" time="0">
+    <testcase classname="Logs Controller getFileSystemLogs" name="should handle service errors" time="0.001">
     </testcase>
-    <testcase classname="Logs Controller exportLogs" name="should export logs and return file info" time="0">
+    <testcase classname="Logs Controller exportLogs" name="should export logs and return file info" time="0.001">
     </testcase>
     <testcase classname="Logs Controller exportLogs" name="should return 401 when user is not authenticated" time="0.001">
     </testcase>
-    <testcase classname="Logs Controller exportLogs" name="should handle service errors" time="0.001">
+    <testcase classname="Logs Controller exportLogs" name="should handle service errors" time="0">
     </testcase>
-    <testcase classname="Logs Controller downloadExportedLog" name="should set headers and send file" time="0.001">
+    <testcase classname="Logs Controller downloadExportedLog" name="should set headers and send file" time="0">
     </testcase>
-    <testcase classname="Logs Controller downloadExportedLog" name="should return 400 when fileName is missing" time="0">
+    <testcase classname="Logs Controller downloadExportedLog" name="should return 400 when fileName is missing" time="0.001">
     </testcase>
-    <testcase classname="Logs Controller downloadExportedLog" name="should handle service errors" time="0.001">
+    <testcase classname="Logs Controller downloadExportedLog" name="should handle service errors" time="0">
     </testcase>
-    <testcase classname="Logs Controller getSecurityStats" name="should get security statistics" time="0.001">
+    <testcase classname="Logs Controller getSecurityStats" name="should get security statistics" time="0">
     </testcase>
-    <testcase classname="Logs Controller getSecurityStats" name="should handle service errors" time="0">
+    <testcase classname="Logs Controller getSecurityStats" name="should handle service errors" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad MesaPartes" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.132" tests="7">
+  <testsuite name="Pruebas de Entidad MesaPartes" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:20" time="0.135" tests="7">
     <testcase classname="Pruebas de Entidad MesaPartes" name="Debería crear una nueva mesa de partes" time="0.007">
     </testcase>
-    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería obtener una mesa de partes por ID" time="0.002">
+    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería obtener una mesa de partes por ID" time="0.003">
     </testcase>
-    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería obtener una mesa de partes por código de identificación" time="0.001">
+    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería obtener una mesa de partes por código de identificación" time="0.002">
     </testcase>
-    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería actualizar datos de una mesa de partes" time="0.005">
+    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería actualizar datos de una mesa de partes" time="0.006">
     </testcase>
     <testcase classname="Pruebas de Entidad MesaPartes" name="Debería desactivar una mesa de partes" time="0.004">
     </testcase>
-    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería eliminar físicamente una mesa de partes" time="0.005">
+    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería eliminar físicamente una mesa de partes" time="0.006">
     </testcase>
-    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería listar todas las mesas de partes activas" time="0.002">
+    <testcase classname="Pruebas de Entidad MesaPartes" name="Debería listar todas las mesas de partes activas" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Notification Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.06" tests="21">
+  <testsuite name="Notification Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:20" time="0.061" tests="21">
     <testcase classname="Notification Controller getUserNotifications" name="should get user notifications successfully" time="0.001">
     </testcase>
-    <testcase classname="Notification Controller getUserNotifications" name="should handle errors" time="0.001">
+    <testcase classname="Notification Controller getUserNotifications" name="should handle errors" time="0">
     </testcase>
     <testcase classname="Notification Controller getNotificationById" name="should get notification by id successfully" time="0.002">
     </testcase>
     <testcase classname="Notification Controller getNotificationById" name="should return 400 when id is missing" time="0">
     </testcase>
-    <testcase classname="Notification Controller getNotificationById" name="should handle errors" time="0">
+    <testcase classname="Notification Controller getNotificationById" name="should handle errors" time="0.001">
     </testcase>
     <testcase classname="Notification Controller markAsRead" name="should mark notification as read successfully" time="0.001">
     </testcase>
@@ -367,51 +367,51 @@
     </testcase>
     <testcase classname="Notification Controller deleteNotification" name="should handle errors" time="0">
     </testcase>
-    <testcase classname="Notification Controller getNotificationSettings" name="should get notification settings successfully" time="0.001">
+    <testcase classname="Notification Controller getNotificationSettings" name="should get notification settings successfully" time="0">
     </testcase>
-    <testcase classname="Notification Controller getNotificationSettings" name="should return 400 when userId is missing" time="0">
+    <testcase classname="Notification Controller getNotificationSettings" name="should return 400 when userId is missing" time="0.001">
     </testcase>
-    <testcase classname="Notification Controller getNotificationSettings" name="should handle errors" time="0.001">
+    <testcase classname="Notification Controller getNotificationSettings" name="should handle errors" time="0">
     </testcase>
     <testcase classname="Notification Controller updateNotificationSettings" name="should update notification settings successfully" time="0">
     </testcase>
-    <testcase classname="Notification Controller updateNotificationSettings" name="should return 400 when userId is missing" time="0">
+    <testcase classname="Notification Controller updateNotificationSettings" name="should return 400 when userId is missing" time="0.001">
     </testcase>
     <testcase classname="Notification Controller updateNotificationSettings" name="should return 400 when no settings to update" time="0">
     </testcase>
     <testcase classname="Notification Controller updateNotificationSettings" name="should handle errors" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Papelera de Reciclaje" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.17" tests="4">
-    <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería mover un documento a la papelera" time="0.009">
+  <testsuite name="Pruebas de Papelera de Reciclaje" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:20" time="0.173" tests="4">
+    <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería mover un documento a la papelera" time="0.011">
     </testcase>
-    <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería restaurar un documento de la papelera" time="0.007">
+    <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería restaurar un documento de la papelera" time="0.006">
     </testcase>
-    <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería mover nuevamente a papelera y eliminar permanentemente" time="0.009">
+    <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería mover nuevamente a papelera y eliminar permanentemente" time="0.008">
     </testcase>
     <testcase classname="Pruebas de Papelera de Reciclaje" name="Debería comprobar permiso contextual para eliminar documento" time="0.016">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad PermisoContextual" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.133" tests="5">
-    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería crear un nuevo permiso contextual" time="0.004">
+  <testsuite name="Pruebas de Entidad PermisoContextual" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:21" time="0.153" tests="5">
+    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería crear un nuevo permiso contextual" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería obtener un permiso contextual por ID" time="0.002">
+    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería obtener un permiso contextual por ID" time="0.004">
     </testcase>
-    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería obtener permisos contextuales a través de la vista" time="0.003">
+    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería obtener permisos contextuales a través de la vista" time="0.004">
     </testcase>
-    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería actualizar un permiso contextual" time="0.004">
+    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería actualizar un permiso contextual" time="0.007">
     </testcase>
-    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería eliminar un permiso contextual" time="0.005">
+    <testcase classname="Pruebas de Entidad PermisoContextual" name="Debería eliminar un permiso contextual" time="0.006">
     </testcase>
   </testsuite>
-  <testsuite name="Permisos Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.056" tests="13">
-    <testcase classname="Permisos Controller obtenerPermisosContextuales" name="should get all permisos contextuales with default pagination" time="0.002">
+  <testsuite name="Permisos Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:21" time="0.065" tests="13">
+    <testcase classname="Permisos Controller obtenerPermisosContextuales" name="should get all permisos contextuales with default pagination" time="0.001">
     </testcase>
-    <testcase classname="Permisos Controller obtenerPermisosContextuales" name="should handle database errors" time="0.001">
+    <testcase classname="Permisos Controller obtenerPermisosContextuales" name="should handle database errors" time="0">
     </testcase>
-    <testcase classname="Permisos Controller obtenerPermisoContextualPorId" name="should get a permiso contextual by id and return 200 status" time="0">
+    <testcase classname="Permisos Controller obtenerPermisoContextualPorId" name="should get a permiso contextual by id and return 200 status" time="0.001">
     </testcase>
-    <testcase classname="Permisos Controller obtenerPermisoContextualPorId" name="should return 404 if permiso contextual not found" time="0">
+    <testcase classname="Permisos Controller obtenerPermisoContextualPorId" name="should return 404 if permiso contextual not found" time="0.001">
     </testcase>
     <testcase classname="Permisos Controller obtenerPermisoContextualPorId" name="should return 400 for invalid id" time="0.002">
     </testcase>
@@ -421,57 +421,57 @@
     </testcase>
     <testcase classname="Permisos Controller crearPermisoContextual" name="should return 400 when missing required fields" time="0">
     </testcase>
-    <testcase classname="Permisos Controller crearPermisoContextual" name="should return 409 when permiso already exists" time="0.001">
+    <testcase classname="Permisos Controller crearPermisoContextual" name="should return 409 when permiso already exists" time="0">
     </testcase>
-    <testcase classname="Permisos Controller crearPermisoContextual" name="should handle database errors" time="0">
+    <testcase classname="Permisos Controller crearPermisoContextual" name="should handle database errors" time="0.001">
     </testcase>
-    <testcase classname="Permisos Controller getPermissionBits" name="should calculate permission bits correctly" time="0.001">
+    <testcase classname="Permisos Controller getPermissionBits" name="should calculate permission bits correctly" time="0">
     </testcase>
     <testcase classname="Permisos Controller getPermissionBits" name="should return 400 when missing permissions array" time="0">
     </testcase>
     <testcase classname="Permisos Controller getPermissionBits" name="should handle service errors" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="API de Permisos" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:03" time="0.479" tests="5">
-    <testcase classname="API de Permisos" name="Debería obtener los bits de permisos" time="0.026">
+  <testsuite name="API de Permisos" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:21" time="0.426" tests="5">
+    <testcase classname="API de Permisos" name="Debería obtener los bits de permisos" time="0.029">
     </testcase>
-    <testcase classname="API de Permisos" name="Debería verificar un permiso por bit" time="0.02">
+    <testcase classname="API de Permisos" name="Debería verificar un permiso por bit" time="0.016">
     </testcase>
-    <testcase classname="API de Permisos" name="Debería obtener todos los permisos contextuales" time="0.013">
+    <testcase classname="API de Permisos" name="Debería obtener todos los permisos contextuales" time="0.011">
     </testcase>
-    <testcase classname="API de Permisos" name="Debería obtener información completa de permisos para frontend" time="0.011">
+    <testcase classname="API de Permisos" name="Debería obtener información completa de permisos para frontend" time="0.01">
     </testcase>
-    <testcase classname="API de Permisos" name="Debería devolver error 404 si el usuario no existe" time="0.01">
+    <testcase classname="API de Permisos" name="Debería devolver error 404 si el usuario no existe" time="0.013">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad QuimicaToxicologiaForense" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.132" tests="6">
-    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería crear un nuevo registro químico/toxicológico" time="0.008">
+  <testsuite name="Pruebas de Entidad QuimicaToxicologiaForense" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:21" time="0.129" tests="6">
+    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería crear un nuevo registro químico/toxicológico" time="0.009">
     </testcase>
-    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería obtener un registro químico/toxicológico por ID" time="0.002">
+    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería obtener un registro químico/toxicológico por ID" time="0.003">
     </testcase>
     <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería obtener un registro químico/toxicológico por número de registro" time="0.002">
     </testcase>
     <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería actualizar datos de un registro químico/toxicológico" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería desactivar un registro químico/toxicológico" time="0.004">
+    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería desactivar un registro químico/toxicológico" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería eliminar físicamente un registro químico/toxicológico" time="0.004">
+    <testcase classname="Pruebas de Entidad QuimicaToxicologiaForense" name="Debería eliminar físicamente un registro químico/toxicológico" time="0.005">
     </testcase>
   </testsuite>
-  <testsuite name="Role Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.06" tests="20">
+  <testsuite name="Role Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:21" time="0.06" tests="20">
     <testcase classname="Role Controller getAllRoles" name="should get all roles with default pagination" time="0.001">
     </testcase>
     <testcase classname="Role Controller getAllRoles" name="should handle database errors" time="0">
     </testcase>
-    <testcase classname="Role Controller getRoleById" name="should get a role by id and return 200 status" time="0.002">
+    <testcase classname="Role Controller getRoleById" name="should get a role by id and return 200 status" time="0.001">
     </testcase>
     <testcase classname="Role Controller getRoleById" name="should return 404 if role not found" time="0.001">
     </testcase>
-    <testcase classname="Role Controller getRoleById" name="should return 400 for invalid id" time="0">
+    <testcase classname="Role Controller getRoleById" name="should return 400 for invalid id" time="0.001">
     </testcase>
     <testcase classname="Role Controller getRoleById" name="should handle database errors" time="0">
     </testcase>
-    <testcase classname="Role Controller createRole" name="should create a new role and return 201 status" time="0.001">
+    <testcase classname="Role Controller createRole" name="should create a new role and return 201 status" time="0">
     </testcase>
     <testcase classname="Role Controller createRole" name="should return 400 when missing required fields" time="0.001">
     </testcase>
@@ -481,9 +481,9 @@
     </testcase>
     <testcase classname="Role Controller updateRole" name="should update a role and return 200 status" time="0.001">
     </testcase>
-    <testcase classname="Role Controller updateRole" name="should return 400 for invalid id" time="0">
+    <testcase classname="Role Controller updateRole" name="should return 400 for invalid id" time="0.002">
     </testcase>
-    <testcase classname="Role Controller updateRole" name="should return 400 when no fields to update" time="0.001">
+    <testcase classname="Role Controller updateRole" name="should return 400 when no fields to update" time="0">
     </testcase>
     <testcase classname="Role Controller updateRole" name="should return 404 if role not found" time="0">
     </testcase>
@@ -493,39 +493,39 @@
     </testcase>
     <testcase classname="Role Controller deleteRole" name="should return 400 for invalid id" time="0">
     </testcase>
-    <testcase classname="Role Controller deleteRole" name="should return 404 if role not found" time="0">
+    <testcase classname="Role Controller deleteRole" name="should return 404 if role not found" time="0.001">
     </testcase>
-    <testcase classname="Role Controller deleteRole" name="should return 409 if role has associated users" time="0">
+    <testcase classname="Role Controller deleteRole" name="should return 409 if role has associated users" time="0.001">
     </testcase>
     <testcase classname="Role Controller deleteRole" name="should handle database errors" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Security Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.058" tests="17">
-    <testcase classname="Security Controller getAuditLogs" name="should get audit logs successfully" time="0.001">
+  <testsuite name="Security Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:21" time="0.058" tests="17">
+    <testcase classname="Security Controller getAuditLogs" name="should get audit logs successfully" time="0.002">
     </testcase>
-    <testcase classname="Security Controller getAuditLogs" name="should handle errors" time="0.002">
+    <testcase classname="Security Controller getAuditLogs" name="should handle errors" time="0">
     </testcase>
-    <testcase classname="Security Controller getSecurityEvents" name="should get security events successfully" time="0.001">
+    <testcase classname="Security Controller getSecurityEvents" name="should get security events successfully" time="0">
     </testcase>
     <testcase classname="Security Controller getSecurityEvents" name="should handle errors" time="0">
     </testcase>
     <testcase classname="Security Controller securityStatus" name="should get security status successfully" time="0.001">
     </testcase>
-    <testcase classname="Security Controller securityStatus" name="should handle errors" time="0">
+    <testcase classname="Security Controller securityStatus" name="should handle errors" time="0.001">
     </testcase>
     <testcase classname="Security Controller passwordPolicy" name="should get password policy successfully" time="0">
     </testcase>
-    <testcase classname="Security Controller passwordPolicy" name="should handle errors" time="0.001">
+    <testcase classname="Security Controller passwordPolicy" name="should handle errors" time="0">
     </testcase>
-    <testcase classname="Security Controller updatePasswordPolicy" name="should update password policy successfully" time="0">
+    <testcase classname="Security Controller updatePasswordPolicy" name="should update password policy successfully" time="0.001">
     </testcase>
-    <testcase classname="Security Controller updatePasswordPolicy" name="should return 403 when user is not admin" time="0">
+    <testcase classname="Security Controller updatePasswordPolicy" name="should return 403 when user is not admin" time="0.002">
     </testcase>
     <testcase classname="Security Controller updatePasswordPolicy" name="should handle errors" time="0.001">
     </testcase>
     <testcase classname="Security Controller securitySettings" name="should get security settings successfully" time="0">
     </testcase>
-    <testcase classname="Security Controller securitySettings" name="should handle errors" time="0">
+    <testcase classname="Security Controller securitySettings" name="should handle errors" time="0.001">
     </testcase>
     <testcase classname="Security Controller updateSecuritySettings" name="should update security settings successfully" time="0.001">
     </testcase>
@@ -536,34 +536,34 @@
     <testcase classname="Security Controller updateSecuritySettings" name="should handle errors" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Security Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.049" tests="5">
+  <testsuite name="Security Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:22" time="0.05" tests="5">
     <testcase classname="Security Middleware sanitizeData" name="should sanitize malicious scripts in request body" time="0.001">
     </testcase>
     <testcase classname="Security Middleware sanitizeData" name="should sanitize malicious scripts in query parameters" time="0.001">
     </testcase>
-    <testcase classname="Security Middleware sanitizeData" name="should sanitize nested objects in body" time="0.001">
+    <testcase classname="Security Middleware sanitizeData" name="should sanitize nested objects in body" time="0">
     </testcase>
-    <testcase classname="Security Middleware validateHeaders" name="should add security headers to response" time="0.001">
+    <testcase classname="Security Middleware validateHeaders" name="should add security headers to response" time="0">
     </testcase>
-    <testcase classname="Security Middleware validateHeaders" name="should return 400 status for invalid content type" time="0">
+    <testcase classname="Security Middleware validateHeaders" name="should return 400 status for invalid content type" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Session Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.052" tests="13">
+  <testsuite name="Session Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:22" time="0.052" tests="13">
     <testcase classname="Session Middleware validateSession" name="debe permitir el acceso cuando la sesión es válida" time="0.001">
     </testcase>
-    <testcase classname="Session Middleware validateSession" name="debe retornar 401 cuando no hay sesión" time="0.001">
+    <testcase classname="Session Middleware validateSession" name="debe retornar 401 cuando no hay sesión" time="0">
     </testcase>
     <testcase classname="Session Middleware validateSession" name="debe retornar 401 cuando no hay usuario en la sesión" time="0">
     </testcase>
-    <testcase classname="Session Middleware validateSession" name="debe retornar 401 cuando la sesión no se encuentra en Redis" time="0">
+    <testcase classname="Session Middleware validateSession" name="debe retornar 401 cuando la sesión no se encuentra en Redis" time="0.001">
     </testcase>
-    <testcase classname="Session Middleware validateSession" name="debe manejar errores al verificar sesión" time="0.001">
+    <testcase classname="Session Middleware validateSession" name="debe manejar errores al verificar sesión" time="0">
     </testcase>
-    <testcase classname="Session Middleware regenerateSession" name="debe regenerar la sesión correctamente" time="0.001">
+    <testcase classname="Session Middleware regenerateSession" name="debe regenerar la sesión correctamente" time="0">
     </testcase>
-    <testcase classname="Session Middleware regenerateSession" name="debe pasar al siguiente middleware si no hay método regenerate" time="0">
+    <testcase classname="Session Middleware regenerateSession" name="debe pasar al siguiente middleware si no hay método regenerate" time="0.001">
     </testcase>
-    <testcase classname="Session Middleware regenerateSession" name="debe manejar errores durante la regeneración" time="0.001">
+    <testcase classname="Session Middleware regenerateSession" name="debe manejar errores durante la regeneración" time="0">
     </testcase>
     <testcase classname="Session Middleware regenerateSession" name="debe pasar al siguiente middleware si hay un error general" time="0">
     </testcase>
@@ -571,37 +571,37 @@
     </testcase>
     <testcase classname="Session Middleware clearSession" name="debe pasar al siguiente middleware si no hay sesión" time="0">
     </testcase>
-    <testcase classname="Session Middleware clearSession" name="debe manejar errores durante la limpieza" time="0">
+    <testcase classname="Session Middleware clearSession" name="debe manejar errores durante la limpieza" time="0.001">
     </testcase>
-    <testcase classname="Session Middleware clearSession" name="debe pasar al siguiente middleware si hay un error general" time="0.001">
+    <testcase classname="Session Middleware clearSession" name="debe pasar al siguiente middleware si hay un error general" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="User Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.055" tests="11">
+  <testsuite name="User Controller" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:22" time="0.054" tests="11">
     <testcase classname="User Controller getAllUsers" name="should get all users with default pagination" time="0.001">
     </testcase>
     <testcase classname="User Controller getAllUsers" name="should apply search filters when provided" time="0">
     </testcase>
     <testcase classname="User Controller getAllUsers" name="should handle database errors" time="0">
     </testcase>
-    <testcase classname="User Controller getUserById" name="should get a user by id and return 200 status" time="0">
+    <testcase classname="User Controller getUserById" name="should get a user by id and return 200 status" time="0.001">
     </testcase>
     <testcase classname="User Controller getUserById" name="should return 404 if user not found" time="0.001">
     </testcase>
-    <testcase classname="User Controller getUserById" name="should return 400 for invalid id" time="0.001">
+    <testcase classname="User Controller getUserById" name="should return 400 for invalid id" time="0">
     </testcase>
     <testcase classname="User Controller getUserById" name="should handle database errors" time="0">
     </testcase>
-    <testcase classname="User Controller createUser" name="should create a new user and return 201 status" time="0">
+    <testcase classname="User Controller createUser" name="should create a new user and return 201 status" time="0.001">
     </testcase>
-    <testcase classname="User Controller createUser" name="should return 400 when missing required fields" time="0">
+    <testcase classname="User Controller createUser" name="should return 400 when missing required fields" time="0.001">
     </testcase>
-    <testcase classname="User Controller createUser" name="should return 409 when user already exists" time="0.001">
+    <testcase classname="User Controller createUser" name="should return 409 when user already exists" time="0">
     </testcase>
     <testcase classname="User Controller createUser" name="should handle database errors" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="Pruebas de Entidad Usuario" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.131" tests="5">
-    <testcase classname="Pruebas de Entidad Usuario" name="Debería crear un nuevo usuario" time="0.006">
+  <testsuite name="Pruebas de Entidad Usuario" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:22" time="0.131" tests="5">
+    <testcase classname="Pruebas de Entidad Usuario" name="Debería crear un nuevo usuario" time="0.005">
     </testcase>
     <testcase classname="Pruebas de Entidad Usuario" name="Debería obtener un usuario por ID" time="0.002">
     </testcase>
@@ -609,15 +609,15 @@
     </testcase>
     <testcase classname="Pruebas de Entidad Usuario" name="Debería actualizar datos de usuario" time="0.005">
     </testcase>
-    <testcase classname="Pruebas de Entidad Usuario" name="Debería eliminar un usuario" time="0.004">
+    <testcase classname="Pruebas de Entidad Usuario" name="Debería eliminar un usuario" time="0.005">
     </testcase>
   </testsuite>
-  <testsuite name="Validation Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:19:04" time="0.115" tests="5">
+  <testsuite name="Validation Middleware" errors="0" failures="0" skipped="0" timestamp="2025-03-24T22:38:22" time="0.113" tests="5">
     <testcase classname="Validation Middleware validate (Express Validator)" name="should call next() when validation passes" time="0.005">
     </testcase>
-    <testcase classname="Validation Middleware validate (Express Validator)" name="should return 400 with error messages when validation fails" time="0.001">
+    <testcase classname="Validation Middleware validate (Express Validator)" name="should return 400 with error messages when validation fails" time="0.002">
     </testcase>
-    <testcase classname="Validation Middleware validateSchema (Joi)" name="should call next() when validation passes" time="0.001">
+    <testcase classname="Validation Middleware validateSchema (Joi)" name="should call next() when validation passes" time="0.002">
     </testcase>
     <testcase classname="Validation Middleware validateSchema (Joi)" name="should return 400 with error messages when validation fails" time="0.001">
     </testcase>

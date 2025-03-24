@@ -22,8 +22,8 @@ function loadEnv(envPath = null) {
   
   // Verificar si tenemos la variable de entorno DB_PASSWORD
   if (!process.env.DB_PASSWORD) {
-    logger.warn('DB_PASSWORD no definida, usando contraseña por defecto "kali"');
-    process.env.DB_PASSWORD = 'kali';
+    logger.warn('DB_PASSWORD no definida, usando valor de la variable de entorno');
+    // No asignar un valor por defecto aquí, usar la variable del entorno
   }
   
   // Log de configuración (sin mostrar la contraseña)
@@ -44,7 +44,7 @@ async function executeQuery(sql, params = [], options = {}) {
   const connectionConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'kali', // Usar kali como valor por defecto
+    password: process.env.DB_PASSWORD, // Usar solo la variable de entorno
     database: process.env.DB_NAME || 'Oficri_sistema',
     multipleStatements: options.multipleStatements || false
   };
@@ -247,7 +247,7 @@ async function forceReconnect() {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'kali',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'Oficri_sistema',
     waitForConnections: true,
     connectionLimit: 10,

@@ -7,12 +7,12 @@
 const mysql = require('mysql2/promise');
 const { logger } = require('../utils/logger');
 
-// Asegurarse de que se usa la contraseña correcta (kali)
+// Configuración de la base de datos usando variables de entorno
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'kali', // Usar kali como contraseña por defecto
+  password: process.env.DB_PASSWORD, // Usar solo la variable de entorno
   database: process.env.DB_NAME || 'Oficri_sistema',
   waitForConnections: true,
   connectionLimit: 10,

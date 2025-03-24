@@ -20,12 +20,12 @@ dotenv.config({
 // Configurar variables de entorno por defecto para pruebas
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
-// Aseguramos que se use la contraseña correcta (kali)
+// Usamos la variable de entorno cargada desde .env.test
 process.env.DB_HOST = 'localhost';
 process.env.DB_PORT = '3306';
 process.env.DB_NAME = 'Oficri_sistema';
 process.env.DB_USER = 'root';
-process.env.DB_PASSWORD = 'kali';
+// No establecemos un valor hardcodeado para DB_PASSWORD, usamos lo que viene de .env.test
 process.env.REDIS_HOST = 'localhost';
 process.env.REDIS_PORT = '6379';
 process.env.REDIS_PASSWORD = '';
