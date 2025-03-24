@@ -3,20 +3,17 @@
  * Unit tests for document controller functions
  */
 
-const documentController = require('../../controllers/document.controller');
-const { logger } = require('../../utils/logger');
-
-// Mock the database module before it's used in document.controller.js
+// Mock database antes de importar el controlador
 jest.mock('../../config/database', () => {
   return {
-    executeQuery: jest.fn()
+    executeQuery: jest.fn(),
+    logger: {
+      debug: jest.fn()
+    }
   };
 });
 
-// Import mocked module
-const db = require('../../config/database');
-
-// Mock the logger
+// Mock logger antes de importarlo
 jest.mock('../../utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -26,6 +23,13 @@ jest.mock('../../utils/logger', () => ({
   },
   logSecurityEvent: jest.fn()
 }));
+
+// Ahora importamos el controlador (después de los mocks)
+const documentController = require('../../controllers/document.controller');
+
+// Importamos los módulos mockeados
+const db = require('../../config/database');
+const { logger } = require('../../utils/logger');
 
 describe('Document Controller', () => {
   let mockRequest;
@@ -41,7 +45,7 @@ describe('Document Controller', () => {
       json: jest.fn()
     };
     
-    // Setup request object
+    // Setup request object with datos por defecto
     mockRequest = {
       query: {
         page: 1, 
@@ -57,11 +61,11 @@ describe('Document Controller', () => {
     
     // Default implementation for db.executeQuery
     db.executeQuery.mockImplementation((sql, params = []) => {
-      // For count queries
+      // Para consultas de conteo
       if (sql.includes('COUNT')) {
         return Promise.resolve([{ total: 2 }]);
       } 
-      // For filtered queries
+      // Para consultas filtradas por estado
       else if (sql.includes('estado') && params.includes('RECIBIDO')) {
         return Promise.resolve([
           {
@@ -77,7 +81,7 @@ describe('Document Controller', () => {
           }
         ]);
       } 
-      // Default response for document queries
+      // Respuesta por defecto para consultas de documentos
       else {
         return Promise.resolve([
           {
