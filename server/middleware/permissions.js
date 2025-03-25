@@ -199,7 +199,18 @@ const validateResourcePermissions = (resourcePermissions) => {
         });
       }
 
-      const resource = req.params.resource || req.baseUrl.split('/')[1];
+      // Extraer el recurso de la URL de manera más robusta
+      let resource;
+      if (req.params.resource) {
+        resource = req.params.resource;
+      } else if (req.baseUrl) {
+        // Extraer el segundo segmento de la URL (después de /api/)
+        const segments = req.baseUrl.split('/').filter(segment => segment.length > 0);
+        resource = segments.length > 0 ? segments[segments.length - 1] : '';
+      } else {
+        resource = '';
+      }
+      
       const method = req.method.toUpperCase();
       const requiredPermissions = resourcePermissions[resource]?.[method] || [];
 
@@ -215,6 +226,7 @@ const validateResourcePermissions = (resourcePermissions) => {
       );
 
       if (!hasAllPermissions) {
+        // Garantizar que se registre la advertencia
         logger.warn('Acceso denegado a recurso:', {
           user: req.user.id,
           role: userRole,

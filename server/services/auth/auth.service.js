@@ -684,11 +684,12 @@ async function registerUser(userData) {
     const { codigoCIP, nombres, apellidos, grado, password, idRol, idArea } = userData;
     
     // Validate password against policy
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      const error = new Error(passwordValidation.message);
-      error.statusCode = 400;
-      throw error;
+    try {
+      // Esta función lanzará un error si la contraseña no es válida
+      validatePassword(password);
+    } catch (validationError) {
+      // Re-lanzar el error de validación
+      throw validationError;
     }
     
     // Hash password

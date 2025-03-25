@@ -22,6 +22,16 @@ const authMiddleware = (req, res, next) => {
     return next();
   }
 
+  // En modo de test, pero solo si se solicita específicamente
+  if (process.env.NODE_ENV === 'test' && process.env.USE_TEST_USER === 'true') {
+    req.user = {
+      id: 1,
+      role: 'ADMIN',
+      permissions: ['crear', 'editar', 'eliminar', 'ver', 'derivar', 'auditar']
+    };
+    return next();
+  }
+
   // Obtener token
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -256,8 +266,10 @@ const checkPermissions = (...permissions) => {
 
 /**
  * Middleware para verificar propiedad de recursos
+ * @param {string} resourceType - Tipo de recurso a verificar
+ * @param {Function} [resourceGetter] - Función opcional para obtener el recurso (útil para testing)
  */
-const checkResourceOwnership = (resourceType) => {
+const checkResourceOwnership = (resourceType, resourceGetter) => {
   return async (req, res, next) => {
     try {
       if (!req.user) {
@@ -267,7 +279,9 @@ const checkResourceOwnership = (resourceType) => {
         });
       }
 
-      const resource = await getResource(resourceType, req.params.id);
+      // Usar la función inyectada o la predeterminada
+      const getResourceFn = resourceGetter || getResource;
+      const resource = await getResourceFn(resourceType, req.params.id);
 
       if (!resource) {
         return res.status(404).json({
@@ -277,7 +291,7 @@ const checkResourceOwnership = (resourceType) => {
       }
 
       // Permitir acceso a administradores
-      if (req.user.role === 'admin') {
+      if (req.user.role === 'ADMIN') {
         return next();
       }
 
@@ -395,5 +409,6 @@ module.exports = {
   checkResourceOwnership,
   authenticate,
   authorize,
-  validatePermissions
+  validatePermissions,
+  getResource
 }; 
