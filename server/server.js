@@ -166,15 +166,18 @@ app.post('/api/auth/login', async (req, res) => {
     
     // IMPORTANTE: Comprobar de dos formas:
     // 1. Verificando contra el hash almacenado (como en el original)
-    // 2. Aceptando "admin123" o "Admin123!" directamente (para facilitar pruebas)
+    // 2. Aceptando "admin123" directamente (solo para facilitar pruebas en desarrollo)
+    // NOTA: Este atajo debe ser desactivado en producción mediante variable de entorno
     let isValidPassword = false;
     
-    if (password === 'admin123' || password === 'Admin123!') {
+    // Usar solo "admin123" como estándar para pruebas en desarrollo
+    if (process.env.NODE_ENV !== 'production' && password === 'admin123') {
       isValidPassword = true;
+      console.log('ADVERTENCIA: Usando bypass de contraseña para desarrollo');
     } else {
       try {
         isValidPassword = await verifyPassword(password, user.PasswordHash);
-  } catch (error) {
+      } catch (error) {
         console.error('Error al verificar contraseña:', error);
       }
     }

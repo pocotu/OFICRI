@@ -40,9 +40,11 @@ Este documento proporciona ejemplos detallados para utilizar la API de OFICRI co
 ```json
 {
   "codigoCIP": "12345678",
-  "password": "Admin123!"
+  "password": "admin123"
 }
 ```
+
+> **Nota**: En entorno de desarrollo, el sistema acepta "admin123" como contraseña válida para cualquier usuario para facilitar las pruebas. Este comportamiento está desactivado automáticamente en producción por seguridad.
 
 3. En la pestaña "Tests", añada el siguiente script para guardar automáticamente el token:
 ```javascript

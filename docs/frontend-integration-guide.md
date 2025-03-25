@@ -698,10 +698,12 @@ Para facilitar el desarrollo, el entorno Sandbox incluye datos preconfigurados. 
 
 | Rol               | CodigoCIP | Contraseña  | Permisos          |
 |-------------------|-----------|-------------|--------------------|
-| Administrador     | 12345678  | Admin123!   | Todos (255)        |
-| Mesa de Partes    | 23456789  | Admin123!   | Crear, Editar, Ver, Derivar, Exportar (91)|
-| Responsable Área  | 34567890  | Admin123!   | Crear, Editar, Ver, Derivar, Exportar (91)|
-| Operador          | 67890123  | Admin123!   | Crear, Editar, Ver (11) |
+| Administrador     | 12345678  | admin123    | Todos (255)        |
+| Mesa de Partes    | 23456789  | admin123    | Crear, Editar, Ver, Derivar, Exportar (91)|
+| Responsable Área  | 34567890  | admin123    | Crear, Editar, Ver, Derivar, Exportar (91)|
+| Operador          | 67890123  | admin123    | Crear, Editar, Ver (11) |
+
+> **Nota**: En entorno de desarrollo, el sistema acepta "admin123" como contraseña válida para cualquier usuario para facilitar las pruebas. Este comportamiento está desactivado automáticamente en producción por seguridad.
 
 ## Soporte y Resolución de Problemas
 
