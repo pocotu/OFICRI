@@ -21,7 +21,7 @@ const csrfProtection = (req, res, next) => {
   // Get user session token (to verify CSRF token is valid for this session)
   const sessionID = req.session?.id;
   
-  if (!csrfToken) {
+  if (!csrfToken || csrfToken.trim() === '') {
     logSecurityEvent('CSRF_TOKEN_MISSING', {
       ip: req.ip,
       path: req.originalUrl,
@@ -42,7 +42,8 @@ const csrfProtection = (req, res, next) => {
     logSecurityEvent('CSRF_TOKEN_INVALID', {
       ip: req.ip,
       path: req.originalUrl,
-      method: req.method
+      method: req.method,
+      token: csrfToken
     });
     
     return res.status(403).json({
@@ -58,8 +59,17 @@ const csrfProtection = (req, res, next) => {
  * Generate a new CSRF token
  * @param {string} sessionID - User session ID
  * @returns {string} CSRF token
+ * @throws {Error} If CSRF_SECRET is not configured or sessionID is invalid
  */
 const generateCsrfToken = (sessionID) => {
+  if (!sessionID || sessionID.trim() === '') {
+    throw new Error('Session ID es requerido');
+  }
+
+  if (!process.env.CSRF_SECRET) {
+    throw new Error('CSRF_SECRET no está configurado');
+  }
+
   // In a real implementation, store this token associated with the session
   const hmac = crypto.createHmac('sha256', process.env.CSRF_SECRET);
   hmac.update(sessionID + Date.now().toString());
@@ -74,7 +84,7 @@ const generateCsrfToken = (sessionID) => {
  */
 const validateCsrfToken = (token, sessionID) => {
   // In a real implementation, check against stored token for this session
-  // For demo purposes, always return true
+  // For demo purposes, always return true if token is valid
   return token && token.length > 20;
 };
 
