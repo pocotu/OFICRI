@@ -13,6 +13,22 @@ const db = require('../config/database');
  */
 async function obtenerPermisosContextuales(req, res) {
   try {
+    // Verificar si la tabla existe en la base de datos
+    try {
+      await db.executeQuery(`SELECT 1 FROM PermisoContextual LIMIT 1`);
+    } catch (tableError) {
+      // Si el error indica que la tabla no existe, manejarlo específicamente
+      if (tableError.message && tableError.message.includes("doesn't exist")) {
+        return res.status(404).json({
+          success: false,
+          message: 'La tabla PermisoContextual no existe en la base de datos',
+          data: []
+        });
+      }
+      // Si es otro tipo de error, lanzarlo para que se maneje en el catch exterior
+      throw tableError;
+    }
+    
     const permisos = await permisosService.getPermisosContextuales();
     res.status(200).json({
       success: true,
@@ -21,6 +37,16 @@ async function obtenerPermisosContextuales(req, res) {
     });
   } catch (error) {
     logger.error(`Error al obtener permisos contextuales: ${error.message}`);
+    
+    // Si el error indica que la tabla no existe, manejarlo específicamente
+    if (error.message && error.message.includes("doesn't exist")) {
+      return res.status(404).json({
+        success: false,
+        message: 'La tabla PermisoContextual no existe en la base de datos',
+        data: []
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Error al obtener permisos contextuales',

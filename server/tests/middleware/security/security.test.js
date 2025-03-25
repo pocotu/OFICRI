@@ -47,6 +47,8 @@ const { logSecurityEvent } = require('../../../utils/logger');
 const rateLimit = require('express-rate-limit');
 const express = require('express');
 const request = require('supertest');
+const securityModule = require('../../../middleware/security/index');
+const { rateLimitMiddleware } = securityModule;
 
 describe('Security Middleware', () => {
   let app;
@@ -122,10 +124,44 @@ describe('Security Middleware', () => {
     jest.useRealTimers();
   });
 
+  describe('Module Exports', () => {
+    test('should export rateLimitMiddleware with all required limiters', () => {
+      expect(rateLimitMiddleware).toBeDefined();
+      expect(rateLimitMiddleware.standard).toBeDefined();
+      expect(rateLimitMiddleware.auth).toBeDefined();
+      expect(rateLimitMiddleware.passwordReset).toBeDefined();
+      
+      // Verify that exported middleware are functions
+      expect(typeof rateLimitMiddleware.standard).toBe('function');
+      expect(typeof rateLimitMiddleware.auth).toBe('function');
+      expect(typeof rateLimitMiddleware.passwordReset).toBe('function');
+    });
+  });
+
   describe('Rate Limit Middleware', () => {
     describe('Standard Rate Limiter', () => {
       test('should allow requests within standard limit', async () => {
         app.use(standardLimiter);
+        app.get('/test', (req, res) => res.json({ success: true }));
+
+        // Make requests up to the limit
+        for (let i = 0; i < 100; i++) {
+          const response = await request(app).get('/test');
+          expect(response.status).toBe(200);
+        }
+
+        // Next request should be blocked
+        const response = await request(app).get('/test');
+        expect(response.status).toBe(429);
+        expect(response.body).toEqual({
+          success: false,
+          message: 'Demasiadas solicitudes, por favor intente más tarde'
+        });
+        expect(logSecurityEvent).toHaveBeenCalledWith('RATE_LIMIT_EXCEEDED', expect.any(Object));
+      });
+
+      test('should use the exported standardLimiter correctly', async () => {
+        app.use(rateLimitMiddleware.standard);
         app.get('/test', (req, res) => res.json({ success: true }));
 
         // Make requests up to the limit
@@ -165,11 +201,51 @@ describe('Security Middleware', () => {
         });
         expect(logSecurityEvent).toHaveBeenCalledWith('AUTH_RATE_LIMIT_EXCEEDED', expect.any(Object));
       });
+
+      test('should use the exported authLimiter correctly', async () => {
+        app.use(rateLimitMiddleware.auth);
+        app.post('/auth', (req, res) => res.json({ success: true }));
+
+        // Make requests up to the limit
+        for (let i = 0; i < 10; i++) {
+          const response = await request(app).post('/auth');
+          expect(response.status).toBe(200);
+        }
+
+        // Next request should be blocked
+        const response = await request(app).post('/auth');
+        expect(response.status).toBe(429);
+        expect(response.body).toEqual({
+          success: false,
+          message: 'Demasiados intentos de autenticación, por favor intente más tarde'
+        });
+        expect(logSecurityEvent).toHaveBeenCalledWith('AUTH_RATE_LIMIT_EXCEEDED', expect.any(Object));
+      });
     });
 
     describe('Password Reset Rate Limiter', () => {
       test('should allow requests within password reset limit', async () => {
         app.use(passwordResetLimiter);
+        app.post('/reset-password', (req, res) => res.json({ success: true }));
+
+        // Make requests up to the limit
+        for (let i = 0; i < 3; i++) {
+          const response = await request(app).post('/reset-password');
+          expect(response.status).toBe(200);
+        }
+
+        // Next request should be blocked
+        const response = await request(app).post('/reset-password');
+        expect(response.status).toBe(429);
+        expect(response.body).toEqual({
+          success: false,
+          message: 'Demasiados intentos de restablecimiento de contraseña, por favor intente más tarde'
+        });
+        expect(logSecurityEvent).toHaveBeenCalledWith('PASSWORD_RESET_RATE_LIMIT_EXCEEDED', expect.any(Object));
+      });
+
+      test('should use the exported passwordResetLimiter correctly', async () => {
+        app.use(rateLimitMiddleware.passwordReset);
         app.post('/reset-password', (req, res) => res.json({ success: true }));
 
         // Make requests up to the limit
@@ -228,6 +304,63 @@ describe('Security Middleware', () => {
       // Next request should be allowed
       const response = await request(app).get('/test');
       expect(response.status).toBe(200);
+    });
+
+    test('should apply different rate limits to different routes', async () => {
+      // Creamos instancias frescas para asegurarnos de que no hay contadores compartidos
+      mockState.clear(); // Reiniciar el estado del mock
+      app = express();
+      
+      // Configurar rutas y limitadores
+      app.get('/api/test', standardLimiter, (req, res) => res.json({ success: true }));
+      app.post('/auth/login', authLimiter, (req, res) => res.json({ success: true }));
+      app.post('/reset-password', passwordResetLimiter, (req, res) => res.json({ success: true }));
+      
+      // Standard limiter (100 requests)
+      for (let i = 0; i < 99; i++) { // Reduce a 99 para evitar límite
+        const response = await request(app).get('/api/test');
+        expect(response.status).toBe(200);
+      }
+      
+      // La solicitud 100 debe seguir funcionando
+      let response = await request(app).get('/api/test');
+      expect(response.status).toBe(200);
+      
+      // La solicitud 101 debería ser bloqueada
+      response = await request(app).get('/api/test');
+      expect(response.status).toBe(429);
+      
+      mockState.clear(); // Reiniciar el estado para la siguiente prueba
+      
+      // Auth limiter (10 requests)
+      for (let i = 0; i < 9; i++) { // Reduce a 9 para evitar límite
+        const response = await request(app).post('/auth/login');
+        expect(response.status).toBe(200);
+      }
+      
+      // La solicitud 10 debería seguir funcionando
+      response = await request(app).post('/auth/login');
+      expect(response.status).toBe(200);
+      
+      // La solicitud 11 debería ser bloqueada
+      response = await request(app).post('/auth/login');
+      expect(response.status).toBe(429);
+      
+      mockState.clear(); // Reiniciar el estado para la siguiente prueba
+      
+      // Password reset limiter (3 requests)
+      for (let i = 0; i < 2; i++) { // Reduce a 2 para evitar límite
+        const response = await request(app).post('/reset-password');
+        expect(response.status).toBe(200);
+      }
+      
+      // La solicitud 3 debería seguir funcionando
+      response = await request(app).post('/reset-password');
+      expect(response.status).toBe(200);
+      
+      // La solicitud 4 debería ser bloqueada
+      response = await request(app).post('/reset-password');
+      expect(response.status).toBe(429);
     });
   });
 }); 

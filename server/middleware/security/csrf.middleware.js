@@ -84,11 +84,18 @@ const generateCsrfToken = (sessionID) => {
  */
 const validateCsrfToken = (token, sessionID) => {
   // In a real implementation, check against stored token for this session
-  // For demo purposes, always return true if token is valid
+  // For demo purposes, always return true if token is valid format
   return token && token.length > 20;
 };
 
-module.exports = {
+const csrfMiddleware = {
   csrfMiddleware: csrfProtection,
   generateCsrfToken
-}; 
+};
+
+// Exportar la función de validación para pruebas
+csrfMiddleware.__test__ = {
+  validateCsrfToken
+};
+
+module.exports = csrfMiddleware; 

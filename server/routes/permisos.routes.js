@@ -11,6 +11,7 @@ const { asyncHandler } = require('../middleware/async-handler');
 const { verifyToken, validatePermissions } = require('../middleware/auth');
 const { validateSchema } = require('../middleware/validation');
 const { permisoContextualSchema, permisoEspecialSchema } = require('../middleware/validation/permiso.validator');
+const db = require('../config/database');
 
 /**
  * @swagger
@@ -151,6 +152,56 @@ router.post('/verificar-bit',
 );
 
 // ENDPOINTS PARA PERMISOS CONTEXTUALES
+
+/**
+ * @swagger
+ * /api/permisos/check-table:
+ *   get:
+ *     summary: Verificar si la tabla de permisos contextuales existe
+ *     tags: [Permisos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estado de la tabla
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ *       401:
+ *         description: No autorizado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/check-table', authenticate, asyncHandler(async (req, res) => {
+  try {
+    // Consulta para verificar si la tabla existe
+    try {
+      await db.executeQuery('SELECT 1 FROM PermisoContextual LIMIT 1');
+      return res.status(200).json({
+        success: true,
+        exists: true
+      });
+    } catch (error) {
+      if (error.message.includes("doesn't exist")) {
+        return res.status(200).json({
+          success: true,
+          exists: false
+        });
+      }
+      throw error; // Relanzo si es otro tipo de error
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error al verificar la existencia de la tabla',
+      error: error.message
+    });
+  }
+}));
 
 /**
  * @swagger
