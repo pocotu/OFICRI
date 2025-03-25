@@ -889,6 +889,123 @@ async function closeAllSessions(userId) {
   }
 }
 
+/**
+ * Verify a password reset token
+ * @param {string} resetToken - Token to verify
+ * @returns {Promise<Object|null>} Reset token info or null if invalid
+ */
+async function verifyPasswordResetToken(resetToken) {
+  try {
+    if (!resetToken) {
+      return null;
+    }
+    
+    // Find token in database
+    const tokens = await executeQuery(`
+      SELECT 
+        pr.IDReset, pr.IDUsuario, pr.ResetToken, pr.Expiracion, pr.Usado,
+        u.CodigoCIP
+      FROM PasswordReset pr
+      JOIN Usuario u ON pr.IDUsuario = u.IDUsuario
+      WHERE pr.ResetToken = ? AND pr.Usado = FALSE AND pr.Expiracion > NOW()
+    `, [resetToken]);
+    
+    // Token not found, expired, or already used
+    if (tokens.length === 0) {
+      logSecurityEvent('PASSWORD_RESET_FAILURE', {
+        reason: 'INVALID_TOKEN',
+        token: '[REDACTED]'
+      });
+      return null;
+    }
+    
+    return tokens[0];
+  } catch (error) {
+    logger.error('Error al verificar token de restablecimiento:', { error: error.message });
+    return null;
+  }
+}
+
+/**
+ * Mark a password reset token as used
+ * @param {string} resetToken - Token to mark as used
+ * @returns {Promise<boolean>} True if successful
+ */
+async function markResetTokenAsUsed(resetToken) {
+  try {
+    const result = await executeQuery(`
+      UPDATE PasswordReset
+      SET Usado = TRUE, FechaUso = NOW()
+      WHERE ResetToken = ?
+    `, [resetToken]);
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    logger.error('Error al marcar token como usado:', { error: error.message });
+    return false;
+  }
+}
+
+/**
+ * Hash a password securely
+ * @param {string} password - Plain text password
+ * @returns {Promise<string>} Hashed password
+ */
+async function hashPassword(password) {
+  const salt = await bcrypt.genSalt(10);
+  return await bcrypt.hash(password, 10);
+}
+
+/**
+ * Verify a password against a hash
+ * @param {string} password - Plain text password
+ * @param {string} hash - Hashed password
+ * @returns {Promise<boolean>} True if password matches hash
+ */
+async function verifyPassword(password, hash) {
+  return await bcrypt.compare(password, hash);
+}
+
+/**
+ * Get a user by ID
+ * @param {number} userId - User ID
+ * @returns {Promise<Object|null>} User data or null if not found
+ */
+async function getUserById(userId) {
+  try {
+    const users = await executeQuery(`
+      SELECT 
+        u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+        u.PasswordHash as passwordHash, u.IDArea, u.IDRol
+      FROM Usuario u
+      WHERE u.IDUsuario = ? AND u.Bloqueado = FALSE
+    `, [userId]);
+    
+    return users.length > 0 ? users[0] : null;
+  } catch (error) {
+    logger.error('Error en getUserById:', { error: error.message });
+    return null;
+  }
+}
+
+// Función auxiliar para mapear respuestas de usuario
+function mapUsuarioResponse(user) {
+  return {
+    IDUsuario: user.IDUsuario,
+    CodigoCIP: user.CodigoCIP,
+    Nombres: user.Nombres,
+    Apellidos: user.Apellidos,
+    Grado: user.Grado,
+    IDArea: user.IDArea,
+    NombreArea: user.NombreArea,
+    IDRol: user.IDRol,
+    NombreRol: user.NombreRol,
+    Permisos: user.Permisos,
+    UltimoAcceso: user.UltimoAcceso,
+    passwordHash: user.PasswordHash // Solo para uso interno
+  };
+}
+
 // Export all functions
 module.exports = {
   login,
@@ -906,5 +1023,12 @@ module.exports = {
   blockUser,
   unblockUser,
   getActiveSessions,
-  closeAllSessions
+  closeAllSessions,
+  // Funciones auxiliares expuestas para testing
+  verifyPasswordResetToken,
+  markResetTokenAsUsed,
+  hashPassword,
+  verifyPassword,
+  getUserById,
+  mapUsuarioResponse
 }; 
