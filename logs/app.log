@@ -13041,3 +13041,27 @@
 {"level":"debug","message":"Configuración de base de datos: host=localhost, port=3306, user=root, database=Oficri_sistema","timestamp":"2025-03-26T22:24:51.242Z"}
 {"level":"info","message":"Database connection pool closed successfully","timestamp":"2025-03-26T22:24:51.350Z"}
 {"level":"error","message":"Error al conectar a la base de datos: Pool is closed.","stack":"Error: Pool is closed.\n    at D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\pool.js:55:21\n    at PoolConnection.<anonymous> (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:818:13)\n    at Object.onceWrapper (node:events:628:26)\n    at PoolConnection.emit (node:events:513:28)\n    at ClientHandshake.<anonymous> (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:137:14)\n    at ClientHandshake.emit (node:events:513:28)\n    at ClientHandshake.execute (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\commands\\command.js:49:10)\n    at PoolConnection.handlePacket (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:475:34)\n    at PacketParser.onPacket (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:93:12)\n    at PacketParser.executeStart (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\packet_parser.js:75:16)\n    at Socket.<anonymous> (D:\\proye\\OFICRI\\pagina\\Final\\refactored\\OFICRI\\node_modules\\mysql2\\lib\\base\\connection.js:100:25)\n    at Socket.emit (node:events:513:28)\n    at addChunk (node:internal/streams/readable:559:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)\n    at Socket.Readable.push (node:internal/streams/readable:390:5)\n    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)","timestamp":"2025-03-26T22:24:51.352Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-26T22:26:05.530Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-26T22:26:05.533Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.537Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.578Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.584Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.615Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.622Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.628Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.633Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.641Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.723Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.731Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:26:05.735Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-26T22:44:31.568Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-03-26T22:44:31.571Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.574Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.613Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.618Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.627Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.633Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.636Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.710Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.719Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-03-26T22:44:31.723Z"}
