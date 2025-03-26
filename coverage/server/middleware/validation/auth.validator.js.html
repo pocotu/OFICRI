@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -161,11 +161,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -177,7 +177,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -194,7 +194,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -205,7 +205,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -227,7 +227,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -243,7 +243,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -254,11 +254,11 @@
  * Input validation for authentication-related routes
  */
 &nbsp;
-const { body } = <span class="cstat-no" title="statement not covered" >require('express-validator');</span>
-const Joi = <span class="cstat-no" title="statement not covered" >require('joi');</span>
+const { body } = require('express-validator');
+const Joi = require('joi');
 &nbsp;
 // Login validation
-const loginValidator = <span class="cstat-no" title="statement not covered" >[</span>
+const loginValidator = [
   body('codigoCIP')
     .notEmpty().withMessage('El código CIP es obligatorio')
     .isLength({ min: 3, max: 50 }).withMessage('El código CIP debe tener entre 3 y 50 caracteres')
@@ -270,7 +270,7 @@ const loginValidator = <span class="cstat-no" title="statement not covered" >[</
 ];
 &nbsp;
 // Esquema para validación de login
-const loginSchema = <span class="cstat-no" title="statement not covered" >Joi.object({</span>
+const loginSchema = Joi.object({
   codigoCIP: Joi.string().min(3).max(20).required()
     .messages({
       'string.empty': 'El CIP es obligatorio',
@@ -287,7 +287,7 @@ const loginSchema = <span class="cstat-no" title="statement not covered" >Joi.ob
 });
 &nbsp;
 // Esquema para solicitud de reset de contraseña (solo admin)
-const resetRequestSchema = <span class="cstat-no" title="statement not covered" >Joi.object({</span>
+const resetRequestSchema = Joi.object({
   codigoCIP: Joi.string().min(3).max(20).required()
     .messages({
       'string.empty': 'El CIP del usuario es obligatorio',
@@ -298,7 +298,7 @@ const resetRequestSchema = <span class="cstat-no" title="statement not covered" 
 });
 &nbsp;
 // Esquema para reset de contraseña con token (solo admin)
-const resetPasswordSchema = <span class="cstat-no" title="statement not covered" >Joi.object({</span>
+const resetPasswordSchema = Joi.object({
   token: Joi.string().required()
     .messages({
       'string.empty': 'El token es obligatorio',
@@ -320,7 +320,7 @@ const resetPasswordSchema = <span class="cstat-no" title="statement not covered"
 });
 &nbsp;
 // Esquema para cambio de contraseña (solo admin)
-const cambioPasswordSchema = <span class="cstat-no" title="statement not covered" >Joi.object({</span>
+const cambioPasswordSchema = Joi.object({
   idUsuario: Joi.number().integer().positive().required()
     .messages({
       'number.base': 'El ID de usuario debe ser un número',
@@ -336,7 +336,7 @@ const cambioPasswordSchema = <span class="cstat-no" title="statement not covered
     })
 });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = {</span>
+module.exports = {
   loginValidator,
   loginSchema,
   resetRequestSchema,
@@ -349,7 +349,7 @@ const cambioPasswordSchema = <span class="cstat-no" title="statement not covered
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-25T23:07:08.603Z
+                at 2025-03-26T04:59:19.657Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

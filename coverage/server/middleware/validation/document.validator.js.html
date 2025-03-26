@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -209,12 +209,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -263,7 +263,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -299,7 +299,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -318,7 +318,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -338,7 +338,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -349,12 +349,12 @@
  * ISO/IEC 27001 compliant implementation
  */
 &nbsp;
-const { body } = <span class="cstat-no" title="statement not covered" >require('express-validator');</span>
+const { body } = require('express-validator');
 &nbsp;
 /**
  * Validates document creation request
  */
-const createDocumentValidator = <span class="cstat-no" title="statement not covered" >[</span>
+const createDocumentValidator = [
   body('mesaPartesId')
     .notEmpty().withMessage('Se requiere el ID de Mesa de Partes')
     .isInt().withMessage('El ID de Mesa de Partes debe ser un número entero'),
@@ -403,7 +403,7 @@ const createDocumentValidator = <span class="cstat-no" title="statement not cove
 /**
  * Validates document update request
  */
-const updateDocumentValidator = <span class="cstat-no" title="statement not covered" >[</span>
+const updateDocumentValidator = [
   body('numeroOficioDocumento')
     .optional()
     .isString().withMessage('El Número de Oficio debe ser una cadena de texto')
@@ -439,7 +439,7 @@ const updateDocumentValidator = <span class="cstat-no" title="statement not cove
 /**
  * Validates document status update request
  */
-const updateStatusValidator = <span class="cstat-no" title="statement not covered" >[</span>
+const updateStatusValidator = [
   body('estado')
     .notEmpty().withMessage('Se requiere el Estado del Documento')
     .isIn(['REGISTRADO', 'EN_PROCESO', 'OBSERVADO', 'FINALIZADO', 'ARCHIVADO', 'CANCELADO'])
@@ -458,7 +458,7 @@ const updateStatusValidator = <span class="cstat-no" title="statement not covere
 /**
  * Validates document derivation request
  */
-const deriveDocumentValidator = <span class="cstat-no" title="statement not covered" >[</span>
+const deriveDocumentValidator = [
   body('areaDestinoId')
     .notEmpty().withMessage('Se requiere el ID del Área de Destino')
     .isInt().withMessage('El ID del Área de Destino debe ser un número entero'),
@@ -478,7 +478,7 @@ const deriveDocumentValidator = <span class="cstat-no" title="statement not cove
     .isLength({ max: 255 }).withMessage('El Motivo no debe exceder los 255 caracteres')
 ];
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = {</span>
+module.exports = {
   createDocumentValidator,
   updateDocumentValidator,
   updateStatusValidator,
@@ -490,7 +490,7 @@ const deriveDocumentValidator = <span class="cstat-no" title="statement not cove
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-25T23:07:08.603Z
+                at 2025-03-26T04:59:19.657Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
