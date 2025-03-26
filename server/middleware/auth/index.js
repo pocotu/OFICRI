@@ -4,7 +4,7 @@
  */
 
 const jwt = require('jsonwebtoken');
-const { logSecurityEvent } = require('../../utils/logger');
+const logger = require('../../utils/logger');
 
 // Middleware to verify JWT tokens
 const verifyToken = (req, res, next) => {
@@ -29,7 +29,7 @@ const verifyToken = (req, res, next) => {
     next();
   } catch (error) {
     // Log the error
-    logSecurityEvent('INVALID_TOKEN', {
+    logger.logSecurityEvent('INVALID_TOKEN', {
       ip: req.ip,
       path: req.originalUrl,
       method: req.method,
@@ -57,7 +57,7 @@ const checkRole = (requiredRoles) => {
     // Check if user role is in the required roles array
     if (!requiredRoles.includes(req.user.role)) {
       // Log unauthorized access attempt
-      logSecurityEvent('UNAUTHORIZED_ACCESS', {
+      logger.logSecurityEvent('UNAUTHORIZED_ACCESS', {
         userId: req.user.id,
         userRole: req.user.role,
         requiredRoles: requiredRoles,

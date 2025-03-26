@@ -34,4 +34,16 @@ const logger = winston.createLogger({
   transports
 });
 
-module.exports = { logger }; 
+/**
+ * Función para registrar eventos de seguridad
+ * @param {string} eventType - Tipo de evento de seguridad
+ * @param {Object} details - Detalles del evento
+ */
+const logSecurityEvent = (eventType, details) => {
+  logger.warn(`Security Event [${eventType}]`, { ...details, timestamp: new Date().toISOString() });
+};
+
+module.exports = { 
+  logger,
+  logSecurityEvent 
+}; 
