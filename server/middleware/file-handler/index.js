@@ -158,5 +158,6 @@ const fileHandlerMiddleware = (req, res, next) => {
 module.exports = {
   uploadMiddleware,
   multerErrorHandler,
-  fileHandlerMiddleware
+  fileHandlerMiddleware,
+  _fileFilter: fileFilter // Expose for testing purposes
 }; 
