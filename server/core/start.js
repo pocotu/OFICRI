@@ -90,44 +90,93 @@ async function main() {
     loggerWinston.error(`crear-admin error: ${data}`);
   });
   
-  crearAdmin.on('close', (code) => {
-    if (code !== 0) {
-      loggerWinston.warn(`crear-admin proceso terminado con código ${code}`);
-    } else {
-      loggerWinston.info('Verificación de usuario admin completada');
-    }
-    startServer();
+  return new Promise((resolve) => {
+    crearAdmin.on('close', (code) => {
+      if (code !== 0) {
+        loggerWinston.warn(`crear-admin proceso terminado con código ${code}`);
+      } else {
+        loggerWinston.info('Verificación de usuario admin completada');
+      }
+      startServer();
+      resolve();
+    });
   });
 }
+
+// Referencia al servidor para pruebas
+let serverInstance = null;
 
 // Iniciar el servidor
 function startServer() {
   // Si se especifica USE_SIMPLE_SERVER=true o estamos en desarrollo (por defecto), usar servidor simple
   if (process.env.USE_SIMPLE_SERVER === 'true') {
     loggerWinston.info('Iniciando servidor simplificado...');
-    require('../server');
-    return;
+    
+    // En modo de prueba, permitir mock del servidor
+    if (process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'mock') {
+      serverInstance = {};
+      return serverInstance;
+    }
+    
+    try {
+      serverInstance = require('../server');
+      return serverInstance;
+    } catch (error) {
+      loggerWinston.error(`Error al iniciar servidor: ${error.message}`);
+      exitProcess(1);
+      return null; // Never reaches here, but helps with test coverage
+    }
   }
   
   // Intentar iniciar servidor completo
   try {
     loggerWinston.info('Iniciando servidor completo...');
-    require('../server');
+    
+    // En modo de prueba, permitir mock del servidor
+    if (process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'mock') {
+      serverInstance = {};
+      return serverInstance;
+    }
+    
+    serverInstance = require('../server');
+    return serverInstance;
   } catch (error) {
     loggerWinston.error(`Error al iniciar servidor completo: ${error.message}`);
     loggerWinston.info('Intentando iniciar servidor simplificado como respaldo...');
     
     try {
-      require('../server');
+      if (process.env.NODE_ENV === 'test' && process.env.TEST_MODE === 'mock') {
+        serverInstance = {};
+        return serverInstance;
+      }
+      
+      serverInstance = require('../server');
+      return serverInstance;
     } catch (fallbackError) {
       loggerWinston.error(`Error crítico, no se pudo iniciar ningún servidor: ${fallbackError.message}`);
-      process.exit(1);
+      exitProcess(1);
+      return null; // Never reaches here, but helps with test coverage
     }
   }
 }
 
-// Ejecutar
-main().catch(err => {
-  loggerWinston.error(`Error en el proceso principal: ${err.message}`);
-  process.exit(1);
-}); 
+// Helper function to make process.exit testable
+function exitProcess(code) {
+  process.exit(code);
+}
+
+// Ejecutar solo si no estamos en entorno de prueba
+if (process.env.NODE_ENV !== 'test') {
+  main().catch(err => {
+    loggerWinston.error(`Error en el proceso principal: ${err.message}`);
+    exitProcess(1);
+  });
+}
+
+// Export functions for testing
+module.exports = {
+  displayServerInfo,
+  main,
+  startServer,
+  exitProcess
+}; 
