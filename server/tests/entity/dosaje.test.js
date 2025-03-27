@@ -23,7 +23,7 @@ describe('Pruebas de Entidad Dosaje', () => {
     TipoDosaje: 'ETÍLICO',
     Nombres: 'Persona',
     Apellidos: 'De Prueba',
-    MotivoExamen: 'Prueba automatizada',
+    Procedencia: 'Procedencia de la prueba automatizada',
     Responsable: 'Técnico de prueba',
     Observaciones: 'Registro creado para pruebas automatizadas'
   };
@@ -102,7 +102,7 @@ describe('Pruebas de Entidad Dosaje', () => {
       const result = await db.executeQuery(
         `INSERT INTO Dosaje (
           IDArea, NumeroRegistro, FechaIngreso, OficioDoc, NumeroOficio,
-          TipoDosaje, Nombres, Apellidos, MotivoExamen,
+          TipoDosaje, Nombres, Apellidos, Procedencia,
           Responsable, Observaciones, IsActive
         ) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -113,7 +113,7 @@ describe('Pruebas de Entidad Dosaje', () => {
           testDosajeData.TipoDosaje,
           testDosajeData.Nombres,
           testDosajeData.Apellidos,
-          testDosajeData.MotivoExamen,
+          testDosajeData.Procedencia,
           testDosajeData.Responsable,
           testDosajeData.Observaciones,
           true
@@ -249,14 +249,15 @@ describe('Pruebas de Entidad Dosaje', () => {
     }
 
     const nuevoDosajeData = {
-      NumeroRegistro: `TEST-SP-DOSAJE-${Date.now()}`,
-      OficioDoc: `TEST-SP-OFICIO-${Date.now()}`,
-      NumeroOficio: Math.floor(Math.random() * 10000),
-      TipoDosaje: 'ETÍLICO-SP',
-      Nombres: 'Persona SP',
-      Apellidos: 'De Prueba SP',
-      MotivoExamen: 'Prueba SP',
-      Responsable: 'Técnico SP'
+      NumeroRegistro: `TEST-DOSAJE-SP-${Date.now()}`,
+      OficioDoc: 'TEST-SP',
+      NumeroOficio: 999999,
+      TipoDosaje: 'TOXICOLÓGICO',
+      Nombres: 'ProcAlmacenado',
+      Apellidos: 'TestUsuario',
+      Procedencia: 'Prueba SP',
+      Responsable: 'Sistema',
+      Observaciones: 'Creado por procedimiento almacenado de prueba'
     };
 
     try {
@@ -271,8 +272,9 @@ describe('Pruebas de Entidad Dosaje', () => {
           nuevoDosajeData.TipoDosaje,
           nuevoDosajeData.Nombres,
           nuevoDosajeData.Apellidos,
-          nuevoDosajeData.MotivoExamen,
-          nuevoDosajeData.Responsable
+          nuevoDosajeData.Procedencia,
+          nuevoDosajeData.Responsable,
+          nuevoDosajeData.Observaciones
         ]
       );
 

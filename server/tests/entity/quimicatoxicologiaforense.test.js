@@ -98,27 +98,29 @@ describe('Pruebas de Entidad QuimicaToxicologiaForense', () => {
       // Eliminar cualquier registro previo con el mismo número de registro
       await db.executeQuery('DELETE FROM QuimicaToxicologiaForense WHERE NumeroRegistro = ?', [testQuimicaData.NumeroRegistro]);
 
-      // Insertar el registro químico/toxicológico de prueba
-      const result = await db.executeQuery(
-        `INSERT INTO QuimicaToxicologiaForense (
+      const query = `
+        INSERT INTO QuimicaToxicologiaForense (
           IDArea, NumeroRegistro, FechaIngreso, OficioDoc, NumeroOficio,
-          TipoMuestra, PesajeMuestra, ResponsableMuestreo, ResultadoPreliminar,
+          Examen, Nombres, Apellidos, DelitoInfraccion,
           Responsable, Observaciones, IsActive
-        ) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          testAreaId,
-          testQuimicaData.NumeroRegistro,
-          testQuimicaData.OficioDoc,
-          testQuimicaData.NumeroOficio,
-          testQuimicaData.TipoMuestra,
-          testQuimicaData.PesajeMuestra,
-          testQuimicaData.ResponsableMuestreo,
-          testQuimicaData.ResultadoPreliminar,
-          testQuimicaData.Responsable,
-          testQuimicaData.Observaciones,
-          true
-        ]
-      );
+        ) VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      
+      const params = [
+        testAreaId,
+        testQuimicaData.NumeroRegistro,
+        testQuimicaData.OficioDoc,
+        testQuimicaData.NumeroOficio,
+        "SANGRE",
+        "Nombre de Prueba",
+        "Apellido de Prueba",
+        "NEGATIVO",
+        "Perito de prueba",
+        "Registro creado para pruebas automatizadas",
+        true
+      ];
+
+      const result = await db.executeQuery(query, params);
 
       expect(result.affectedRows).toBe(1);
       expect(result.insertId).toBeGreaterThan(0);
@@ -141,9 +143,9 @@ describe('Pruebas de Entidad QuimicaToxicologiaForense', () => {
       expect(quimicas).toHaveLength(1);
       expect(quimicas[0].NumeroRegistro).toBe(testQuimicaData.NumeroRegistro);
       expect(quimicas[0].NumeroOficio).toBe(testQuimicaData.NumeroOficio);
-      expect(quimicas[0].TipoMuestra).toBe(testQuimicaData.TipoMuestra);
-      expect(quimicas[0].PesajeMuestra).toBe(testQuimicaData.PesajeMuestra);
-      expect(quimicas[0].ResultadoPreliminar).toBe(testQuimicaData.ResultadoPreliminar);
+      expect(quimicas[0].Examen).toBe("SANGRE");
+      expect(quimicas[0].Nombres).toBe("Nombre de Prueba");
+      expect(quimicas[0].Apellidos).toBe("Apellido de Prueba");
     } catch (error) {
       expect(error).toBeNull();
     }
@@ -170,13 +172,13 @@ describe('Pruebas de Entidad QuimicaToxicologiaForense', () => {
     }
 
     // Datos para la actualización
-    const nuevaMuestra = 'ORINA';
-    const nuevoResultado = 'POSITIVO';
+    const nuevoExamen = 'TOXICOLOGICO';
+    const nuevoDelito = 'POSITIVO';
     
     try {
       const result = await db.executeQuery(
-        'UPDATE QuimicaToxicologiaForense SET TipoMuestra = ?, ResultadoPreliminar = ? WHERE IDQuimicaToxForense = ?',
-        [nuevaMuestra, nuevoResultado, testQuimicaId]
+        'UPDATE QuimicaToxicologiaForense SET Examen = ?, DelitoInfraccion = ? WHERE IDQuimicaToxForense = ?',
+        [nuevoExamen, nuevoDelito, testQuimicaId]
       );
 
       expect(result.affectedRows).toBe(1);
@@ -184,8 +186,8 @@ describe('Pruebas de Entidad QuimicaToxicologiaForense', () => {
       // Verificar que se actualizó correctamente
       const quimicas = await db.executeQuery('SELECT * FROM QuimicaToxicologiaForense WHERE IDQuimicaToxForense = ?', [testQuimicaId]);
       expect(quimicas).toHaveLength(1);
-      expect(quimicas[0].TipoMuestra).toBe(nuevaMuestra);
-      expect(quimicas[0].ResultadoPreliminar).toBe(nuevoResultado);
+      expect(quimicas[0].Examen).toBe(nuevoExamen);
+      expect(quimicas[0].DelitoInfraccion).toBe(nuevoDelito);
       // Verificar que los otros campos no han cambiado
       expect(quimicas[0].NumeroRegistro).toBe(testQuimicaData.NumeroRegistro);
     } catch (error) {
