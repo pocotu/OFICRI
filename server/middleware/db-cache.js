@@ -182,5 +182,7 @@ module.exports = {
   cacheQuery,
   invalidateQueryCache,
   clearQueryCache,
-  cacheQueryWithParams
+  cacheQueryWithParams,
+  // Exportamos la instancia de caché para pruebas
+  dbCache
 }; 
