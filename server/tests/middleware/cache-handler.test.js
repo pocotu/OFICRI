@@ -12,7 +12,20 @@ jest.mock('ioredis', () => {
     del: jest.fn()
   };
   
-  return jest.fn(() => mockRedis);
+  // Guardamos la última estrategia de reintento utilizada
+  let lastRetryStrategy = null;
+  
+  const mockRedisConstructor = jest.fn((options) => {
+    if (options && options.retryStrategy) {
+      lastRetryStrategy = options.retryStrategy;
+    }
+    return mockRedis;
+  });
+  
+  // Exponemos la estrategia para las pruebas
+  mockRedisConstructor.getLastRetryStrategy = () => lastRetryStrategy;
+  
+  return mockRedisConstructor;
 });
 
 jest.mock('../../utils/logger', () => ({
@@ -64,6 +77,25 @@ describe('Cache Handler Middleware', () => {
     
     // Mock de next
     next = jest.fn();
+  });
+  
+  describe('Redis Connection', () => {
+    test('debería configurar la estrategia de reintento correctamente', () => {
+      // Obtener la estrategia de reintento
+      const retryStrategy = Redis.getLastRetryStrategy();
+      
+      // Verificar que existe
+      expect(retryStrategy).toBeDefined();
+      
+      // Probar con diferentes tiempos
+      const delay1 = retryStrategy(1);  // 1 * 50 = 50ms
+      const delay10 = retryStrategy(10); // 10 * 50 = 500ms
+      const delay100 = retryStrategy(100); // Debería usar el máximo (2000ms)
+      
+      expect(delay1).toBe(50);
+      expect(delay10).toBe(500);
+      expect(delay100).toBe(2000);
+    });
   });
   
   describe('cacheResponse', () => {
