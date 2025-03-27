@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -99,71 +99,71 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Rutas para la gestión de logs
  * Implementa endpoints para obtener y exportar logs del sistema
  */
 &nbsp;
-const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
-const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
-const logsController = <span class="cstat-no" title="statement not covered" >require('../controllers/logs.controller');</span>
-const { verifyToken, checkRole } = <span class="cstat-no" title="statement not covered" >require('../middleware/auth');</span>
+const express = require('express');
+const router = express.Router();
+const logsController = require('../controllers/logs.controller');
+const { verifyToken, checkRole } = require('../middleware/auth');
 &nbsp;
 // Middleware de autenticación para todas las rutas
-<span class="cstat-no" title="statement not covered" >router.use(verifyToken);</span>
+router.use(verifyToken);
 &nbsp;
 // Solo administradores pueden acceder a los logs
-<span class="cstat-no" title="statement not covered" >router.use(checkRole('admin'));</span>
+router.use(checkRole('admin'));
 &nbsp;
 // GET /api/logs - Obtener logs de la base de datos
-<span class="cstat-no" title="statement not covered" >router.get('/', logsController.getLogs);</span>
+router.get('/', logsController.getLogs);
 &nbsp;
 // GET /api/logs/files - Obtener logs del sistema de archivos
-<span class="cstat-no" title="statement not covered" >router.get('/files', logsController.getFileSystemLogs);</span>
+router.get('/files', logsController.getFileSystemLogs);
 &nbsp;
 // POST /api/logs/export - Exportar logs
-<span class="cstat-no" title="statement not covered" >router.post('/export', logsController.exportLogs);</span>
+router.post('/export', logsController.exportLogs);
 &nbsp;
 // GET /api/logs/download/:fileName - Descargar un archivo de logs exportado
-<span class="cstat-no" title="statement not covered" >router.get('/download/:fileName', logsController.downloadExportedLog);</span>
+router.get('/download/:fileName', logsController.downloadExportedLog);
 &nbsp;
 // GET /api/logs/security/stats - Obtener estadísticas de seguridad
-<span class="cstat-no" title="statement not covered" >router.get('/security/stats', logsController.getSecurityStats);</span>
+router.get('/security/stats', logsController.getSecurityStats);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = router; </span></pre></td></tr></table></pre>
+module.exports = router; </pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-27T17:39:05.920Z
+                at 2025-03-27T17:58:36.982Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
