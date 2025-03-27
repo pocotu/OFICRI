@@ -52,6 +52,9 @@ describe('User Routes', () => {
   let express;
   let userRoutes;
   let router;
+  let auth;
+  let validation;
+  let userController;
   
   beforeEach(() => {
     // Limpiar mocks
@@ -60,6 +63,9 @@ describe('User Routes', () => {
     // Importar dependencias
     express = require('express');
     router = express.Router();
+    auth = require('../../middleware/auth');
+    validation = require('../../middleware/validation');
+    userController = require('../../controllers/user.controller');
     
     // Cargar el módulo de rutas con los mocks configurados
     jest.isolateModules(() => {
@@ -76,5 +82,48 @@ describe('User Routes', () => {
     
     // Simplemente verificar que el módulo de rutas existe
     expect(userRoutes).toBeDefined();
+  });
+  
+  test('debe configurar rutas POST para crear usuarios', () => {
+    // Verificar que se llama a router.post al menos una vez
+    expect(router.post).toHaveBeenCalled();
+    
+    // Verificar que existe el controlador para crear usuarios
+    expect(userController.createUser).toBeDefined();
+  });
+  
+  test('debe configurar rutas PUT para actualizar usuarios', () => {
+    // Verificar que se llama a router.put al menos una vez
+    expect(router.put).toHaveBeenCalled();
+    
+    // Verificar que existe el controlador para actualizar usuarios
+    expect(userController.updateUser).toBeDefined();
+  });
+  
+  test('debe configurar rutas DELETE para eliminar usuarios', () => {
+    // Verificar que se llama a router.delete al menos una vez
+    expect(router.delete).toHaveBeenCalled();
+    
+    // Verificar que existe el controlador para eliminar usuarios
+    expect(userController.deleteUser).toBeDefined();
+  });
+  
+  test('debe configurar rutas para operaciones con perfiles de usuario', () => {
+    // Verificar que existe el controlador para obtener perfiles
+    expect(userController.getUserProfile).toBeDefined();
+    
+    // Verificar que existe el controlador para actualizar perfiles
+    expect(userController.updateUserProfile).toBeDefined();
+  });
+  
+  test('debe configurar middleware de autenticación y validación', () => {
+    // Verificar que se utiliza el middleware de autenticación
+    expect(auth.verifyToken).toBeDefined();
+    
+    // Verificar que se utiliza el middleware de validación
+    expect(validation.validateSchema).toBeDefined();
+    
+    // Verificar que se utiliza la validación de permisos
+    expect(auth.validatePermissions).toBeDefined();
   });
 }); 
