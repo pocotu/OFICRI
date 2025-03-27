@@ -46,7 +46,10 @@ async function executeQuery(sql, params = [], options = {}) {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD, // Usar solo la variable de entorno
     database: process.env.DB_NAME || 'Oficri_sistema',
-    multipleStatements: options.multipleStatements || false
+    multipleStatements: options.multipleStatements || false,
+    // Agregar configuración explícita de charset para evitar problemas de codificación
+    charset: 'utf8mb4',
+    timezone: '+00:00'
   };
 
   // Log de la consulta (sin contraseña)

@@ -16,7 +16,10 @@ const dbConfig = {
   database: process.env.DB_NAME || 'Oficri_sistema',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Agregar configuración explícita de charset para evitar problemas de codificación
+  charset: 'utf8mb4',
+  timezone: '+00:00'
 };
 
 // Loguear la configuración (sin la contraseña) para depuración

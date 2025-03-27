@@ -54,11 +54,11 @@ describe('Pruebas de Entidad PermisoContextual', () => {
         );
       }
       
-      // Si no existe el rol, crear uno - Eliminamos NivelAcceso que no existe en el esquema
+      // Si no existe el rol, crear uno - Aseguramos que NivelAcceso está incluido
       if (rolResult.length === 0) {
         await db.executeQuery(
-          'INSERT INTO Rol (IDRol, NombreRol, Descripcion, Permisos) VALUES (?, ?, ?, ?)',
-          [999, 'Rol de Prueba', 'Rol creado para pruebas', 255]
+          'INSERT INTO Rol (IDRol, NombreRol, Descripcion, Permisos, NivelAcceso) VALUES (?, ?, ?, ?, ?)',
+          [999, 'Rol de Prueba', 'Rol creado para pruebas', 255, 1]
         );
       }
       

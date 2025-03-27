@@ -119,7 +119,9 @@ describe('Database Helpers', () => {
         user: 'root',
         password: undefined,
         database: 'Oficri_sistema',
-        multipleStatements: false
+        multipleStatements: false,
+        charset: 'utf8mb4',
+        timezone: '+00:00'
       });
     });
 
@@ -139,7 +141,9 @@ describe('Database Helpers', () => {
         user: 'test-user',
         password: 'test-password',
         database: 'test-db',
-        multipleStatements: false
+        multipleStatements: false,
+        charset: 'utf8mb4',
+        timezone: '+00:00'
       });
     });
 
