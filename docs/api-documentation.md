@@ -1,6 +1,6 @@
 # Documentación Técnica API REST OFICRI
 
-_Versión: 1.0.0_
+_Versión: 1.0.0 (Actualizado: Mayo 2024)_
 
 ## Introducción
 
@@ -12,11 +12,11 @@ Este documento proporciona la documentación técnica completa de la API REST de
 
 | Ambiente | URL Base                                    |
 |----------|---------------------------------------------|
-| Sandbox  | `http://localhost:3000/api`                 |
-| QA       | `http://[servidor-qa]/api` (pendiente definir)  |
-| Producción | `http://[servidor-produccion]/api` (pendiente definir)   |
+| Desarrollo | `http://localhost:3000/api`               |
+| QA       | `http://qa.oficri.gob.pe/api` _(pendiente)_ |
+| Producción | `https://oficri.gob.pe/api` _(pendiente)_ |
 
-> **Nota**: Para desarrollo y pruebas, utilice siempre el ambiente Sandbox. Las URLs de QA y Producción se actualizarán cuando se definan los DNS correspondientes.
+> **Nota**: Para desarrollo y pruebas, utilice siempre el ambiente de Desarrollo. Las URLs de QA y Producción se actualizarán cuando se definan los DNS correspondientes.
 
 ## Autenticación y Autorización
 
@@ -29,7 +29,7 @@ La API utiliza autenticación basada en tokens JWT (JSON Web Token).
 Para obtener un token de acceso, realice una solicitud POST al endpoint de login:
 
 ```
-POST /auth/login
+POST /api/auth/login
 ```
 
 **Cuerpo de la solicitud (JSON):**
@@ -46,11 +46,13 @@ POST /auth/login
   "success": true,
   "message": "Inicio de sesión exitoso",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh-token-12345",
   "user": {
     "id": 1,
     "codigoCIP": "12345678",
-    "role": "admin"
+    "nombre": "Admin",
+    "apellidos": "Usuario",
+    "grado": "Teniente",
+    "role": "Administrador"
   }
 }
 ```
@@ -63,18 +65,31 @@ Incluya el token en el encabezado de autorización de todas las solicitudes a en
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-#### Renovación del Token
+#### Verificación del Token
 
-El token tiene una validez de 1 hora. Para renovar el token sin volver a iniciar sesión:
+Para verificar si un token sigue siendo válido:
 
 ```
-POST /auth/refresh-token
+GET /api/auth/verify
 ```
 
-**Cuerpo de la solicitud (JSON):**
+**Headers necesarios:**
+- `Authorization: Bearer {token}`
+
+**Respuesta exitosa (200 OK):**
 ```json
 {
-  "refreshToken": "refresh-token-12345"
+  "success": true,
+  "message": "Token válido",
+  "user": {
+    "id": 1,
+    "codigoCIP": "12345678",
+    "role": "admin",
+    "nombre": "Admin",
+    "apellidos": "Usuario",
+    "grado": "Teniente",
+    "permissions": 255
+  }
 }
 ```
 
@@ -89,28 +104,11 @@ El sistema utiliza un esquema de permisos basado en bits donde cada bit represen
 | 2   | 4             | Eliminar    | Permiso para eliminar recursos             |
 | 3   | 8             | Ver         | Permiso para visualizar recursos           |
 | 4   | 16            | Derivar     | Permiso para derivar documentos            |
-| 5   | 32            | Asignar     | Permiso para asignar elementos a usuarios  |
+| 5   | 32            | Auditar     | Permiso para ver logs y hacer auditorías   |
 | 6   | 64            | Exportar    | Permiso para exportar datos                |
-| 7   | 128           | Auditar     | Permiso para ver logs y hacer auditorías   |
+| 7   | 128           | Administrar | Acceso completo al sistema                 |
 
 Los permisos se combinan mediante operaciones OR a nivel de bits. Por ejemplo, un usuario con permisos para Crear, Editar y Ver tendría un valor de permisos de 11 (1 + 2 + 8).
-
-## Control de Versiones API
-
-La API soporta versionado mediante el encabezado `X-API-Version`. Si no se especifica, se utiliza la versión `v1` por defecto.
-
-```
-X-API-Version: v1
-```
-
-## Políticas CORS
-
-El backend está configurado para permitir solicitudes CORS de los siguientes orígenes:
-
-- `http://localhost:3000` (Desarrollo)
-- `http://localhost:8080` (Desarrollo alternativo)
-
-Para entornos de producción, se deben especificar los dominios exactos en la variable de entorno `CORS_ORIGIN`.
 
 ## Manejo de Errores
 
@@ -119,14 +117,8 @@ La API devuelve errores en un formato estandarizado:
 ```json
 {
   "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Descripción detallada del error",
-    "details": {
-      "campo": "Información específica sobre el error"
-    }
-  },
-  "timestamp": "2023-01-15T10:30:00Z"
+  "message": "Descripción detallada del error",
+  "error": "Error específico o código de error"
 }
 ```
 
@@ -149,12 +141,57 @@ La API devuelve errores en un formato estandarizado:
 
 A continuación se detallan todos los endpoints disponibles, organizados por recursos.
 
+### Endpoints Generales
+
+#### Estado del servidor
+
+```
+GET /status
+GET /health
+```
+
+**Propósito**: Verificar el estado del servidor y la conexión a la base de datos.
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "status": "ok",
+  "server": "running",
+  "database": "connected",
+  "environment": "development",
+  "time": "2024-05-20T10:30:00.123Z",
+  "uptime": 3600
+}
+```
+
+#### Ruta principal
+
+```
+GET /
+```
+
+**Propósito**: Obtener información básica sobre la API.
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "message": "Servidor OFICRI funcionando correctamente",
+  "version": "1.0",
+  "endpoints": {
+    "login": "/api/auth/login",
+    "status": "/status",
+    "api": "/api",
+    "health": "/health"
+  }
+}
+```
+
 ### Autenticación
 
 #### Login
 
 ```
-POST /auth/login
+POST /api/auth/login
 ```
 
 **Propósito**: Iniciar sesión y obtener token JWT.
@@ -173,11 +210,13 @@ POST /auth/login
   "success": true,
   "message": "Inicio de sesión exitoso",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh-token-12345",
   "user": {
     "id": 1,
     "codigoCIP": "12345678",
-    "role": "admin"
+    "nombre": "Admin",
+    "apellidos": "Usuario",
+    "grado": "Teniente",
+    "role": "Administrador"
   }
 }
 ```
@@ -186,37 +225,14 @@ POST /auth/login
 ```json
 {
   "success": false,
-  "error": {
-    "code": "INVALID_CREDENTIALS",
-    "message": "Credenciales inválidas."
-  },
-  "timestamp": "2023-01-15T10:30:00Z"
-}
-```
-
-#### Logout
-
-```
-POST /auth/logout
-```
-
-**Propósito**: Cerrar sesión y revocar token.
-
-**Headers necesarios:**
-- `Authorization: Bearer {token}`
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Sesión cerrada correctamente"
+  "message": "Credenciales inválidas"
 }
 ```
 
 #### Verificar Token
 
 ```
-GET /auth/verificar-token
+GET /api/auth/verify
 ```
 
 **Propósito**: Verificar validez del token JWT.
@@ -227,12 +243,45 @@ GET /auth/verificar-token
 **Respuesta exitosa (200 OK):**
 ```json
 {
-  "valid": true,
+  "success": true,
+  "message": "Token válido",
   "user": {
     "id": 1,
     "codigoCIP": "12345678",
-    "role": "admin"
+    "role": "admin",
+    "nombre": "Admin",
+    "apellidos": "Usuario",
+    "grado": "Teniente",
+    "permissions": 255
   }
+}
+```
+
+**Respuesta de error (401 Unauthorized):**
+```json
+{
+  "success": false,
+  "message": "Token inválido o expirado",
+  "error": "jwt expired"
+}
+```
+
+#### Logout
+
+```
+POST /api/auth/logout
+```
+
+**Propósito**: Cerrar sesión (invalidar token en el cliente).
+
+**Headers necesarios:**
+- `Authorization: Bearer {token}`
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Sesión cerrada exitosamente"
 }
 ```
 
@@ -241,20 +290,13 @@ GET /auth/verificar-token
 #### Listar Usuarios
 
 ```
-GET /users
+GET /api/users
 ```
 
-**Propósito**: Obtener lista paginada de usuarios.
+**Propósito**: Obtener lista de usuarios del sistema.
 
 **Headers necesarios:**
 - `Authorization: Bearer {token}`
-
-**Parámetros de consulta:**
-- `page` (opcional): Número de página (predeterminado: 1)
-- `limit` (opcional): Elementos por página (predeterminado: 10)
-- `search` (opcional): Búsqueda por nombre, apellido o código CIP
-- `area` (opcional): Filtrar por ID de área
-- `role` (opcional): Filtrar por ID de rol
 
 **Respuesta exitosa (200 OK):**
 ```json
@@ -262,102 +304,60 @@ GET /users
   "success": true,
   "data": [
     {
-      "IDUsuario": 1,
-      "CodigoCIP": "12345678",
-      "Nombres": "Admin",
-      "Apellidos": "Sistema",
-      "Grado": "Capitán",
-      "IDArea": 1,
-      "IDRol": 1,
-      "UltimoAcceso": "2023-01-15T10:30:00Z",
-      "Bloqueado": false
+      "id": 1,
+      "nombre": "Admin",
+      "apellidos": "Usuario",
+      "codigoCIP": "12345678",
+      "role": "Administrador"
     },
-    // Más usuarios...
-  ],
-  "pagination": {
-    "totalItems": 50,
-    "totalPages": 5,
-    "currentPage": 1,
-    "pageSize": 10,
-    "hasNext": true,
-    "hasPrevious": false
-  }
+    {
+      "id": 2,
+      "nombre": "Usuario",
+      "apellidos": "Operador",
+      "codigoCIP": "87654321",
+      "role": "Operador"
+    }
+  ]
 }
 ```
 
-#### Obtener Usuario por ID
+### Áreas
+
+#### Listar Áreas
 
 ```
-GET /users/:id
+GET /api/areas
 ```
 
-**Propósito**: Obtener información detallada de un usuario.
+**Propósito**: Obtener lista de áreas del sistema.
 
 **Headers necesarios:**
 - `Authorization: Bearer {token}`
-
-**Parámetros de ruta:**
-- `id`: ID del usuario
 
 **Respuesta exitosa (200 OK):**
 ```json
 {
   "success": true,
-  "data": {
-    "IDUsuario": 1,
-    "CodigoCIP": "12345678",
-    "Nombres": "Admin",
-    "Apellidos": "Sistema",
-    "Grado": "Capitán",
-    "IDArea": 1,
-    "NombreArea": "Administración",
-    "IDRol": 1,
-    "NombreRol": "Administrador",
-    "UltimoAcceso": "2023-01-15T10:30:00Z",
-    "Bloqueado": false,
-    "FechaCreacion": "2023-01-01T00:00:00Z"
-  }
-}
-```
-
-#### Crear Usuario
-
-```
-POST /users
-```
-
-**Propósito**: Crear un nuevo usuario.
-
-**Headers necesarios:**
-- `Authorization: Bearer {token}`
-
-**Cuerpo de la solicitud:**
-```json
-{
-  "CodigoCIP": "87654321",
-  "Nombres": "Nuevo",
-  "Apellidos": "Usuario",
-  "Grado": "Teniente",
-  "IDArea": 2,
-  "IDRol": 2,
-  "Password": "Abcd1234!"
-}
-```
-
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Usuario creado exitosamente",
-  "data": {
-    "IDUsuario": 9,
-    "CodigoCIP": "87654321",
-    "Nombres": "Nuevo",
-    "Apellidos": "Usuario",
-    "Grado": "Teniente",
-    "IDArea": 2,
-    "IDRol": 2
-  }
+  "data": [
+    {
+      "id": 1,
+      "nombre": "Administración",
+      "codigo": "ADM-001",
+      "tipo": "Administrativa"
+    },
+    {
+      "id": 2,
+      "nombre": "Mesa de Partes",
+      "codigo": "MP-001",
+      "tipo": "Operativa"
+    },
+    {
+      "id": 3, 
+      "nombre": "Laboratorio Forense",
+      "codigo": "LAB-001",
+      "tipo": "Técnica"
+    }
+  ]
 }
 ```
 
@@ -366,7 +366,7 @@ POST /users
 #### Listar Documentos
 
 ```
-GET /documents
+GET /api/documentos
 ```
 
 **Propósito**: Obtener lista paginada de documentos.
@@ -375,39 +375,40 @@ GET /documents
 - `Authorization: Bearer {token}`
 
 **Parámetros de consulta:**
-- `page` (opcional): Número de página (predeterminado: 1)
-- `limit` (opcional): Elementos por página (predeterminado: 10)
-- `search` (opcional): Búsqueda por número registro o oficio
-- `estado` (opcional): Filtrar por estado (RECIBIDO, EN_PROCESO, COMPLETADO, etc.)
-- `area` (opcional): Filtrar por ID de área
-- `fechaInicio` (opcional): Filtrar desde fecha (YYYY-MM-DD)
-- `fechaFin` (opcional): Filtrar hasta fecha (YYYY-MM-DD)
+- `page`: Número de página (default: 1)
+- `limit`: Cantidad de documentos por página (default: 10)
+- `search`: Término de búsqueda (opcional)
+- `estado`: Estado del documento (opcional, valores: RECIBIDO, EN_PROCESO, COMPLETADO, ARCHIVADO)
 
 **Respuesta exitosa (200 OK):**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "IDDocumento": 1,
-      "NroRegistro": "REG-2023-001",
-      "NumeroOficioDocumento": "OF-2023-001",
-      "FechaDocumento": "2023-01-15",
-      "OrigenDocumento": "EXTERNO",
-      "Estado": "RECIBIDO",
-      "Procedencia": "Fiscalía Provincial",
-      "NombreAreaActual": "Mesa de Partes",
-      "NombreUsuarioCreador": "Operador Mesa Partes"
-    },
-    // Más documentos...
-  ],
-  "pagination": {
-    "totalItems": 50,
-    "totalPages": 5,
-    "currentPage": 1,
-    "pageSize": 10,
-    "hasNext": true,
-    "hasPrevious": false
+  "data": {
+    "documents": [
+      {
+        "id": 1,
+        "nroRegistro": "DOC-2023-001",
+        "numeroOficioDocumento": "OF-2023-001",
+        "procedencia": "Fiscalía",
+        "estado": "RECIBIDO",
+        "fechaDocumento": "2023-01-15"
+      },
+      {
+        "id": 2,
+        "nroRegistro": "DOC-2023-002",
+        "numeroOficioDocumento": "OF-2023-002",
+        "procedencia": "Juzgado",
+        "estado": "EN_PROCESO",
+        "fechaDocumento": "2023-02-10"
+      }
+    ],
+    "pagination": {
+      "total": 5,
+      "totalPages": 1,
+      "currentPage": 1,
+      "perPage": 10
+    }
   }
 }
 ```
@@ -415,16 +416,16 @@ GET /documents
 #### Obtener Documento por ID
 
 ```
-GET /documents/:id
+GET /api/documentos/:id
 ```
 
-**Propósito**: Obtener información detallada de un documento.
+**Propósito**: Obtener detalles completos de un documento específico.
 
 **Headers necesarios:**
 - `Authorization: Bearer {token}`
 
 **Parámetros de ruta:**
-- `id`: ID del documento
+- `id`: ID del documento a consultar
 
 **Respuesta exitosa (200 OK):**
 ```json
@@ -433,108 +434,64 @@ GET /documents/:id
   "data": {
     "IDDocumento": 1,
     "IDMesaPartes": 1,
-    "IDAreaActual": 2,
-    "IDUsuarioCreador": 2,
+    "IDAreaActual": 3,
+    "IDUsuarioCreador": 1,
     "IDUsuarioAsignado": null,
     "IDDocumentoPadre": null,
-    "NroRegistro": "REG-2023-001",
+    "NroRegistro": "DOC-2023-001",
     "NumeroOficioDocumento": "OF-2023-001",
-    "FechaDocumento": "2023-01-15",
+    "FechaDocumento": "2023-01-01",
+    "FechaRegistro": "2023-01-01T08:30:00.000Z",
     "OrigenDocumento": "EXTERNO",
     "Estado": "RECIBIDO",
-    "Observaciones": "Documento recibido en mesa de partes",
-    "Procedencia": "Fiscalía Provincial",
-    "Contenido": "Solicitud de análisis químico para evidencia de caso",
-    "NombreAreaActual": "Mesa de Partes",
-    "NombreUsuarioCreador": "Operador Mesa Partes",
-    "NombreUsuarioAsignado": null,
-    "DocumentoPadre": null,
-    "Adjuntos": [],
-    "Derivaciones": [],
-    "Historia": [
+    "Procedencia": "Entidad 1",
+    "Contenido": "Contenido del documento 1",
+    "Observaciones": "Observaciones del documento 1",
+    "MesaPartes": {
+      "IDMesaPartes": 1,
+      "Descripcion": "Mesa Central",
+      "CodigoIdentificacion": "MP-001"
+    },
+    "AreaActual": {
+      "IDArea": 3,
+      "NombreArea": "Laboratorio Forense",
+      "CodigoIdentificacion": "LAB-001"
+    },
+    "UsuarioCreador": {
+      "IDUsuario": 1,
+      "CodigoCIP": "12345678",
+      "Nombres": "Admin",
+      "Apellidos": "Usuario",
+      "Grado": "Teniente"
+    },
+    "UsuarioAsignado": null,
+    "Archivos": [
       {
-        "IDDocumentoEstado": 1,
-        "FechaCambio": "2023-01-15T09:30:00Z",
-        "EstadoAnterior": null,
-        "EstadoNuevo": "RECIBIDO",
-        "IDUsuario": 2,
-        "NombreUsuario": "Operador Mesa Partes",
-        "Observaciones": "Documento registrado en Mesa de Partes"
+        "IDArchivo": 1,
+        "NombreArchivo": "documento.pdf",
+        "TipoArchivo": "application/pdf",
+        "FechaSubida": "2023-01-15T10:30:00.000Z",
+        "RutaArchivo": "/uploads/documentos/documento.pdf"
+      }
+    ],
+    "Derivaciones": [
+      {
+        "IDDerivacion": 1,
+        "FechaDerivacion": "2023-01-16T09:15:00.000Z",
+        "AreaOrigen": "Mesa de Partes",
+        "AreaDestino": "Laboratorio Forense",
+        "Estado": "COMPLETADA"
       }
     ]
   }
 }
 ```
 
-#### Crear Documento
-
-```
-POST /documents
-```
-
-**Propósito**: Crear un nuevo documento.
-
-**Headers necesarios:**
-- `Authorization: Bearer {token}`
-
-**Cuerpo de la solicitud:**
+**Respuesta de error (404 Not Found):**
 ```json
 {
-  "IDMesaPartes": 1,
-  "IDAreaActual": 2,
-  "NroRegistro": "REG-2023-010",
-  "NumeroOficioDocumento": "OF-2023-010",
-  "FechaDocumento": "2023-01-20",
-  "OrigenDocumento": "EXTERNO",
-  "Procedencia": "Comisaría Central",
-  "Contenido": "Solicitud de análisis forense"
-}
-```
-
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Documento creado exitosamente",
-  "data": {
-    "IDDocumento": 8,
-    "NroRegistro": "REG-2023-010",
-    "Estado": "RECIBIDO"
-  }
-}
-```
-
-### Áreas Especializadas
-
-#### Listar Áreas
-
-```
-GET /areas
-```
-
-**Propósito**: Obtener lista de áreas especializadas.
-
-**Headers necesarios:**
-- `Authorization: Bearer {token}`
-
-**Parámetros de consulta:**
-- `activas` (opcional): Si es true, filtra solo áreas activas
-
-**Respuesta exitosa (200 OK):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "IDArea": 1,
-      "NombreArea": "Administración",
-      "CodigoIdentificacion": "ADM",
-      "TipoArea": "ADMIN",
-      "Descripcion": "Área administrativa del sistema",
-      "IsActive": true
-    },
-    // Más áreas...
-  ]
+  "success": false,
+  "message": "Documento no encontrado"
 }
 ```
 
@@ -543,10 +500,10 @@ GET /areas
 #### Listar Roles
 
 ```
-GET /roles
+GET /api/roles
 ```
 
-**Propósito**: Obtener lista de roles del sistema.
+**Propósito**: Obtener lista de roles disponibles en el sistema.
 
 **Headers necesarios:**
 - `Authorization: Bearer {token}`
@@ -557,13 +514,29 @@ GET /roles
   "success": true,
   "data": [
     {
-      "IDRol": 1,
-      "NombreRol": "Administrador",
-      "Descripcion": "Control total del sistema",
-      "NivelAcceso": 1,
-      "Permisos": 255
+      "id": 1,
+      "nombre": "Administrador",
+      "nivel": 1,
+      "permisos": 255
     },
-    // Más roles...
+    {
+      "id": 2,
+      "nombre": "Supervisor",
+      "nivel": 2,
+      "permisos": 127
+    },
+    {
+      "id": 3,
+      "nombre": "Operador",
+      "nivel": 3,
+      "permisos": 63
+    },
+    {
+      "id": 4,
+      "nombre": "Consulta",
+      "nivel": 4,
+      "permisos": 3
+    }
   ]
 }
 ```
@@ -573,10 +546,10 @@ GET /roles
 #### Listar Mesas de Partes
 
 ```
-GET /mesapartes
+GET /api/mesapartes
 ```
 
-**Propósito**: Obtener lista de mesas de partes.
+**Propósito**: Obtener lista de mesas de partes del sistema.
 
 **Headers necesarios:**
 - `Authorization: Bearer {token}`
@@ -587,23 +560,127 @@ GET /mesapartes
   "success": true,
   "data": [
     {
-      "IDMesaPartes": 1,
-      "Descripcion": "Mesa de Partes Principal",
-      "CodigoIdentificacion": "MP-PRINC",
-      "IsActive": true
+      "id": 1,
+      "descripcion": "Mesa de Partes Principal",
+      "codigo": "MP-PRIN",
+      "isActive": true
     },
-    // Más mesas de partes...
+    {
+      "id": 2,
+      "descripcion": "Mesa de Partes Secundaria",
+      "codigo": "MP-SEC",
+      "isActive": true
+    },
+    {
+      "id": 3,
+      "descripcion": "Mesa de Partes Digital",
+      "codigo": "MP-DIG",
+      "isActive": true
+    }
   ]
 }
 ```
 
-### Dashboard
+### Permisos
+
+#### Listar Permisos
 
 ```
-GET /dashboard/stats
+GET /api/permisos
 ```
 
-**Propósito**: Obtener estadísticas para el dashboard.
+**Propósito**: Obtener lista de permisos disponibles en el sistema.
+
+**Headers necesarios:**
+- `Authorization: Bearer {token}`
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "nombre": "Ver",
+      "clave": "ver",
+      "descripcion": "Permite ver registros"
+    },
+    {
+      "id": 2,
+      "nombre": "Crear",
+      "clave": "crear",
+      "descripcion": "Permite crear nuevos registros"
+    },
+    {
+      "id": 3,
+      "nombre": "Editar",
+      "clave": "editar",
+      "descripcion": "Permite modificar registros existentes"
+    },
+    {
+      "id": 4,
+      "nombre": "Eliminar",
+      "clave": "eliminar",
+      "descripcion": "Permite eliminar registros"
+    },
+    {
+      "id": 5,
+      "nombre": "Derivar",
+      "clave": "derivar",
+      "descripcion": "Permite derivar documentos"
+    },
+    {
+      "id": 6,
+      "nombre": "Auditar",
+      "clave": "auditar",
+      "descripcion": "Permite acceder a logs de auditoría"
+    },
+    {
+      "id": 8,
+      "nombre": "Administrar",
+      "clave": "admin",
+      "descripcion": "Acceso completo al sistema"
+    }
+  ]
+}
+```
+
+#### Verificar Permiso por Bit
+
+```
+POST /api/permisos/verificar-bit
+```
+
+**Propósito**: Verificar si un usuario tiene un permiso específico basado en bits.
+
+**Headers necesarios:**
+- `Authorization: Bearer {token}`
+
+**Cuerpo de la solicitud:**
+```json
+{
+  "idUsuario": 1,
+  "permisoBit": 0
+}
+```
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "success": true,
+  "tienePermiso": true
+}
+```
+
+### Información del Sistema
+
+#### Obtener información del sistema
+
+```
+GET /api/system/info
+```
+
+**Propósito**: Obtener información sobre el estado y métricas del sistema.
 
 **Headers necesarios:**
 - `Authorization: Bearer {token}`
@@ -613,111 +690,101 @@ GET /dashboard/stats
 {
   "success": true,
   "data": {
-    "documentosPorEstado": {
-      "RECIBIDO": 3,
-      "EN_PROCESO": 3,
-      "COMPLETADO": 1,
-      "PAPELERA": 0
+    "version": "1.0.0",
+    "nombre": "OFICRI API",
+    "entorno": "desarrollo",
+    "nodejs": "v18.16.0",
+    "sistema": "win32",
+    "memoria": {
+      "rss": 59023360,
+      "heapTotal": 33042432,
+      "heapUsed": 20736128,
+      "external": 1994611
     },
-    "documentosPorArea": {
-      "1": 0,
-      "2": 3,
-      "3": 2,
-      "4": 1,
-      "5": 1
-    },
-    "ultimosDocumentos": [
-      {
-        "IDDocumento": 1,
-        "NroRegistro": "REG-2023-001",
-        "Estado": "RECIBIDO",
-        "FechaDocumento": "2023-01-15",
-        "NombreAreaActual": "Mesa de Partes"
-      },
-      // Más documentos...
-    ]
+    "uptime": 3600,
+    "usuarios_activos": 3,
+    "documentos_total": 157,
+    "documentos_pendientes": 42
   }
 }
 ```
 
-## Ejemplos en Postman
+## Ejemplos de integración
 
-Para importar esta documentación en Postman, puede utilizar el archivo de colección adjunto o seguir estos pasos:
+### Ejemplo de login y uso de token (JavaScript)
 
-1. Abra Postman y cree una nueva colección llamada "OFICRI API"
-2. Configure variables de entorno para su instancia de Postman:
-   - `baseUrl`: URL base de la API (ej. `http://localhost:3000/api`)
-   - `token`: Token JWT obtenido al iniciar sesión
+```javascript
+// Función para iniciar sesión
+async function login(codigoCIP, password) {
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ codigoCIP, password })
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+    
+    // Guardar token en localStorage
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data;
+  } catch (error) {
+    console.error('Error de login:', error);
+    throw error;
+  }
+}
 
-3. Añada los siguientes encabezados a su configuración:
-   - `Content-Type: application/json`
-   - `Authorization: Bearer {{token}}`
+// Función para obtener documentos (ejemplo de endpoint protegido)
+async function getDocumentos(page = 1, limit = 10) {
+  try {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+    
+    const response = await fetch(`http://localhost:3000/api/documentos?page=${page}&limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+    
+    return data.data;
+  } catch (error) {
+    console.error('Error al obtener documentos:', error);
+    throw error;
+  }
+}
+```
 
-### Ejemplo: Flujo de Autenticación
+## Consideraciones de seguridad
 
-1. Realice una solicitud POST a `{{baseUrl}}/auth/login` con el cuerpo:
-   ```json
-   {
-     "codigoCIP": "12345678",
-     "password": "Admin123!"
-   }
-   ```
+1. **Validez del token**: Los tokens JWT tienen una validez de 1 hora. Asegúrese de manejar la expiración adecuadamente en el frontend.
 
-2. De la respuesta, guarde el token JWT en su variable de entorno `token`
+2. **HTTPS**: En ambientes de producción, todas las comunicaciones deben realizarse a través de HTTPS para garantizar la seguridad de los datos.
 
-3. Ahora puede realizar solicitudes autenticadas a endpoints protegidos
+3. **Permisos**: Verifique los permisos necesarios para cada operación y asegúrese de que los usuarios solo puedan realizar acciones para las que están autorizados.
 
-### Ambiente Sandbox
+4. **Datos sensibles**: No almacene datos sensibles en localStorage sin cifrado adicional.
 
-Para pruebas, puede utilizar el ambiente Sandbox con los siguientes usuarios:
+## Contacto y soporte
 
-| CodigoCIP | Contraseña | Rol          | Nombre Usuario         |
-|-----------|------------|--------------|------------------------|
-| 12345678  | Admin123!  | Administrador| Admin Sistema          |
-| 23456789  | Admin123!  | Mesa de Partes| Operador Mesa Partes   |
-| 34567890  | Admin123!  | Responsable  | Jefe Química           |
-| 45678901  | Admin123!  | Responsable  | Jefe Digital           |
-| 56789012  | Admin123!  | Responsable  | Jefe Dosaje            |
-| 67890123  | Admin123!  | Operador     | Operador Química       |
-| 78901234  | Admin123!  | Operador     | Operador Digital       |
-| 89012345  | Admin123!  | Operador     | Operador Dosaje        |
+Para consultas o problemas relacionados con la API, contacte al equipo de desarrollo:
 
-## Buenas Prácticas
-
-1. **Manejo de Errores**: Siempre verifique el código de estado HTTP y la estructura de la respuesta para identificar errores.
-
-2. **Paginación**: Para endpoints que devuelven muchos resultados, utilice los parámetros `page` y `limit` para paginar los resultados.
-
-3. **Caché**: La API implementa caché HTTP mediante encabezados ETag. Utilice estos encabezados para optimizar las solicitudes.
-
-4. **Rendimiento**: Para mejorar el rendimiento, solicite solo los datos que necesita mediante parámetros de consulta.
-
-5. **Seguridad**: Nunca almacene tokens JWT en localStorage. Utilice cookies con httpOnly o sessionStorage.
-
-## Control de Versiones y Migración
-
-### Migración a Nuevas Versiones
-
-Cuando se publiquen nuevas versiones de la API:
-
-1. La URL base incluirá el número de versión (ej. `/api/v2/`)
-2. Alternativamente, especifique la versión mediante el encabezado `X-API-Version`
-3. Las versiones antiguas seguirán disponibles durante un período de transición
-
-### Changelog
-
-- **v1.0.0** (Actual):
-  - Versión inicial de la API
-  - Incluye endpoints para autenticación, usuarios, documentos, áreas y roles
-
-- **v1.1.0** (Próximamente):
-  - Nuevos endpoints para gestión de notificaciones
-  - Mejoras en el sistema de permisos
-  - Soporte para carga de archivos múltiples
-
-## Soporte y Contacto
-
-Para soporte técnico relacionado con la API, contacte al equipo de desarrollo a través de:
-
-- Email: desarrollo@oficri-sistema.gob.pe
-- Jira: https://jira.oficri-sistema.gob.pe/proyecto/api-soporte 
+- Email: desarrollo@oficri.gob.pe
+- Jira: https://oficri.atlassian.net/ 
