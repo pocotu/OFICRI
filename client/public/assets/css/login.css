@@ -9,7 +9,20 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(135deg, var(--oficri-primary), var(--oficri-secondary));
+  background: url('../img/fondo_toxicologia.jpg') no-repeat center center;
+  background-size: cover;
+  position: relative;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(7, 71, 35, 0.7);
+  z-index: 0;
 }
 
 .login-card {
@@ -17,21 +30,25 @@
   max-width: 450px;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: slideUp 0.5s ease-out forwards;
   position: relative;
+  z-index: 1;
 }
 
 .login-header {
   padding: 25px 30px 10px;
   text-align: center;
+  background-color: rgba(30, 132, 73, 0.05);
+  border-bottom: 1px solid rgba(30, 132, 73, 0.1);
 }
 
 .login-logo {
   max-width: 180px;
   height: auto;
   margin-bottom: 15px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.1));
 }
 
 .login-title {
@@ -108,7 +125,17 @@
   font-size: 1rem;
   font-weight: 600;
   border-radius: 8px;
+  background: linear-gradient(135deg, var(--oficri-secondary), var(--oficri-primary));
+  border: none;
+  color: white;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.login-btn:hover {
+  background: linear-gradient(135deg, var(--oficri-primary), var(--oficri-secondary));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
 .login-separator {

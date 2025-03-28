@@ -4,10 +4,10 @@
  */
 
 :root {
-  /* Color palette */
-  --oficri-primary: #1a3c6d;
-  --oficri-secondary: #2a5ca5;
-  --oficri-accent: #f8a913;
+  /* Color palette - Tema Verde */
+  --oficri-primary: #0c6b35;  /* Verde oscuro */
+  --oficri-secondary: #1e8449; /* Verde */
+  --oficri-accent: #f8a913;    /* Mantener naranja como acento */
   --oficri-light: #f5f8fa;
   --oficri-dark: #172b4d;
   --oficri-danger: #e53935;

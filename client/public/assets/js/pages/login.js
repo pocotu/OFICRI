@@ -52,7 +52,10 @@ OFICRI.loginPage = (function() {
     loginContainer.innerHTML = `
       <div class="login-card">
         <div class="login-header">
-          <img src="assets/img/logo.png" alt="OFICRI Logo" class="login-logo" onerror="this.src='https://via.placeholder.com/180x60?text=OFICRI'; this.onerror=null;">
+          <div class="d-flex justify-content-center align-items-center mb-3">
+            <img src="assets/img/logoPolicia2x2.png" alt="Logo PNP" class="login-logo me-3" style="max-height: 70px;">
+            <img src="assets/img/logoOficri2x2.png" alt="Logo OFICRI" class="login-logo" style="max-height: 80px;">
+          </div>
           <h1 class="login-title">OFICRI</h1>
           <p class="login-subtitle">Sistema de Gestión Documental</p>
         </div>
