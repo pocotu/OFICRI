@@ -11,7 +11,6 @@
     "dev:full": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=false&& nodemon --env-file=.env server/core/start.js",
     "mock": "node server/mock-server.js",
     "simple": "set NODE_ENV=development&& node --env-file=.env server/server.js",
-    "swagger": "node server/swagger-server.js",
     "start:client": "webpack serve --mode development",
     "build:client": "webpack --mode production",
     "test": "jest --runInBand",
@@ -93,8 +92,6 @@
     "mysql2": "^3.14.0",
     "node-cache": "^5.1.2",
     "punycode2": "^1.0.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0",
     "xss-clean": "^0.1.4"
   },

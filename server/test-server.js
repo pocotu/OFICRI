@@ -1,25 +1,60 @@
 /**
- * Servidor de prueba básico para endpoints
+ * Servidor de pruebas para OFICRI
+ * Incluye una versión simplificada para pruebas
  */
 
-// Establecer entorno de prueba
-process.env.NODE_ENV = 'test';
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const bodyParser = require('body-parser');
+const path = require('path');
 const jwt = require('jsonwebtoken');
-const { setupSwagger } = require('./swagger');
 const permisosRoutes = require('./routes/permisos.routes');
 
+// Crear aplicación Express
 const app = express();
 
+// Configuración de seguridad básica
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  hidePoweredBy: true,
+  xssFilter: true
+}));
+
 // Middleware básico
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '2mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));
+
+// Configuración de CORS
 app.use(cors({
   origin: '*',
   credentials: true
 }));
+app.options('*', cors()); // Enable pre-flight para todas las rutas
+
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Logger simple
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
+
+// Variables para almacenar datos de prueba
+const testData = {
+  users: [
+    { id: 1, username: 'admin', role: 'admin' },
+    { id: 2, username: 'user', role: 'user' }
+  ],
+  documents: [
+    { id: 101, title: 'Test Document 1', content: 'Content 1' },
+    { id: 102, title: 'Test Document 2', content: 'Content 2' }
+  ]
+};
 
 // Middleware de autenticación simulada para pruebas
 app.use((req, res, next) => {
@@ -49,9 +84,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// Configurar Swagger
-setupSwagger(app);
 
 // Agregar rutas de la API real
 app.use('/api/permisos', permisosRoutes);
@@ -546,54 +578,73 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Endpoint para la página principal
+// Ruta principal - Formulario HTML para probar
 app.get('/', (req, res) => {
   res.send(`
-    <html>
-      <head>
-        <title>OFICRI API - Servidor de Prueba</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; }
-          h1 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-          h2 { color: #444; margin-top: 20px; }
-          a { display: inline-block; margin: 10px 0; color: #0066cc; text-decoration: none; }
-          a:hover { text-decoration: underline; }
-          .container { max-width: 800px; margin: 0 auto; }
-          .card { background: #f9f9f9; border-radius: 5px; padding: 15px; margin-bottom: 20px; }
-          .btn { background: #0066cc; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; display: inline-block; }
-          .btn:hover { background: #0052a3; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>OFICRI API - Servidor de Prueba</h1>
-          
-          <div class="card">
-            <h2>Documentación completa de la API</h2>
-            <p>Accede a la documentación interactiva de todos los endpoints disponibles:</p>
-            <a href="/api-docs" class="btn">Ver Documentación Swagger</a>
-          </div>
-          
-          <div class="card">
-            <h2>Endpoints principales</h2>
-            <ul>
-              <li><a href="/api/documents">/api/documents</a> - Listar documentos</li>
-              <li><a href="/api/users">/api/users</a> - Listar usuarios</li>
-              <li><a href="/api/areas">/api/areas</a> - Listar áreas</li>
-              <li><a href="/api/roles">/api/roles</a> - Listar roles</li>
-              <li><a href="/api/notifications">/api/notifications</a> - Listar notificaciones</li>
-              <li><a href="/api/mesa-partes">/api/mesa-partes</a> - Listar mesas de partes</li>
-            </ul>
-          </div>
-          
-          <div class="card">
-            <h2>Generar token para pruebas</h2>
-            <p>Usa este endpoint para obtener un token JWT:</p>
-            <code>POST /api/auth/test-token</code>
-            <p>Cuerpo: <code>{ "role": "admin" }</code></p>
-          </div>
-        </div>
-      </body>
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Servidor de Pruebas OFICRI</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #2a5ca5; }
+        .endpoint { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .method { display: inline-block; padding: 5px; border-radius: 3px; color: white; }
+        .get { background: #61affe; }
+        .post { background: #49cc90; }
+        .put { background: #fca130; }
+        .delete { background: #f93e3e; }
+        .btn { display: inline-block; padding: 10px 15px; background: #2a5ca5; color: white; 
+              text-decoration: none; border-radius: 5px; margin: 10px 5px 10px 0; }
+        input, select { padding: 8px; margin: 5px 0; width: 100%; }
+        input[type="submit"] { background: #4CAF50; color: white; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+      </style>
+    </head>
+    <body>
+      <h1>Servidor de Pruebas OFICRI</h1>
+      <p>Este es un servidor de pruebas para la API de OFICRI. Permite probar los endpoints sin necesidad de conectarse a una base de datos real.</p>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <strong>/api/status</strong>
+        <p>Verificar el estado del servidor</p>
+        <a href="/api/status" class="btn">Probar endpoint</a>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> <strong>/api/auth/login</strong>
+        <p>Iniciar sesión (se aceptan credenciales de prueba)</p>
+        <form action="/api/auth/login" method="post">
+          <input type="text" name="username" placeholder="Usuario (admin/user)" value="admin">
+          <input type="password" name="password" placeholder="Contraseña" value="password">
+          <input type="submit" value="Iniciar sesión">
+        </form>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span> <strong>/api/user/profile</strong>
+        <p>Obtener perfil de usuario (requiere token)</p>
+        <form action="/api/user/profile" method="get">
+          <input type="text" name="token" placeholder="Token JWT">
+          <input type="submit" value="Obtener perfil">
+        </form>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span> <strong>/api/documents/create</strong>
+        <p>Crear documento (requiere token)</p>
+        <form action="/api/documents/create" method="post">
+          <input type="text" name="token" placeholder="Token JWT">
+          <input type="text" name="title" placeholder="Título del documento">
+          <input type="text" name="content" placeholder="Contenido">
+          <input type="submit" value="Crear documento">
+        </form>
+      </div>
+      
+      <a href="/status" class="btn">Ver Estado</a>
+    </body>
     </html>
   `);
 });

@@ -99,7 +99,7 @@ async function verifyPassword(password, hash) {
 }
 
 // Ruta principal para verificación
-  app.get('/', (req, res) => {
+app.get('/', (req, res) => {
   res.json({
     message: 'Servidor OFICRI funcionando correctamente',
     version: '1.0',
@@ -107,8 +107,7 @@ async function verifyPassword(password, hash) {
       login: '/api/auth/login',
       status: '/status',
         api: '/api',
-      health: '/health',
-      docs: '/api-docs'
+      health: '/health'
       }
     });
   });
