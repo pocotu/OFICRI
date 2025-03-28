@@ -1,0 +1,217 @@
+/**
+ * Login Module CSS
+ * Styles specific to the login page of OFICRI
+ */
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--oficri-primary), var(--oficri-secondary));
+}
+
+.login-card {
+  width: 100%;
+  max-width: 450px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: slideUp 0.5s ease-out forwards;
+  position: relative;
+}
+
+.login-header {
+  padding: 25px 30px 10px;
+  text-align: center;
+}
+
+.login-logo {
+  max-width: 180px;
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.login-title {
+  color: var(--oficri-primary);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.login-subtitle {
+  color: var(--oficri-dark);
+  opacity: 0.8;
+  font-size: 1rem;
+  margin-bottom: 15px;
+}
+
+.login-form {
+  padding: 0 30px 25px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--oficri-dark);
+  font-weight: 500;
+}
+
+.form-group .input-icon {
+  position: absolute;
+  top: 38px;
+  left: 12px;
+  color: var(--oficri-secondary);
+  opacity: 0.7;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px 12px 35px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.25s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--oficri-secondary);
+  box-shadow: 0 0 0 3px rgba(42, 92, 165, 0.15);
+  outline: none;
+}
+
+.form-group input.is-invalid {
+  border-color: var(--oficri-danger);
+  background-color: rgba(229, 57, 53, 0.05);
+}
+
+.form-group .invalid-feedback {
+  color: var(--oficri-danger);
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+.form-actions {
+  margin-top: 30px;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.login-separator {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.login-separator span {
+  padding: 0 15px;
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+.login-separator:before,
+.login-separator:after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: #e2e8f0;
+}
+
+.login-footer {
+  padding: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #718096;
+  border-top: 1px solid #e2e8f0;
+  background-color: #f8f9fa;
+}
+
+.login-footer a {
+  color: var(--oficri-secondary);
+  font-weight: 600;
+}
+
+/* Password visibility toggle */
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 38px;
+  cursor: pointer;
+  color: #718096;
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-width: 0.2em;
+}
+
+/* Remember me checkbox */
+.form-check {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.form-check-input {
+  margin-right: 8px;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Error alert styling */
+.login-alert {
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  background-color: rgba(229, 57, 53, 0.1);
+  border: 1px solid rgba(229, 57, 53, 0.25);
+  color: var(--oficri-danger);
+  font-size: 0.9rem;
+}
+
+.login-alert-icon {
+  margin-right: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .login-card {
+    box-shadow: none;
+    border-radius: 0;
+  }
+  
+  .login-container {
+    padding: 0;
+  }
+  
+  .login-header, .login-form {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+} 

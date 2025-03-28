@@ -1,0 +1,144 @@
+/**
+ * Main CSS for OFICRI System
+ * Main styles and variables for the application
+ */
+
+:root {
+  /* Color palette */
+  --oficri-primary: #1a3c6d;
+  --oficri-secondary: #2a5ca5;
+  --oficri-accent: #f8a913;
+  --oficri-light: #f5f8fa;
+  --oficri-dark: #172b4d;
+  --oficri-danger: #e53935;
+  --oficri-success: #43a047;
+  --oficri-warning: #ffb300;
+  --oficri-info: #039be5;
+  
+  /* Typography */
+  --oficri-font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+  
+  /* Layout */
+  --header-height: 60px;
+  --sidebar-width: 260px;
+  --content-padding: 25px;
+  
+  /* Z-index layers */
+  --z-header: 1000;
+  --z-sidebar: 990;
+  --z-dropdown: 980;
+  --z-modal: 1050;
+  --z-notification: 1100;
+}
+
+/* Base Styles */
+body {
+  font-family: var(--oficri-font-family);
+  color: var(--oficri-dark);
+  background-color: var(--oficri-light);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--oficri-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+  color: var(--oficri-primary);
+}
+
+/* Custom Button Styles */
+.btn-oficri-primary {
+  background-color: var(--oficri-primary);
+  border-color: var(--oficri-primary);
+  color: white;
+}
+
+.btn-oficri-primary:hover, .btn-oficri-primary:focus {
+  background-color: var(--oficri-secondary);
+  border-color: var(--oficri-secondary);
+  color: white;
+}
+
+.btn-oficri-secondary {
+  background-color: var(--oficri-accent);
+  border-color: var(--oficri-accent);
+  color: var(--oficri-dark);
+}
+
+.btn-oficri-secondary:hover, .btn-oficri-secondary:focus {
+  background-color: #e09100;
+  border-color: #e09100;
+  color: var(--oficri-dark);
+}
+
+/* Card Styling */
+.oficri-card {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: white;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.oficri-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* Utility Classes */
+.text-oficri-primary {
+  color: var(--oficri-primary);
+}
+
+.text-oficri-secondary {
+  color: var(--oficri-secondary);
+}
+
+.text-oficri-accent {
+  color: var(--oficri-accent);
+}
+
+.bg-oficri-primary {
+  background-color: var(--oficri-primary);
+}
+
+.bg-oficri-secondary {
+  background-color: var(--oficri-secondary);
+}
+
+.bg-oficri-accent {
+  background-color: var(--oficri-accent);
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Responsive Helpers */
+@media (max-width: 768px) {
+  :root {
+    --content-padding: 15px;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+} 

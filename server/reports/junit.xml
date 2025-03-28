@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="29" failures="0" errors="0" time="1.063">
+  <testsuite name="limpiar-db.js Tests" errors="0" failures="0" skipped="0" timestamp="2025-03-28T16:10:36" time="0.629" tests="9">
+    <testcase classname="limpiar-db.js Tests" name="executeQuery debería establecer la conexión con los parámetros correctos" time="0.02">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="eliminarTriggers debería eliminar todos los triggers encontrados" time="0.005">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="eliminarTriggers debería manejar errores" time="0.002">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="limpiarRolLog debería crear registros iniciales correctamente" time="0.005">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="limpiarRolLog debería manejar errores" time="0.001">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="limpiarBaseDatos debería ejecutar correctamente todo el proceso" time="0.003">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="limpiarBaseDatos debería manejar errores generales" time="0.002">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="script principal debería manejar ejecución exitosa" time="0.001">
+    </testcase>
+    <testcase classname="limpiar-db.js Tests" name="script principal debería manejar errores" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="Database Initialization Script Tests" errors="0" failures="0" skipped="0" timestamp="2025-03-28T16:10:36" time="0.682" tests="20">
+    <testcase classname="Database Initialization Script Tests initializeAreas function" name="should create areas when they do not exist" time="0.011">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeAreas function" name="should skip creating areas when they already exist" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeAreas function" name="should handle errors during area initialization" time="0.005">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeRoles function" name="should create roles when they do not exist" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeRoles function" name="should update roles when they already exist" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeRoles function" name="should handle errors during role initialization" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeMesaPartes function" name="should create Mesa de Partes when it does not exist" time="0">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeMesaPartes function" name="should skip creating Mesa de Partes when it already exists" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeMesaPartes function" name="should handle errors during Mesa de Partes initialization" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests createDefaultAdmin function" name="should create admin user when it does not exist" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests createDefaultAdmin function" name="should update admin user when it already exists" time="0.003">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests createDefaultAdmin function" name="should throw error if admin role or area not found" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests createDefaultAdmin function" name="should handle errors during admin creation" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeSecurity function" name="should create and assign permissions" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeSecurity function" name="should skip creating permissions when they already exist" time="0">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeSecurity function" name="should handle errors during security initialization" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeDatabase function" name="should call all initialization functions and return true" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests initializeDatabase function" name="should enable constraints even if an error occurs" time="0.001">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests Module direct execution" name="should call initializeDatabase when executed directly" time="0.002">
+    </testcase>
+    <testcase classname="Database Initialization Script Tests Module direct execution" name="should handle error during direct execution" time="0.041">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -142,4 +142,18 @@ if (require.main === module) {
       console.error('Error no controlado:', error);
       process.exit(1);
     });
-} 
+}
+
+// Exportar funciones para testing
+module.exports = {
+  // Para uso normal, solo exponemos la función principal
+  limpiarBaseDatos,
+  
+  // Para testing, exponemos las funciones internas
+  __test__: {
+    executeQuery,
+    eliminarTriggers,
+    limpiarRolLog,
+    limpiarBaseDatos
+  }
+}; 
