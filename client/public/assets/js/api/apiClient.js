@@ -22,6 +22,8 @@ OFICRI.apiClient = (function() {
   const _request = async function(options) {
     const { method = 'GET', endpoint, data = null, headers = {}, params = {}, retries = config.api.retries } = options;
     
+    console.log('[DEBUG-API] Starting API request:', { method, endpoint, params, skipAuth: options.skipAuth });
+    
     // Build URL with query parameters
     let url = `${config.api.baseUrl}${endpoint}`;
     if (params && Object.keys(params).length > 0) {
@@ -34,6 +36,8 @@ OFICRI.apiClient = (function() {
       url += `?${queryParams.toString()}`;
     }
     
+    console.log('[DEBUG-API] Request URL:', url);
+    
     // Build request headers
     const requestHeaders = {
       'Content-Type': 'application/json',
@@ -45,7 +49,12 @@ OFICRI.apiClient = (function() {
     const token = OFICRI.authService.getToken();
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
+      console.log('[DEBUG-API] Added auth token to request (token length):', token.length);
+    } else {
+      console.log('[DEBUG-API] No auth token available for request');
     }
+    
+    console.log('[DEBUG-API] Request headers:', requestHeaders);
     
     // Request options
     const requestOptions = {
@@ -58,23 +67,35 @@ OFICRI.apiClient = (function() {
     // Add request body for non-GET requests
     if (method !== 'GET' && data) {
       requestOptions.body = JSON.stringify(data);
+      console.log('[DEBUG-API] Request body:', method !== 'POST' || !endpoint.includes('login') ? JSON.stringify(data) : 'Password hidden for security');
     }
     
     try {
+      console.log('[DEBUG-API] Sending fetch request...');
+      
       // Perform fetch request
       const response = await fetch(url, requestOptions);
+      
+      console.log('[DEBUG-API] Response received - Status:', response.status, response.statusText);
+      console.log('[DEBUG-API] Response headers:', [...response.headers.entries()]);
       
       // Clone response for potential retries
       const clonedResponse = response.clone();
       
       // Handle 401 Unauthorized (token expired)
       if (response.status === 401 && !options.skipAuth) {
+        console.log('[DEBUG-API] 401 Unauthorized - Attempting token refresh');
+        
         // Try token refresh
         const refreshed = await _handleTokenRefresh();
         if (refreshed) {
+          console.log('[DEBUG-API] Token refresh successful - Retrying request');
+          
           // Retry request with new token
           return _request({ ...options, skipAuth: true });
         } else {
+          console.log('[DEBUG-API] Token refresh failed - Logging out user');
+          
           // Refresh failed, redirect to login
           OFICRI.authService.logout();
           window.location.href = '/';
@@ -85,16 +106,25 @@ OFICRI.apiClient = (function() {
       // Parse response body
       let responseData;
       const contentType = response.headers.get('content-type');
+      
+      console.log('[DEBUG-API] Response content type:', contentType);
+      
       if (contentType && contentType.includes('application/json')) {
+        console.log('[DEBUG-API] Parsing JSON response');
         responseData = await response.json();
       } else {
+        console.log('[DEBUG-API] Parsing text response');
         responseData = await response.text();
       }
       
       // Handle unsuccessful responses
       if (!response.ok) {
+        console.log('[DEBUG-API] Response not OK:', response.status, responseData);
+        
         // Retry on server errors if retries remaining
         if (response.status >= 500 && retries > 0) {
+          console.log('[DEBUG-API] Server error - Retrying request');
+          
           // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, 1000));
           return _request({ ...options, retries: retries - 1 });
@@ -107,11 +137,16 @@ OFICRI.apiClient = (function() {
         throw error;
       }
       
+      console.log('[DEBUG-API] Request successful');
       return responseData;
     } catch (error) {
+      console.error('[DEBUG-API] Request error:', error.name, error.message);
+      
       // Handle network errors with retries
       if (error.name === 'AbortError' || error.name === 'TypeError') {
         if (retries > 0) {
+          console.log('[DEBUG-API] Network error - Retrying request');
+          
           // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, 1000));
           return _request({ ...options, retries: retries - 1 });
@@ -120,7 +155,11 @@ OFICRI.apiClient = (function() {
       
       // Log error if debugging enabled
       if (config.features.debugging) {
-        console.error('API Request Error:', error);
+        console.error('[DEBUG-API] API Request Error Details:', {
+          errorName: error.name,
+          errorMessage: error.message,
+          errorStack: error.stack
+        });
       }
       
       // Rethrow for handler

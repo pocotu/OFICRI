@@ -97,27 +97,66 @@ OFICRI.authService = (function() {
      */
     login: async function(credentials) {
       try {
-        // Call login API endpoint (temporarily use direct fetch since apiClient depends on authService)
-        const response = await fetch(`${config.api.baseUrl}/auth/login`, {
+        console.log('[DEBUG] Login attempt - Starting login process');
+        console.log('[DEBUG] Login credentials (without password):', { codigoCIP: credentials.codigoCIP, remember: credentials.remember });
+        
+        // Full API URL logging with protocol and host for CORS debugging
+        const apiUrl = `${config.api.baseUrl}/auth/login`;
+        console.log('[DEBUG] API URL being used:', apiUrl);
+        console.log('[DEBUG] Current document.location:', document.location.href);
+        console.log('[DEBUG] Origin:', window.location.origin);
+        console.log('[DEBUG] Browser User-Agent:', navigator.userAgent);
+        
+        // Detailed request configuration logging
+        const requestConfig = {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify(credentials)
-        });
+          body: JSON.stringify(credentials),
+          credentials: 'include', // Include cookies in request
+          mode: 'cors'
+        };
+        
+        console.log('[DEBUG] Request configuration:', JSON.stringify(requestConfig, (key, value) => 
+          key === 'body' ? '***REDACTED***' : value
+        ));
+        
+        // Call login API endpoint with extensive error handling
+        console.log('[DEBUG] About to send fetch request to login endpoint');
+        let response;
+        try {
+          response = await fetch(apiUrl, requestConfig);
+          console.log('[DEBUG] Fetch response received - Status:', response.status, response.statusText);
+          console.log('[DEBUG] Response headers:', Object.fromEntries([...response.headers.entries()]));
+        } catch (fetchError) {
+          console.error('[DEBUG] Network error during fetch:', fetchError);
+          console.error('[DEBUG] Error name:', fetchError.name);
+          console.error('[DEBUG] Error message:', fetchError.message);
+          console.error('[DEBUG] CORS issue likely - Check server CORS configuration');
+          throw new Error(`Network error: ${fetchError.message}. Possible CORS issue.`);
+        }
         
         if (!response.ok) {
+          console.log('[DEBUG] Response not OK - Attempting to parse error data');
           const errorData = await response.json();
+          console.log('[DEBUG] Error data received:', errorData);
           throw new Error(errorData.error?.message || 'Login failed');
         }
         
+        console.log('[DEBUG] Response OK - Attempting to parse auth data');
         const authData = await response.json();
+        console.log('[DEBUG] Auth data received (token length):', authData.token ? authData.token.length : 'no token');
         
         // Validate and store auth data
         if (!authData.token || !authData.user) {
+          console.log('[DEBUG] Invalid auth data - Missing token or user');
           throw new Error('Invalid response from server');
         }
         
+        console.log('[DEBUG] Setting auth data in localStorage');
         _setAuthData(authData);
         
         // Log successful login if security auditing enabled
@@ -125,9 +164,13 @@ OFICRI.authService = (function() {
           console.info('User logged in:', authData.user.codigoCIP);
         }
         
+        console.log('[DEBUG] Login successful - Returning user data');
         return authData.user;
       } catch (error) {
-        console.error('Login error:', error);
+        console.error('[DEBUG] Login error - Full error:', error);
+        console.error('[DEBUG] Login error - Error name:', error.name);
+        console.error('[DEBUG] Login error - Error message:', error.message);
+        console.error('[DEBUG] Login error - Error stack:', error.stack);
         throw error;
       }
     },

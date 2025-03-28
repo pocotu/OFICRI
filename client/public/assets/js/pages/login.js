@@ -148,24 +148,23 @@ OFICRI.loginPage = (function() {
   
   /**
    * Handles login form submission
-   * @param {Event} event - Form submit event
+   * @param {Event} event - Form submission event
    */
   const _handleLogin = async function(event) {
     event.preventDefault();
     
-    // Prevent multiple submissions
-    if (_isLoading) {
-      return;
-    }
+    console.log('[DEBUG-LOGIN] Form submission started');
     
-    // Clear previous alerts
+    // Clear any existing alerts
     _showAlert(null);
     
-    // Validate form fields
-    const isValid = _validateForm();
-    if (!isValid) {
+    // Validate form
+    if (!_validateForm()) {
+      console.log('[DEBUG-LOGIN] Form validation failed');
       return;
     }
+    
+    console.log('[DEBUG-LOGIN] Form validation passed, proceeding with login');
     
     // Get form data
     const formData = new FormData(_loginForm);
@@ -175,17 +174,39 @@ OFICRI.loginPage = (function() {
       remember: formData.get('rememberMe') === 'on'
     };
     
+    console.log('[DEBUG-LOGIN] Credentials prepared (without password)', { 
+      codigoCIP: credentials.codigoCIP, 
+      remember: credentials.remember 
+    });
+    
     // Show loading state
     _setLoading(true);
+    console.log('[DEBUG-LOGIN] Loading state set to true');
     
     try {
+      console.log('[DEBUG-LOGIN] Calling authService.login');
+      console.log('[DEBUG-LOGIN] Current domain:', window.location.hostname);
+      console.log('[DEBUG-LOGIN] Current origin:', window.location.origin);
+      console.log('[DEBUG-LOGIN] Current protocol:', window.location.protocol);
+      console.log('[DEBUG-LOGIN] API Server Config:', config.api);
+      console.log('[DEBUG-LOGIN] Browser capabilities:', {
+        cookiesEnabled: navigator.cookieEnabled,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language
+      });
+      
       // Attempt login
       await OFICRI.authService.login(credentials);
       
+      console.log('[DEBUG-LOGIN] Login successful, redirecting to app');
       // Success - redirect to app
       _redirectToApp();
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[DEBUG-LOGIN] Login error in handler:', error);
+      console.error('[DEBUG-LOGIN] Error name:', error.name);
+      console.error('[DEBUG-LOGIN] Error message:', error.message);
+      console.error('[DEBUG-LOGIN] Error stack:', error.stack);
       
       // Show error message
       _showAlert(error.message || 'Credenciales inválidas. Por favor, intente nuevamente.');
@@ -348,23 +369,8 @@ OFICRI.loginPage = (function() {
       return;
     }
     
-    let redirectUrl = 'dashboard.html';
-    
-    // Redirect based on role
-    switch (user.role) {
-      case 'admin':
-        redirectUrl = 'admin.html';
-        break;
-      case 'mesa_partes':
-        redirectUrl = 'mesaPartes.html';
-        break;
-      case 'area':
-        redirectUrl = 'area.html';
-        break;
-    }
-    
-    // Perform redirect
-    window.location.href = redirectUrl;
+    // Redirigir a dashboard que se encargará de redirigir según el rol
+    window.location.href = 'dashboard.html';
   };
   
   // Return public API

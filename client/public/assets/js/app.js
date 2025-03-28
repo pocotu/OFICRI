@@ -14,6 +14,8 @@ OFICRI.app = (function() {
    * Initializes the application
    */
   const _init = function() {
+    console.log('[DEBUG-APP] Starting application initialization');
+    
     // Initialize core services
     _initServices();
     
@@ -25,10 +27,12 @@ OFICRI.app = (function() {
     
     // Log initialization if debugging enabled
     if (config.features.debugging) {
-      console.log('OFICRI App initialized:', {
+      console.log('[DEBUG-APP] OFICRI App initialized:', {
         environment: config.environment.isDevelopment ? 'development' : 'production',
         apiUrl: config.api.baseUrl,
-        features: config.features
+        features: config.features,
+        userAgent: navigator.userAgent,
+        corsEnabled: typeof config.corsOptions !== 'undefined'
       });
     }
   };
@@ -37,11 +41,15 @@ OFICRI.app = (function() {
    * Initializes core services
    */
   const _initServices = function() {
+    console.log('[DEBUG-APP] Initializing core services');
+    
     // Setup security protections
     _setupSecurityProtections();
     
     // Setup error handling
     _setupErrorHandling();
+    
+    console.log('[DEBUG-APP] Core services initialized');
   };
   
   /**
@@ -86,11 +94,34 @@ OFICRI.app = (function() {
    * Sets up security protections
    */
   const _setupSecurityProtections = function() {
-    // Add basic XSS protection headers
-    const meta = document.createElement('meta');
-    meta.setAttribute('http-equiv', 'Content-Security-Policy');
-    meta.setAttribute('content', "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;");
-    document.head.appendChild(meta);
+    console.log('[DEBUG-APP] Setting up security protections');
+    
+    // Check existing CSP meta tags
+    let existingCSP = null;
+    const metaTags = document.getElementsByTagName('meta');
+    for (let i = 0; i < metaTags.length; i++) {
+      if (metaTags[i].getAttribute('http-equiv') === 'Content-Security-Policy') {
+        existingCSP = metaTags[i].getAttribute('content');
+        console.log('[DEBUG-APP] Found existing CSP meta tag:', existingCSP);
+        break;
+      }
+    }
+    
+    // Only add CSP if it doesn't already exist
+    if (!existingCSP) {
+      console.log('[DEBUG-APP] No existing CSP meta tag found, adding new one');
+      
+      const cspContent = "default-src 'self'; connect-src 'self' http://localhost:3000 http://localhost:3001; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;";
+      
+      const meta = document.createElement('meta');
+      meta.setAttribute('http-equiv', 'Content-Security-Policy');
+      meta.setAttribute('content', cspContent);
+      document.head.appendChild(meta);
+      
+      console.log('[DEBUG-APP] Added CSP meta tag with content:', cspContent);
+    } else {
+      console.log('[DEBUG-APP] Using existing CSP meta tag');
+    }
   };
   
   /**

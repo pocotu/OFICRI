@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:3000 http://localhost:3001; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https:;">
+    <title>OFICRI - Panel de Administración</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body class="bg-light">
+    <div class="oficri-app">
+        <!-- Header -->
+        <header class="oficri-header">
+            <div class="menu-toggle" id="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="logo-container">
+                <img src="assets/img/logoOficri2x2.png" alt="Logo OFICRI" class="logo me-2">
+                <h1>Sistema de Gestión OFICRI</h1>
+            </div>
+            <div class="user-info" id="user-info">
+                <span id="user-name">Juan Perez</span>
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="oficri-container">
+            <!-- Sidebar Navigation -->
+            <aside class="oficri-sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h2>Menú Principal</h2>
+                </div>
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li class="active">
+                            <a href="#dashboard" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#usuarios" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-users"></i> Gestión de Usuarios
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#roles" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-user-tag"></i> Gestión de Roles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#areas" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-building"></i> Gestión de Áreas
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#documentos" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-file-alt"></i> Gestión de Documentos
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#auditoria" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-shield-alt"></i> Registros / Auditoría
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#exportar" data-bs-toggle="tab" role="tab">
+                                <i class="fas fa-file-export"></i> Exportar
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="cerrar-sesion">
+                                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="oficri-main">
+                <div class="tab-content">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Panel de Control</h2>
+                            <button class="btn btn-oficri-primary" id="actualizar">
+                                <i class="fas fa-sync-alt"></i> Actualizar
+                            </button>
+                        </div>
+
+                        <div class="row dashboard-stats">
+                            <div class="col-md-4">
+                                <div class="stat-card">
+                                    <div class="stat-value">0</div>
+                                    <div class="stat-title">USUARIOS ACTIVOS</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card">
+                                    <div class="stat-value">0</div>
+                                    <div class="stat-title">DOCUMENTOS PENDIENTES</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card">
+                                    <div class="stat-value">0</div>
+                                    <div class="stat-title">ÁREAS ACTIVAS</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row dashboard-panels">
+                            <div class="col-md-6">
+                                <div class="panel">
+                                    <h3>Actividad Reciente</h3>
+                                    <div id="actividad-reciente" class="panel-content">
+                                        <p>Cargando actividad reciente...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="panel">
+                                    <h3>Documentos Pendientes</h3>
+                                    <div id="documentos-pendientes" class="panel-content">
+                                        <p>Cargando documentos pendientes...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Usuarios Tab -->
+                    <div class="tab-pane fade" id="usuarios" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Gestión de Usuarios</h2>
+                            <button class="btn btn-oficri-primary" id="nuevo-usuario">
+                                <i class="fas fa-plus"></i> Nuevo Usuario
+                            </button>
+                        </div>
+                        <div class="panel">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Código CIP</th>
+                                            <th>Nombres</th>
+                                            <th>Apellidos</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usuarios-tabla">
+                                        <tr>
+                                            <td colspan="7" class="text-center">Cargando usuarios...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles Tab -->
+                    <div class="tab-pane fade" id="roles" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Gestión de Roles</h2>
+                            <button class="btn btn-oficri-primary" id="nuevo-rol">
+                                <i class="fas fa-plus"></i> Nuevo Rol
+                            </button>
+                        </div>
+                        <div class="panel">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Permisos</th>
+                                            <th>Descripción</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roles-tabla">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Cargando roles...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Áreas Tab -->
+                    <div class="tab-pane fade" id="areas" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Gestión de Áreas</h2>
+                            <button class="btn btn-oficri-primary" id="nueva-area">
+                                <i class="fas fa-plus"></i> Nueva Área
+                            </button>
+                        </div>
+                        <div class="panel">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Código</th>
+                                            <th>Responsable</th>
+                                            <th>Documentos</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="areas-tabla">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Cargando áreas...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documentos Tab -->
+                    <div class="tab-pane fade" id="documentos" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Gestión de Documentos</h2>
+                            <button class="btn btn-oficri-primary" id="nuevo-documento">
+                                <i class="fas fa-plus"></i> Nuevo Documento
+                            </button>
+                        </div>
+                        <div class="panel">
+                            <div class="filters mb-3">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="filtro-estado">
+                                            <option value="">Todos los estados</option>
+                                            <option value="RECIBIDO">Recibido</option>
+                                            <option value="EN_PROCESO">En Proceso</option>
+                                            <option value="COMPLETADO">Completado</option>
+                                            <option value="ARCHIVADO">Archivado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="filtro-area">
+                                            <option value="">Todas las áreas</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="buscar-documento" placeholder="Buscar documento...">
+                                            <button class="btn btn-outline-secondary" type="button" id="buscar-btn">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Nro. Registro</th>
+                                            <th>Oficio</th>
+                                            <th>Fecha</th>
+                                            <th>Procedencia</th>
+                                            <th>Área Actual</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="documentos-tabla">
+                                        <tr>
+                                            <td colspan="7" class="text-center">Cargando documentos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pagination-container d-flex justify-content-between align-items-center mt-3">
+                                <div class="page-info">Mostrando <span id="page-showing">0-0</span> de <span id="page-total">0</span></div>
+                                <nav aria-label="Paginación de documentos">
+                                    <ul class="pagination" id="documentos-pagination"></ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Auditoría Tab -->
+                    <div class="tab-pane fade" id="auditoria" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Registros del Sistema / Auditoría</h2>
+                            <div class="date-filter">
+                                <input type="date" class="form-control" id="auditoria-desde">
+                                <span>a</span>
+                                <input type="date" class="form-control" id="auditoria-hasta">
+                                <button class="btn btn-outline-primary" id="filtrar-auditoria">
+                                    <i class="fas fa-filter"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha/Hora</th>
+                                            <th>Usuario</th>
+                                            <th>Acción</th>
+                                            <th>Módulo</th>
+                                            <th>Descripción</th>
+                                            <th>IP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="auditoria-tabla">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Cargando registros de auditoría...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pagination-container d-flex justify-content-between align-items-center mt-3">
+                                <div class="page-info">Mostrando <span id="audit-page-showing">0-0</span> de <span id="audit-page-total">0</span></div>
+                                <nav aria-label="Paginación de auditoría">
+                                    <ul class="pagination" id="auditoria-pagination"></ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Exportar Tab -->
+                    <div class="tab-pane fade" id="exportar" role="tabpanel">
+                        <div class="content-header">
+                            <h2>Exportación de Datos</h2>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="panel">
+                                    <h3>Exportar Documentos</h3>
+                                    <div class="panel-content">
+                                        <form id="exportar-documentos-form">
+                                            <div class="mb-3">
+                                                <label class="form-label">Formato:</label>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="formato-docs" id="formato-excel" value="excel" checked>
+                                                    <label class="form-check-label" for="formato-excel">Excel</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="formato-docs" id="formato-pdf" value="pdf">
+                                                    <label class="form-check-label" for="formato-pdf">PDF</label>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Filtros:</label>
+                                                <select class="form-select mb-2" id="exportar-estado">
+                                                    <option value="">Todos los estados</option>
+                                                    <option value="RECIBIDO">Recibido</option>
+                                                    <option value="EN_PROCESO">En Proceso</option>
+                                                    <option value="COMPLETADO">Completado</option>
+                                                    <option value="ARCHIVADO">Archivado</option>
+                                                </select>
+                                                <div class="date-filter">
+                                                    <input type="date" class="form-control" id="exportar-desde" placeholder="Desde">
+                                                    <span>a</span>
+                                                    <input type="date" class="form-control" id="exportar-hasta" placeholder="Hasta">
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-oficri-primary">
+                                                <i class="fas fa-file-export"></i> Exportar Documentos
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="panel">
+                                    <h3>Exportar Logs de Auditoría</h3>
+                                    <div class="panel-content">
+                                        <form id="exportar-logs-form">
+                                            <div class="mb-3">
+                                                <label class="form-label">Formato:</label>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="formato-logs" id="logs-excel" value="excel" checked>
+                                                    <label class="form-check-label" for="logs-excel">Excel</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="formato-logs" id="logs-pdf" value="pdf">
+                                                    <label class="form-check-label" for="logs-pdf">PDF</label>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Tipo de Log:</label>
+                                                <select class="form-select mb-2" id="exportar-tipo-log">
+                                                    <option value="">Todos los logs</option>
+                                                    <option value="LOGIN">Inicios de sesión</option>
+                                                    <option value="DOCUMENTO">Documentos</option>
+                                                    <option value="USUARIO">Usuarios</option>
+                                                    <option value="SISTEMA">Sistema</option>
+                                                </select>
+                                                <div class="date-filter">
+                                                    <input type="date" class="form-control" id="logs-desde" placeholder="Desde">
+                                                    <span>a</span>
+                                                    <input type="date" class="form-control" id="logs-hasta" placeholder="Hasta">
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-oficri-primary">
+                                                <i class="fas fa-file-export"></i> Exportar Logs
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="panel">
+                                    <h3>Respaldo de Base de Datos</h3>
+                                    <div class="panel-content">
+                                        <p>Generar una copia de seguridad de la base de datos del sistema.</p>
+                                        <button id="generar-backup" class="btn btn-oficri-primary">
+                                            <i class="fas fa-database"></i> Generar Backup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal genérico para formularios -->
+    <div class="modal fade" id="form-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title">Título</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-oficri-primary" id="modal-save">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Application Core JavaScript -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api/apiClient.js"></script>
+    <script src="assets/js/services/authService.js"></script>
+    <script src="assets/js/utils/validators.js"></script>
+    <script src="assets/js/ui/notifications.js"></script>
+    
+    <!-- Admin Modules -->
+    <script src="assets/js/admin/dashboard.js"></script>
+    <script src="assets/js/admin/usuarios.js"></script>
+    <script src="assets/js/admin/roles.js"></script>
+    <script src="assets/js/admin/areas.js"></script>
+    <script src="assets/js/admin/documentos.js"></script>
+    <script src="assets/js/admin/auditoria.js"></script>
+    <script src="assets/js/admin/exportar.js"></script>
+    
+    <!-- Main Application Script -->
+    <script src="assets/js/admin.js"></script>
+</body>
+</html>

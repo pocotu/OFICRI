@@ -6,9 +6,18 @@
 const config = {
   // API Configuration
   api: {
-    baseUrl: 'http://localhost:3001/api', // Default API URL
+    baseUrl: 'http://localhost:3000/api', // Default API URL
     timeout: 15000, // Request timeout in milliseconds
-    retries: 1 // Number of retries for failed requests
+    retries: 1, // Number of retries for failed requests
+    corsOptions: {
+      credentials: 'include',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }
   },
   
   // Authentication Configuration
@@ -47,8 +56,18 @@ const config = {
 // Apply environment-specific overrides
 if (config.environment.isDevelopment) {
   // Development settings
-  config.api.baseUrl = 'http://localhost:3001/api';
+  config.api.baseUrl = 'http://localhost:3000/api';
+  console.log('[CONFIG] Using development API URL:', config.api.baseUrl);
   config.features.debugging = true;
+}
+
+// Add runtime diagnostics when debugging is enabled
+if (config.features.debugging) {
+  console.log('[CONFIG] Runtime configuration initialized:', {
+    environment: config.environment.isDevelopment ? 'development' : 'production',
+    apiBaseUrl: config.api.baseUrl,
+    currentOrigin: window.location.origin
+  });
 }
 
 // Freeze config to prevent modifications

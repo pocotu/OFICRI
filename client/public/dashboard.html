@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:3000 http://localhost:3001; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https:;">
+    <title>OFICRI - Redirección</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    
+    <style>
+        .redirect-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <h4>Redireccionando a su panel de control...</h4>
+        <p id="message">Verificando permisos...</p>
+    </div>
+
+    <!-- Application Core JavaScript -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api/apiClient.js"></script>
+    <script src="assets/js/services/authService.js"></script>
+    
+    <!-- Redirect Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageElement = document.getElementById('message');
+            
+            // Verificar autenticación
+            if (!OFICRI.authService.isAuthenticated()) {
+                messageElement.textContent = 'No ha iniciado sesión. Redireccionando...';
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+                return;
+            }
+            
+            // Obtener datos del usuario
+            const user = OFICRI.authService.getUser();
+            
+            if (!user || !user.role) {
+                messageElement.textContent = 'Error: Información de usuario inválida.';
+                setTimeout(() => {
+                    OFICRI.authService.logout();
+                }, 2000);
+                return;
+            }
+            
+            messageElement.textContent = `Bienvenido ${user.nombre}. Cargando su interfaz...`;
+            
+            // Redirigir según el rol
+            setTimeout(() => {
+                let redirectUrl = 'admin.html';
+                
+                switch (user.role.toLowerCase()) {
+                    case 'administrador':
+                        redirectUrl = 'admin.html';
+                        break;
+                    case 'mesa de partes':
+                        redirectUrl = 'mesaPartes.html';
+                        break;
+                    default:
+                        redirectUrl = 'area.html';
+                        break;
+                }
+                
+                console.log(`Redireccionando a: ${redirectUrl}`);
+                window.location.href = redirectUrl;
+            }, 1500);
+        });
+    </script>
+</body>
+</html> 

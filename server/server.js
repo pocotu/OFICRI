@@ -33,9 +33,28 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Configuración de CORS
 app.use(cors({
-  origin: '*',
-  credentials: true
+  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-CSRF-Token']
 }));
+
+// Middleware para debug de CORS
+app.use((req, res, next) => {
+  console.log(`[DEBUG-CORS] Request from origin: ${req.headers.origin}`);
+  console.log(`[DEBUG-CORS] Request method: ${req.method}`);
+  console.log(`[DEBUG-CORS] Request headers:`, req.headers);
+  
+  // Capture CORS response headers
+  const originalSetHeader = res.setHeader;
+  res.setHeader = function(name, value) {
+    console.log(`[DEBUG-CORS] Response header set: ${name}:`, value);
+    return originalSetHeader.apply(this, arguments);
+  };
+  
+  next();
+});
+
 app.options('*', cors()); // Enable pre-flight para todas las rutas
 
 // Configuración de base de datos

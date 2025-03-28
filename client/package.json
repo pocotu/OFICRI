@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Frontend para el Sistema de Gestión Documental OFICRI",
   "scripts": {
-    "dev": "lite-server --baseDir=\"public\"",
-    "start": "lite-server --baseDir=\"public\""
+    "dev": "lite-server --baseDir=\"public\" --port=3001",
+    "start": "lite-server --baseDir=\"public\" --port=3001"
   },
   "keywords": ["oficri", "frontend"],
   "author": "OFICRI",
