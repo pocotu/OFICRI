@@ -36,8 +36,8 @@ export async function login(codigoCIP, password) {
   try {
     const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+  headers: {
+    'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         codigoCIP,
@@ -145,8 +145,8 @@ export default class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
-      // Verificar si el token ha expirado
+  
+  // Verificar si el token ha expirado
       if (response.status === 401) {
         localStorage.removeItem('token');
         window.location.href = '/login?expired=true';
@@ -160,10 +160,10 @@ export default class ApiClient {
       }
       
       return data;
-    } catch (error) {
+  } catch (error) {
       console.error(`Error en solicitud a ${endpoint}:`, error);
-      throw error;
-    }
+    throw error;
+  }
   }
 
   // Métodos para diferentes tipos de solicitudes
@@ -308,7 +308,7 @@ export const AuthProvider = ({ children }) => {
           const userData = localStorage.getItem('user');
           setUser(JSON.parse(userData));
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error al inicializar autenticación:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -447,7 +447,7 @@ function DocumentosList() {
     search: '',
     estado: ''
   });
-
+  
   useEffect(() => {
     loadDocumentos();
   }, [currentPage, filters]);
@@ -470,7 +470,7 @@ function DocumentosList() {
     // Reiniciar a primera página al buscar
     setCurrentPage(1);
   };
-
+  
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({
@@ -478,32 +478,32 @@ function DocumentosList() {
       [name]: value
     }));
   };
-
+  
   return (
     <div className="documentos-container">
       <h2>Documentos</h2>
       
       <div className="filters-container">
         <form onSubmit={handleSearch}>
-          <input
+        <input
             type="text"
-            name="search"
-            placeholder="Buscar..."
-            value={filters.search}
-            onChange={handleFilterChange}
-          />
+          name="search"
+          placeholder="Buscar..."
+          value={filters.search}
+          onChange={handleFilterChange}
+        />
           
-          <select
-            name="estado"
-            value={filters.estado}
-            onChange={handleFilterChange}
-          >
-            <option value="">Todos los estados</option>
-            <option value="RECIBIDO">Recibido</option>
-            <option value="EN_PROCESO">En proceso</option>
-            <option value="COMPLETADO">Completado</option>
+        <select
+          name="estado"
+          value={filters.estado}
+          onChange={handleFilterChange}
+        >
+          <option value="">Todos los estados</option>
+          <option value="RECIBIDO">Recibido</option>
+          <option value="EN_PROCESO">En proceso</option>
+          <option value="COMPLETADO">Completado</option>
             <option value="ARCHIVADO">Archivado</option>
-          </select>
+        </select>
           
           <button type="submit">Buscar</button>
         </form>
@@ -516,17 +516,17 @@ function DocumentosList() {
       ) : (
         <>
           <table className="documentos-table">
-            <thead>
-              <tr>
-                <th>Nro. Registro</th>
-                <th>Nro. Oficio</th>
+        <thead>
+          <tr>
+            <th>Nro. Registro</th>
+            <th>Nro. Oficio</th>
                 <th>Procedencia</th>
                 <th>Estado</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
               {documentos.map(doc => (
                 <tr key={doc.id}>
                   <td>{doc.nroRegistro}</td>
@@ -542,31 +542,31 @@ function DocumentosList() {
                     <button onClick={() => navigate(`/documentos/${doc.id}`)}>
                       Ver
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          <div className="pagination">
-            <button
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      
+      <div className="pagination">
+        <button 
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            >
-              Anterior
-            </button>
-            
-            <span>
+        >
+          Anterior
+        </button>
+        
+        <span>
               Página {currentPage} de {totalPages}
-            </span>
-            
-            <button
+        </span>
+        
+        <button 
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            >
-              Siguiente
-            </button>
-          </div>
+        >
+          Siguiente
+        </button>
+      </div>
         </>
       )}
     </div>
