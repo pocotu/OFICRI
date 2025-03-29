@@ -3,6 +3,12 @@
  * Handles login page functionality
  */
 
+// Importar módulos necesarios
+import { config } from '../../config/app.config.js';
+import { authService } from '../../services/authService.js';
+import { validators } from '../../utils/validators.js';
+import { notifications } from '../../ui/notifications.js';
+
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
 
@@ -29,7 +35,7 @@ OFICRI.loginPage = (function() {
     _setupEventListeners();
     
     // Check if user is already logged in
-    if (OFICRI.authService.isAuthenticated()) {
+    if (authService.isAuthenticated()) {
       _redirectToApp();
     }
   };
@@ -185,19 +191,8 @@ OFICRI.loginPage = (function() {
     
     try {
       console.log('[DEBUG-LOGIN] Calling authService.login');
-      console.log('[DEBUG-LOGIN] Current domain:', window.location.hostname);
-      console.log('[DEBUG-LOGIN] Current origin:', window.location.origin);
-      console.log('[DEBUG-LOGIN] Current protocol:', window.location.protocol);
-      console.log('[DEBUG-LOGIN] API Server Config:', config.api);
-      console.log('[DEBUG-LOGIN] Browser capabilities:', {
-        cookiesEnabled: navigator.cookieEnabled,
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language
-      });
-      
       // Attempt login
-      await OFICRI.authService.login(credentials);
+      await authService.login(credentials);
       
       console.log('[DEBUG-LOGIN] Login successful, redirecting to app');
       // Success - redirect to app
@@ -245,7 +240,7 @@ OFICRI.loginPage = (function() {
   const _handleForgotPassword = function(event) {
     event.preventDefault();
     
-    OFICRI.notifications.info(
+    notifications.info(
       'Póngase en contacto con el administrador del sistema para restablecer su contraseña.',
       { title: 'Recuperación de Contraseña' }
     );
@@ -271,17 +266,17 @@ OFICRI.loginPage = (function() {
     // Field-specific validation
     switch (fieldName) {
       case 'codigoCIP':
-        if (!OFICRI.validators.required(value)) {
+        if (!validators.required(value)) {
           isValid = false;
           errorMessage = 'El código CIP es requerido';
-        } else if (!OFICRI.validators.codigoCIP(value)) {
+        } else if (!validators.codigoCIP(value)) {
           isValid = false;
           errorMessage = 'Ingrese un código CIP válido';
         }
         break;
         
       case 'password':
-        if (!OFICRI.validators.required(value)) {
+        if (!validators.required(value)) {
           isValid = false;
           errorMessage = 'La contraseña es requerida';
         }
@@ -362,7 +357,7 @@ OFICRI.loginPage = (function() {
    * Redirects to the appropriate app page based on user role
    */
   const _redirectToApp = function() {
-    const user = OFICRI.authService.getUser();
+    const user = authService.getUser();
     
     if (!user) {
       console.error('User data not found');

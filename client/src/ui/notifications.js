@@ -1,369 +1,557 @@
 /**
  * OFICRI Notifications Module
- * Handles UI notifications and alerts
+ * Sistema modular para mostrar notificaciones y mensajes de alerta
  */
 
-// Create namespace if it doesn't exist
+// Namespace para compatibilidad
 window.OFICRI = window.OFICRI || {};
 
-// Notifications Module
-OFICRI.notifications = (function() {
+// Módulo de Notificaciones
+const notifications = (function() {
   'use strict';
   
-  // Private variables
-  let _container = null;
-  let _notificationCounter = 0;
-  
-  /**
-   * Creates notification container if it doesn't exist
-   */
-  const _ensureContainer = function() {
-    if (!_container) {
-      _container = document.getElementById('notification-container');
-      
-      if (!_container) {
-        _container = document.createElement('div');
-        _container.id = 'notification-container';
-        _container.className = 'notification-container';
-        document.body.appendChild(_container);
-        
-        // Add container styles if not already in CSS
-        const style = document.createElement('style');
-        style.textContent = `
-          .notification-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: var(--z-notification, 1100);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 90%;
-            width: 350px;
-          }
-          
-          .notification {
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            color: white;
-            display: flex;
-            align-items: flex-start;
-            opacity: 0;
-            transform: translateX(50px);
-            transition: all 0.3s ease;
-            overflow: hidden;
-            position: relative;
-          }
-          
-          .notification.show {
-            opacity: 1;
-            transform: translateX(0);
-          }
-          
-          .notification-success {
-            background-color: var(--oficri-success, #43a047);
-          }
-          
-          .notification-error {
-            background-color: var(--oficri-danger, #e53935);
-          }
-          
-          .notification-warning {
-            background-color: var(--oficri-warning, #ffb300);
-            color: rgba(0, 0, 0, 0.7);
-          }
-          
-          .notification-info {
-            background-color: var(--oficri-info, #039be5);
-          }
-          
-          .notification-icon {
-            margin-right: 12px;
-            font-size: 1.2rem;
-          }
-          
-          .notification-content {
-            flex: 1;
-          }
-          
-          .notification-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-          }
-          
-          .notification-message {
-            font-size: 0.9rem;
-            opacity: 0.9;
-          }
-          
-          .notification-close {
-            background: none;
-            border: none;
-            color: inherit;
-            font-size: 1.1rem;
-            cursor: pointer;
-            opacity: 0.7;
-            margin-left: 10px;
-            padding: 0;
-            transition: opacity 0.2s;
-          }
-          
-          .notification-close:hover {
-            opacity: 1;
-          }
-          
-          .notification-progress {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.3);
-          }
-          
-          .notification-progress-bar {
-            height: 100%;
-            background: rgba(255, 255, 255, 0.7);
-            width: 100%;
-          }
-          
-          @media (max-width: 576px) {
-            .notification-container {
-              width: calc(100% - 40px);
-              top: 10px;
-              right: 10px;
-            }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    }
+  // Configuración por defecto
+  const _defaultConfig = {
+    position: 'top-right',     // Posición de las notificaciones
+    duration: 5000,            // Duración en ms (0 = no desaparece)
+    animationDuration: 300,    // Duración de animación en ms
+    maxNotifications: 5,       // Máximo de notificaciones visibles
+    container: null,           // Contenedor personalizado
+    theme: 'light',            // Tema: light, dark
+    closeButton: true,         // Mostrar botón de cierre
+    progressBar: true,         // Mostrar barra de progreso
+    preventDuplicates: true,   // Evitar duplicados
+    newestOnTop: true,         // Nuevas notificaciones arriba
+    escapeHTML: true           // Escapar HTML en los mensajes
   };
   
+  // Instancia de contenedor de notificaciones
+  let _container = null;
+  
+  // Contador para IDs únicos
+  let _idCounter = 0;
+  
+  // Cola de notificaciones
+  let _queue = [];
+  
+  // Lista de notificaciones activas
+  let _activeNotifications = [];
+  
   /**
-   * Creates notification element
-   * @param {string} type - Notification type
-   * @param {Object} options - Notification options
-   * @returns {HTMLElement} - Notification element
+   * Inicializa el módulo de notificaciones
+   * @param {Object} config - Configuración personalizada
    */
-  const _createNotification = function(type, options) {
-    const id = `notification-${_notificationCounter++}`;
-    const notification = document.createElement('div');
-    notification.id = id;
-    notification.className = `notification notification-${type}`;
+  const init = function(config = {}) {
+    // Combinar configuración por defecto con personalizada
+    const mergedConfig = { ..._defaultConfig, ...config };
     
-    // Icon based on type
-    let icon = '';
-    switch (type) {
-      case 'success':
-        icon = '<i class="fa-solid fa-circle-check"></i>';
-        break;
-      case 'error':
-        icon = '<i class="fa-solid fa-circle-xmark"></i>';
-        break;
-      case 'warning':
-        icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
-        break;
-      case 'info':
-        icon = '<i class="fa-solid fa-circle-info"></i>';
-        break;
-    }
-    
-    // Build notification content
-    notification.innerHTML = `
-      <div class="notification-icon">${icon}</div>
-      <div class="notification-content">
-        ${options.title ? `<div class="notification-title">${options.title}</div>` : ''}
-        <div class="notification-message">${options.message}</div>
-      </div>
-      <button class="notification-close" aria-label="Cerrar notificación">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-      <div class="notification-progress">
-        <div class="notification-progress-bar"></div>
-      </div>
-    `;
-    
-    // Add close button event listener
-    notification.querySelector('.notification-close').addEventListener('click', () => {
-      _removeNotification(id);
+    // Guardar configuración
+    Object.keys(mergedConfig).forEach(key => {
+      _defaultConfig[key] = mergedConfig[key];
     });
     
-    return notification;
+    // Inicializar contenedor
+    _initContainer();
+    
+    // Si hay notificaciones en la cola, mostrarlas
+    _processQueue();
   };
   
   /**
-   * Animates progress bar
-   * @param {HTMLElement} notification - Notification element
-   * @param {number} duration - Animation duration
+   * Inicializa el contenedor de notificaciones
+   * @private
    */
-  const _animateProgressBar = function(notification, duration) {
-    const progressBar = notification.querySelector('.notification-progress-bar');
+  const _initContainer = function() {
+    // Si ya existe contenedor, no hacer nada
+    if (_container) return;
     
-    if (progressBar) {
-      progressBar.style.transition = `width ${duration}ms linear`;
-      
-      // Trigger reflow to ensure animation starts
-      progressBar.getBoundingClientRect();
-      
-      progressBar.style.width = '0%';
-    }
-  };
-  
-  /**
-   * Removes notification with animation
-   * @param {string} id - Notification ID
-   */
-  const _removeNotification = function(id) {
-    const notification = document.getElementById(id);
-    
-    if (notification) {
-      notification.classList.remove('show');
-      
-      notification.style.opacity = '0';
-      notification.style.transform = 'translateX(50px)';
-      
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.parentNode.removeChild(notification);
-        }
-      }, 300);
-    }
-  };
-  
-  // Public API
-  return {
-    /**
-     * Shows a success notification
-     * @param {string} message - Notification message
-     * @param {Object} options - Additional options
-     */
-    success: function(message, options = {}) {
-      _ensureContainer();
-      
-      const notification = _createNotification('success', {
-        message,
-        title: options.title || 'Éxito',
-        ...options
-      });
-      
-      _container.appendChild(notification);
-      
-      // Trigger animation
-      setTimeout(() => {
-        notification.classList.add('show');
-      }, 10);
-      
-      // Set timeout for removal
-      const duration = options.duration || config.ui.notificationDuration || 5000;
-      _animateProgressBar(notification, duration);
-      
-      setTimeout(() => {
-        _removeNotification(notification.id);
-      }, duration);
-    },
-    
-    /**
-     * Shows an error notification
-     * @param {string} message - Notification message
-     * @param {Object} options - Additional options
-     */
-    error: function(message, options = {}) {
-      _ensureContainer();
-      
-      const notification = _createNotification('error', {
-        message,
-        title: options.title || 'Error',
-        ...options
-      });
-      
-      _container.appendChild(notification);
-      
-      // Trigger animation
-      setTimeout(() => {
-        notification.classList.add('show');
-      }, 10);
-      
-      // Set timeout for removal (longer for errors)
-      const duration = options.duration || config.ui.notificationDuration || 5000;
-      _animateProgressBar(notification, duration);
-      
-      setTimeout(() => {
-        _removeNotification(notification.id);
-      }, duration);
-    },
-    
-    /**
-     * Shows a warning notification
-     * @param {string} message - Notification message
-     * @param {Object} options - Additional options
-     */
-    warning: function(message, options = {}) {
-      _ensureContainer();
-      
-      const notification = _createNotification('warning', {
-        message,
-        title: options.title || 'Advertencia',
-        ...options
-      });
-      
-      _container.appendChild(notification);
-      
-      // Trigger animation
-      setTimeout(() => {
-        notification.classList.add('show');
-      }, 10);
-      
-      // Set timeout for removal
-      const duration = options.duration || config.ui.notificationDuration || 5000;
-      _animateProgressBar(notification, duration);
-      
-      setTimeout(() => {
-        _removeNotification(notification.id);
-      }, duration);
-    },
-    
-    /**
-     * Shows an info notification
-     * @param {string} message - Notification message
-     * @param {Object} options - Additional options
-     */
-    info: function(message, options = {}) {
-      _ensureContainer();
-      
-      const notification = _createNotification('info', {
-        message,
-        title: options.title || 'Información',
-        ...options
-      });
-      
-      _container.appendChild(notification);
-      
-      // Trigger animation
-      setTimeout(() => {
-        notification.classList.add('show');
-      }, 10);
-      
-      // Set timeout for removal
-      const duration = options.duration || config.ui.notificationDuration || 5000;
-      _animateProgressBar(notification, duration);
-      
-      setTimeout(() => {
-        _removeNotification(notification.id);
-      }, duration);
-    },
-    
-    /**
-     * Clears all notifications
-     */
-    clearAll: function() {
-      if (_container) {
-        const notifications = _container.querySelectorAll('.notification');
-        notifications.forEach(notification => {
-          _removeNotification(notification.id);
-        });
+    // Si se especificó un contenedor personalizado
+    if (_defaultConfig.container) {
+      if (typeof _defaultConfig.container === 'string') {
+        _container = document.querySelector(_defaultConfig.container);
+      } else if (_defaultConfig.container instanceof HTMLElement) {
+        _container = _defaultConfig.container;
       }
     }
+    
+    // Si no hay contenedor o no es válido, crear uno
+    if (!_container) {
+      _container = document.createElement('div');
+      _container.className = `oficri-notifications oficri-notifications-${_defaultConfig.position}`;
+      document.body.appendChild(_container);
+    }
+    
+    // Agregar clase de tema
+    _container.classList.add(`oficri-notifications-theme-${_defaultConfig.theme}`);
   };
-})(); 
+  
+  /**
+   * Crea una nueva notificación
+   * @param {string} message - Mensaje de la notificación
+   * @param {Object} options - Opciones específicas
+   * @private
+   */
+  const _createNotification = function(message, options = {}) {
+    const config = { ..._defaultConfig, ...options };
+    
+    // Crear ID único
+    const id = `notification-${Date.now()}-${_idCounter++}`;
+    
+    // Escapar HTML si está configurado
+    if (config.escapeHTML && typeof message === 'string') {
+      message = _escapeHTML(message);
+    }
+    
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = `oficri-notification oficri-notification-${config.type || 'info'}`;
+    notification.id = id;
+    notification.setAttribute('role', 'alert');
+    
+    // Aplicar transición
+    notification.style.transition = `all ${config.animationDuration}ms ease-in-out`;
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(20px)';
+    
+    // Crear contenido
+    let html = '';
+    
+    // Título si existe
+    if (config.title) {
+      html += `<div class="oficri-notification-title">${config.escapeHTML ? _escapeHTML(config.title) : config.title}</div>`;
+    }
+    
+    // Mensaje
+    html += `<div class="oficri-notification-message">${message}</div>`;
+    
+    // Botón de cierre
+    if (config.closeButton) {
+      html += '<button type="button" class="oficri-notification-close" aria-label="Cerrar">&times;</button>';
+    }
+    
+    // Barra de progreso
+    if (config.progressBar && config.duration > 0) {
+      html += '<div class="oficri-notification-progress"><div class="oficri-notification-progress-bar"></div></div>';
+    }
+    
+    // Asignar HTML
+    notification.innerHTML = html;
+    
+    // Agregar evento de cierre
+    if (config.closeButton) {
+      const closeButton = notification.querySelector('.oficri-notification-close');
+      closeButton.addEventListener('click', () => _removeNotification(id));
+    }
+    
+    // Agregar evento de click si es interactivo
+    if (config.onClick) {
+      notification.addEventListener('click', (e) => {
+        // No ejecutar si se hizo click en el botón de cierre
+        if (e.target.closest('.oficri-notification-close')) return;
+        config.onClick(e);
+      });
+      
+      // Agregar cursor de puntero
+      notification.style.cursor = 'pointer';
+    }
+    
+    // Guardar datos para referencia
+    const notificationData = {
+      id,
+      element: notification,
+      timeout: null,
+      config
+    };
+    
+    // Agregar a lista de notificaciones activas
+    _activeNotifications.push(notificationData);
+    
+    // Si se excede el máximo de notificaciones, poner en cola
+    if (_activeNotifications.length > config.maxNotifications) {
+      _queue.push(notificationData);
+      return;
+    }
+    
+    // Mostrar notificación
+    _showNotification(notificationData);
+  };
+  
+  /**
+   * Muestra una notificación
+   * @param {Object} notification - Datos de la notificación
+   * @private
+   */
+  const _showNotification = function(notification) {
+    // Preparar contenedor
+    _initContainer();
+    
+    const { element, config, id } = notification;
+    
+    // Agregar al contenedor según configuración
+    if (config.newestOnTop) {
+      _container.insertBefore(element, _container.firstChild);
+    } else {
+      _container.appendChild(element);
+    }
+    
+    // Forzar reflow para que la transición funcione
+    void element.offsetWidth;
+    
+    // Animar entrada
+    element.style.opacity = '1';
+    element.style.transform = 'translateY(0)';
+    
+    // Configurar barra de progreso
+    if (config.progressBar && config.duration > 0) {
+      const progressBar = element.querySelector('.oficri-notification-progress-bar');
+      progressBar.style.transition = `width ${config.duration}ms linear`;
+      progressBar.style.width = '100%';
+      
+      // Retrasar un poco para que la animación funcione
+      setTimeout(() => {
+        progressBar.style.width = '0%';
+      }, 10);
+    }
+    
+    // Si la duración no es 0, configurar timeout para remover
+    if (config.duration > 0) {
+      notification.timeout = setTimeout(() => {
+        _removeNotification(id);
+      }, config.duration);
+    }
+    
+    // Agregar evento para pausar temporizador al hacer hover
+    element.addEventListener('mouseenter', () => {
+      if (notification.timeout) {
+        clearTimeout(notification.timeout);
+        notification.timeout = null;
+        
+        // Pausar barra de progreso
+        if (config.progressBar) {
+          const progressBar = element.querySelector('.oficri-notification-progress-bar');
+          progressBar.style.transition = 'none';
+        }
+      }
+    });
+    
+    // Reanudar temporizador al quitar hover
+    element.addEventListener('mouseleave', () => {
+      if (config.duration > 0 && !notification.timeout) {
+        notification.timeout = setTimeout(() => {
+          _removeNotification(id);
+        }, config.duration / 2); // Usar la mitad del tiempo restante
+        
+        // Reanudar barra de progreso
+        if (config.progressBar) {
+          const progressBar = element.querySelector('.oficri-notification-progress-bar');
+          progressBar.style.transition = `width ${config.duration / 2}ms linear`;
+          progressBar.style.width = '0%';
+        }
+      }
+    });
+  };
+  
+  /**
+   * Elimina una notificación
+   * @param {string} id - ID de la notificación
+   * @private
+   */
+  const _removeNotification = function(id) {
+    // Buscar índice de la notificación
+    const index = _activeNotifications.findIndex(n => n.id === id);
+    
+    // Si no se encuentra, salir
+    if (index === -1) return;
+    
+    // Obtener datos de la notificación
+    const notification = _activeNotifications[index];
+    const { element, timeout, config } = notification;
+    
+    // Limpiar timeout si existe
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    
+    // Animar salida
+    element.style.opacity = '0';
+    element.style.transform = 'translateY(-20px)';
+    
+    // Esperar a que termine la animación para remover
+    setTimeout(() => {
+      // Remover del DOM
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+      
+      // Remover de la lista de notificaciones activas
+      _activeNotifications.splice(index, 1);
+      
+      // Procesar cola si hay notificaciones pendientes
+      _processQueue();
+      
+      // Ejecutar callback si existe
+      if (config.onClose && typeof config.onClose === 'function') {
+        config.onClose();
+      }
+    }, config.animationDuration);
+  };
+  
+  /**
+   * Procesa la cola de notificaciones
+   * @private
+   */
+  const _processQueue = function() {
+    // Si no hay notificaciones en cola, salir
+    if (_queue.length === 0) return;
+    
+    // Mientras haya espacio y notificaciones en cola
+    while (_activeNotifications.length < _defaultConfig.maxNotifications && _queue.length > 0) {
+      // Obtener primera notificación de la cola
+      const notification = _queue.shift();
+      
+      // Mostrar notificación
+      _showNotification(notification);
+    }
+  };
+  
+  /**
+   * Escapa caracteres HTML
+   * @param {string} html - String a escapar
+   * @private
+   */
+  const _escapeHTML = function(html) {
+    if (typeof html !== 'string') {
+      return html;
+    }
+    
+    return html
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+  
+  /**
+   * Verifica si un mensaje está duplicado
+   * @param {string} message - Mensaje a verificar
+   * @returns {boolean} - True si está duplicado
+   * @private
+   */
+  const _isDuplicate = function(message) {
+    return _activeNotifications.some(n => n.config.message === message);
+  };
+  
+  /**
+   * Elimina todas las notificaciones
+   */
+  const clear = function() {
+    // Copiar IDs para evitar problemas al modificar el array durante la iteración
+    const ids = _activeNotifications.map(n => n.id);
+    
+    // Remover cada notificación
+    ids.forEach(id => _removeNotification(id));
+    
+    // Limpiar cola
+    _queue = [];
+  };
+  
+  // API pública
+  return {
+    init,
+    clear,
+    
+    // Métodos para diferentes tipos de notificaciones
+    success: function(message, options = {}) {
+      if (_defaultConfig.preventDuplicates && _isDuplicate(message)) {
+        return;
+      }
+      _createNotification(message, { ...options, type: 'success' });
+    },
+    
+    error: function(message, options = {}) {
+      if (_defaultConfig.preventDuplicates && _isDuplicate(message)) {
+        return;
+      }
+      _createNotification(message, { ...options, type: 'error' });
+    },
+    
+    warning: function(message, options = {}) {
+      if (_defaultConfig.preventDuplicates && _isDuplicate(message)) {
+        return;
+      }
+      _createNotification(message, { ...options, type: 'warning' });
+    },
+    
+    info: function(message, options = {}) {
+      if (_defaultConfig.preventDuplicates && _isDuplicate(message)) {
+        return;
+      }
+      _createNotification(message, { ...options, type: 'info' });
+    },
+    
+    // Método general para cualquier tipo
+    show: function(message, options = {}) {
+      if (_defaultConfig.preventDuplicates && _isDuplicate(message)) {
+        return;
+      }
+      _createNotification(message, options);
+    },
+    
+    // Getter/setter para configuración
+    getConfig: function() {
+      return { ..._defaultConfig };
+    },
+    
+    setConfig: function(config) {
+      init(config);
+    }
+  };
+})();
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', function() {
+  notifications.init();
+  
+  // Agregar estilos CSS si no están presentes
+  if (!document.getElementById('oficri-notifications-styles')) {
+    const style = document.createElement('style');
+    style.id = 'oficri-notifications-styles';
+    style.textContent = `
+      .oficri-notifications {
+        position: fixed;
+        z-index: 9999;
+        max-width: 320px;
+        box-sizing: border-box;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      
+      .oficri-notifications-top-right {
+        top: 12px;
+        right: 12px;
+      }
+      
+      .oficri-notifications-top-left {
+        top: 12px;
+        left: 12px;
+      }
+      
+      .oficri-notifications-bottom-right {
+        bottom: 12px;
+        right: 12px;
+      }
+      
+      .oficri-notifications-bottom-left {
+        bottom: 12px;
+        left: 12px;
+      }
+      
+      .oficri-notification {
+        position: relative;
+        min-width: 280px;
+        margin-bottom: 10px;
+        padding: 15px 15px 15px 20px;
+        border-radius: 4px;
+        box-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
+        background: #fff;
+        color: #333;
+        overflow: hidden;
+      }
+      
+      .oficri-notification-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        padding-right: 20px;
+      }
+      
+      .oficri-notification-message {
+        word-wrap: break-word;
+        padding-right: 20px;
+      }
+      
+      .oficri-notification-close {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        background: transparent;
+        border: 0;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        color: rgba(0, 0, 0, 0.6);
+      }
+      
+      .oficri-notification-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(0, 0, 0, 0.1);
+        z-index: 1;
+      }
+      
+      .oficri-notification-progress-bar {
+        height: 100%;
+        width: 100%;
+        transition: width linear;
+      }
+      
+      .oficri-notification-success {
+        background-color: #51A351;
+        color: white;
+        border-left: 5px solid #387038;
+      }
+      
+      .oficri-notification-success .oficri-notification-progress-bar {
+        background-color: #387038;
+      }
+      
+      .oficri-notification-error {
+        background-color: #BD362F;
+        color: white;
+        border-left: 5px solid #802420;
+      }
+      
+      .oficri-notification-error .oficri-notification-progress-bar {
+        background-color: #802420;
+      }
+      
+      .oficri-notification-warning {
+        background-color: #F89406;
+        color: white;
+        border-left: 5px solid #AD6704;
+      }
+      
+      .oficri-notification-warning .oficri-notification-progress-bar {
+        background-color: #AD6704;
+      }
+      
+      .oficri-notification-info {
+        background-color: #2F96B4;
+        color: white;
+        border-left: 5px solid #1F6377;
+      }
+      
+      .oficri-notification-info .oficri-notification-progress-bar {
+        background-color: #1F6377;
+      }
+      
+      .oficri-notifications-theme-dark .oficri-notification {
+        background-color: #333;
+        color: #f5f5f5;
+      }
+      
+      .oficri-notifications-theme-dark .oficri-notification-close {
+        color: rgba(255, 255, 255, 0.7);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+});
+
+// Exportar para ES modules
+export { notifications };
+
+// Para compatibilidad con navegadores antiguos
+window.OFICRI.notifications = notifications;

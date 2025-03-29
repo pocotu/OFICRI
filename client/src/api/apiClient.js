@@ -3,16 +3,65 @@
  * Handles API requests with authentication, retries, and error handling
  */
 
+// Importar módulos necesarios
+import { config } from '../config/app.config.js';
+import { authService } from '../services/authService.js';
+
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
 
 // API Client Module
-OFICRI.apiClient = (function() {
+const apiClient = (function() {
   'use strict';
   
   // Private variables
   let _requestQueue = [];
   let _isRefreshing = false;
+  let _requestLog = [];
+  let _maxLogSize = 50;
+  
+  /**
+   * Registra una petición en el historial
+   */
+  const _logRequest = function(request, response, error) {
+    // Mantener solo las últimas X peticiones
+    if (_requestLog.length >= _maxLogSize) {
+      _requestLog.shift();
+    }
+    
+    const logEntry = {
+      timestamp: new Date(),
+      method: request.method,
+      url: request.url,
+      status: response ? response.status : error ? 'ERROR' : 'PENDING',
+      duration: request.endTime ? (request.endTime - request.startTime) : null,
+      requestHeaders: { ...request.headers },
+      responseHeaders: response ? [...response.headers.entries()].reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}) : null,
+      error: error ? {
+        name: error.name,
+        message: error.message,
+        status: error.status
+      } : null
+    };
+    
+    // No incluir datos sensibles en el log
+    if (logEntry.requestHeaders.Authorization) {
+      logEntry.requestHeaders.Authorization = 'Bearer [REDACTED]';
+    }
+    
+    _requestLog.push(logEntry);
+    
+    // Imprimir en consola si está en modo debug
+    if (config.features.debugging) {
+      console.log(`[API-LOG] ${logEntry.method} ${logEntry.url} - ${logEntry.status}`, 
+        logEntry.duration ? `(${logEntry.duration}ms)` : '');
+    }
+    
+    return logEntry;
+  };
   
   /**
    * Performs an HTTP request to the API
@@ -46,7 +95,7 @@ OFICRI.apiClient = (function() {
     };
     
     // Add authentication token if available
-    const token = OFICRI.authService.getToken();
+    const token = authService.getToken();
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
       console.log('[DEBUG-API] Added auth token to request (token length):', token.length);
@@ -70,11 +119,24 @@ OFICRI.apiClient = (function() {
       console.log('[DEBUG-API] Request body:', method !== 'POST' || !endpoint.includes('login') ? JSON.stringify(data) : 'Password hidden for security');
     }
     
+    // Crear objeto de petición para el log
+    const requestLog = {
+      method,
+      url,
+      headers: { ...requestHeaders },
+      startTime: Date.now(),
+      params,
+      data: method !== 'GET' ? data : null
+    };
+    
     try {
       console.log('[DEBUG-API] Sending fetch request...');
       
       // Perform fetch request
       const response = await fetch(url, requestOptions);
+      
+      // Actualizar tiempo de finalización
+      requestLog.endTime = Date.now();
       
       console.log('[DEBUG-API] Response received - Status:', response.status, response.statusText);
       console.log('[DEBUG-API] Response headers:', [...response.headers.entries()]);
@@ -85,6 +147,9 @@ OFICRI.apiClient = (function() {
       // Handle 401 Unauthorized (token expired)
       if (response.status === 401 && !options.skipAuth) {
         console.log('[DEBUG-API] 401 Unauthorized - Attempting token refresh');
+        
+        // Registrar en el log
+        _logRequest(requestLog, response);
         
         // Try token refresh
         const refreshed = await _handleTokenRefresh();
@@ -97,7 +162,7 @@ OFICRI.apiClient = (function() {
           console.log('[DEBUG-API] Token refresh failed - Logging out user');
           
           // Refresh failed, redirect to login
-          OFICRI.authService.logout();
+          authService.logout();
           window.location.href = '/';
           throw new Error('Session expired. Please login again.');
         }
@@ -116,6 +181,9 @@ OFICRI.apiClient = (function() {
         console.log('[DEBUG-API] Parsing text response');
         responseData = await response.text();
       }
+      
+      // Registrar en el log
+      _logRequest(requestLog, response);
       
       // Handle unsuccessful responses
       if (!response.ok) {
@@ -141,6 +209,9 @@ OFICRI.apiClient = (function() {
       return responseData;
     } catch (error) {
       console.error('[DEBUG-API] Request error:', error.name, error.message);
+      
+      // Registrar en el log
+      _logRequest(requestLog, null, error);
       
       // Handle network errors with retries
       if (error.name === 'AbortError' || error.name === 'TypeError') {
@@ -182,14 +253,14 @@ OFICRI.apiClient = (function() {
     _isRefreshing = true;
     
     try {
-      const refreshToken = OFICRI.authService.getRefreshToken();
+      const refreshToken = authService.getRefreshToken();
       
       if (!refreshToken) {
         return false;
       }
       
       // Call auth service to refresh token
-      const success = await OFICRI.authService.refreshToken();
+      const success = await authService.refreshToken();
       
       // Process pending requests
       _requestQueue.forEach(resolve => resolve(success));
@@ -203,86 +274,50 @@ OFICRI.apiClient = (function() {
     }
   };
   
-  // Public API
+  /**
+   * Public API
+   */
   return {
-    /**
-     * Performs a GET request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} params - Query parameters
-     * @param {Object} options - Additional options
-     * @returns {Promise} - Response data
-     */
-    get: function(endpoint, params = {}, options = {}) {
-      return _request({
-        method: 'GET',
-        endpoint,
-        params,
-        ...options
-      });
+    get: function(endpoint, params = {}, headers = {}) {
+      return _request({ method: 'GET', endpoint, params, headers });
+    },
+    
+    post: function(endpoint, data = {}, params = {}, headers = {}) {
+      return _request({ method: 'POST', endpoint, data, params, headers });
+    },
+    
+    put: function(endpoint, data = {}, params = {}, headers = {}) {
+      return _request({ method: 'PUT', endpoint, data, params, headers });
+    },
+    
+    patch: function(endpoint, data = {}, params = {}, headers = {}) {
+      return _request({ method: 'PATCH', endpoint, data, params, headers });
+    },
+    
+    delete: function(endpoint, params = {}, headers = {}) {
+      return _request({ method: 'DELETE', endpoint, params, headers });
     },
     
     /**
-     * Performs a POST request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Request body data
-     * @param {Object} options - Additional options
-     * @returns {Promise} - Response data
+     * Retorna el historial de peticiones realizadas
      */
-    post: function(endpoint, data = {}, options = {}) {
-      return _request({
-        method: 'POST',
-        endpoint,
-        data,
-        ...options
-      });
+    getRequestLog: function() {
+      return [..._requestLog];
     },
     
     /**
-     * Performs a PUT request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Request body data
-     * @param {Object} options - Additional options
-     * @returns {Promise} - Response data
+     * Limpia el historial de peticiones
      */
-    put: function(endpoint, data = {}, options = {}) {
-      return _request({
-        method: 'PUT',
-        endpoint,
-        data,
-        ...options
-      });
-    },
-    
-    /**
-     * Performs a PATCH request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Request body data
-     * @param {Object} options - Additional options
-     * @returns {Promise} - Response data
-     */
-    patch: function(endpoint, data = {}, options = {}) {
-      return _request({
-        method: 'PATCH',
-        endpoint,
-        data,
-        ...options
-      });
-    },
-    
-    /**
-     * Performs a DELETE request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} params - Query parameters
-     * @param {Object} options - Additional options
-     * @returns {Promise} - Response data
-     */
-    delete: function(endpoint, params = {}, options = {}) {
-      return _request({
-        method: 'DELETE',
-        endpoint,
-        params,
-        ...options
-      });
+    clearRequestLog: function() {
+      _requestLog = [];
+      return true;
     }
   };
-})(); 
+})();
+
+// Para compatibilidad con ES modules y UMD
+// El build process convertirá esto a formato compatible con navegadores
+export { apiClient };
+
+// Para compatibilidad con código que usa window.OFICRI.apiClient
+window.OFICRI.apiClient = apiClient; 

@@ -1,318 +1,504 @@
 /**
- * OFICRI Authentication Service
- * Handles user authentication and session management
+ * OFICRI Auth Service
+ * Servicio de autenticación que maneja el login, logout y sesión
+ * Cumple con ISO/IEC 27001 para control de acceso y gestión de identidad
  */
 
-// Create namespace if it doesn't exist
+// Importar módulos
+import { config } from '../config/app.config.js';
+import { apiClient } from '../api/apiClient.js';
+import { validateInput } from '../utils/validators.js';
+
+// Crear namespace global para compatibilidad
 window.OFICRI = window.OFICRI || {};
 
 // Auth Service Module
-OFICRI.authService = (function() {
+const authService = (function() {
   'use strict';
   
-  // Private variables
-  let _inactivityTimer = null;
+  // Constantes privadas
+  const TOKEN_KEY = 'oficri_token';
+  const REFRESH_TOKEN_KEY = 'oficri_refresh_token';
+  const USER_KEY = 'oficri_user';
+  const SESSION_DURATION = 30 * 60 * 1000; // 30 minutos en ms
+  
+  // Variables privadas
+  let _currentUser = null;
+  let _sessionCheckInterval = null;
+  let _lastActivity = Date.now();
+  let _sessionTimeoutWarning = null;
   
   /**
-   * Starts inactivity tracking for automatic logout
+   * Inicializa el servicio de autenticación
    */
-  const _startInactivityTimer = function() {
-    // Clear any existing timer
-    if (_inactivityTimer) {
-      clearTimeout(_inactivityTimer);
+  const init = function() {
+    console.log('[AUTH] Inicializando servicio de autenticación');
+    
+    // Cargar usuario desde localStorage si existe
+    _loadUserFromStorage();
+    
+    // Configurar verificación de sesión
+    _setupSessionCheck();
+    
+    // Configurar listener de actividad
+    _setupActivityTracking();
+  };
+  
+  /**
+   * Autentica al usuario con credenciales
+   * @param {string} username - Nombre de usuario o código CIP
+   * @param {string} password - Contraseña
+   * @param {Object} options - Opciones adicionales
+   * @returns {Promise} Promesa que resuelve con los datos del usuario autenticado
+   */
+  const login = async function(username, password, options = {}) {
+    // Validar entradas
+    if (!validateInput(username, 'username') || !validateInput(password, 'password')) {
+      throw new Error('Credenciales inválidas');
     }
     
-    // Set new timer
-    _inactivityTimer = setTimeout(() => {
-      if (isAuthenticated()) {
-        logout({ reason: 'inactivity' });
+    try {
+      // Realizar petición de login
+      const response = await apiClient.post('/auth/login', {
+        username,
+        password,
+        // No incluir captcha si no se especifica
+        captcha: options.captcha || undefined
+      });
+      
+      // Verificar respuesta
+      if (!response || !response.token) {
+        throw new Error('Respuesta de login inválida');
       }
-    }, config.auth.inactivityTimeout);
-    
-    // Reset timer on user activity
-    const resetTimer = () => {
-      if (isAuthenticated()) {
-        _startInactivityTimer();
+      
+      // Guardar token y datos de usuario
+      _setTokens(response.token, response.refreshToken);
+      _setUser(response.user);
+      
+      // Iniciar verificación de sesión
+      _setupSessionCheck();
+      
+      // Devolver usuario
+      return response.user;
+    } catch (error) {
+      // Registrar intento fallido (solo el intento, no la contraseña)
+      console.warn(`[AUTH] Intento de login fallido para usuario: ${username}`);
+      
+      // Lanzar error para manejo en UI
+      throw error;
+    }
+  };
+  
+  /**
+   * Cierra la sesión del usuario actual
+   * @param {Object} options - Opciones adicionales
+   * @returns {Promise} Promesa que resuelve cuando se completa el logout
+   */
+  const logout = async function(options = {}) {
+    try {
+      // Si hay token, intentar hacer logout en el servidor
+      const token = getToken();
+      if (token) {
+        try {
+          await apiClient.post('/auth/logout', {}, {}, {
+            'Authorization': `Bearer ${token}`
+          });
+        } catch (error) {
+          // Ignorar errores al hacer logout en el servidor
+          console.warn('[AUTH] Error al hacer logout en el servidor:', error.message);
+        }
       }
-    };
+    } finally {
+      // Limpiar datos de sesión
+      _clearSession();
+      
+      // Redirigir a página de login si se especifica
+      if (options.redirect !== false) {
+        window.location.href = options.redirectUrl || '/';
+      }
+    }
+  };
+  
+  /**
+   * Refresca el token de autenticación
+   * @returns {Promise<boolean>} Promesa que resuelve a true si el refresh fue exitoso
+   */
+  const refreshToken = async function() {
+    try {
+      const refreshToken = getRefreshToken();
+      
+      if (!refreshToken) {
+        return false;
+      }
+      
+      // Intentar refrescar token
+      const response = await apiClient.post('/auth/refresh', {
+        refreshToken
+      }, {}, {}, true);
+      
+      // Verificar respuesta
+      if (!response || !response.token) {
+        return false;
+      }
+      
+      // Actualizar tokens
+      _setTokens(response.token, response.refreshToken);
+      
+      return true;
+    } catch (error) {
+      console.error('[AUTH] Error al refrescar token:', error.message);
+      return false;
+    }
+  };
+  
+  /**
+   * Verifica si el usuario está autenticado
+   * @returns {boolean} True si está autenticado
+   */
+  const isAuthenticated = function() {
+    return !!getToken() && !!getUser();
+  };
+  
+  /**
+   * Obtiene el token actual
+   * @returns {string|null} Token JWT o null si no hay sesión
+   */
+  const getToken = function() {
+    return localStorage.getItem(TOKEN_KEY);
+  };
+  
+  /**
+   * Obtiene el token de refresco
+   * @returns {string|null} Token de refresco o null si no hay
+   */
+  const getRefreshToken = function() {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  };
+  
+  /**
+   * Obtiene el usuario actual
+   * @returns {Object|null} Datos del usuario o null si no hay sesión
+   */
+  const getUser = function() {
+    // Si ya tenemos el usuario en memoria, devolverlo
+    if (_currentUser) {
+      return _currentUser;
+    }
     
-    // Add event listeners for user activity
-    ['mousedown', 'keypress', 'scroll', 'touchstart'].forEach(event => {
-      document.addEventListener(event, resetTimer, { passive: true });
+    // Intentar cargar desde localStorage
+    _loadUserFromStorage();
+    
+    return _currentUser;
+  };
+  
+  /**
+   * Verifica si el usuario tiene un rol específico
+   * @param {string|Array<string>} roles - Rol o array de roles a verificar
+   * @returns {boolean} True si tiene alguno de los roles especificados
+   */
+  const hasRole = function(roles) {
+    const user = getUser();
+    
+    // Si no hay usuario o no tiene rol, devolver false
+    if (!user || !user.rol) {
+      return false;
+    }
+    
+    // Convertir roles a array si es string
+    const rolesArray = Array.isArray(roles) ? roles : [roles];
+    
+    // Verificar si el usuario tiene alguno de los roles
+    return rolesArray.includes(user.rol);
+  };
+  
+  /**
+   * Resetea la contraseña del usuario
+   * @param {string} email - Email del usuario
+   * @returns {Promise} Promesa que resuelve con la respuesta del servidor
+   */
+  const resetPassword = async function(email) {
+    // Validar entrada
+    if (!validateInput(email, 'email')) {
+      throw new Error('Email inválido');
+    }
+    
+    try {
+      // Solicitar reset de contraseña
+      const response = await apiClient.post('/auth/reset-password', {
+        email
+      });
+      
+      return response;
+      } catch (error) {
+        throw error;
+      }
+  };
+  
+  /**
+   * Cambia la contraseña del usuario
+   * @param {string} currentPassword - Contraseña actual
+   * @param {string} newPassword - Nueva contraseña
+   * @returns {Promise} Promesa que resuelve con la respuesta del servidor
+   */
+  const changePassword = async function(currentPassword, newPassword) {
+    // Validar entradas
+    if (!validateInput(currentPassword, 'password') || !validateInput(newPassword, 'newPassword')) {
+      throw new Error('Contraseñas inválidas');
+    }
+    
+    try {
+      // Solicitar cambio de contraseña
+      const response = await apiClient.post('/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+      
+      return response;
+          } catch (error) {
+      throw error;
+    }
+  };
+  
+  /**
+   * Guarda los tokens en localStorage
+   * @param {string} token - Token JWT
+   * @param {string} refreshToken - Token de refresco
+   * @private
+   */
+  const _setTokens = function(token, refreshToken) {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+    
+    if (refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    }
+  };
+  
+  /**
+   * Guarda los datos del usuario en localStorage y memoria
+   * @param {Object} user - Datos del usuario
+   * @private
+   */
+  const _setUser = function(user) {
+    if (!user) return;
+    
+    // Guardar en localStorage
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    
+    // Guardar en memoria
+    _currentUser = user;
+    
+    // Actualizar timestamp de última actividad
+    _lastActivity = Date.now();
+  };
+  
+  /**
+   * Carga el usuario desde localStorage a memoria
+   * @private
+   */
+  const _loadUserFromStorage = function() {
+    try {
+      const userJson = localStorage.getItem(USER_KEY);
+      
+      if (userJson) {
+        _currentUser = JSON.parse(userJson);
+      }
+    } catch (error) {
+      console.error('[AUTH] Error al cargar usuario desde localStorage:', error.message);
+      _currentUser = null;
+    }
+  };
+  
+  /**
+   * Configura la verificación periódica de sesión
+   * @private
+   */
+  const _setupSessionCheck = function() {
+    // Limpiar intervalo existente si hay
+    if (_sessionCheckInterval) {
+      clearInterval(_sessionCheckInterval);
+    }
+    
+    // Crear nuevo intervalo
+    _sessionCheckInterval = setInterval(() => {
+      _checkSessionTimeout();
+    }, 60000); // Verificar cada minuto
+  };
+  
+  /**
+   * Verifica si la sesión ha expirado por inactividad
+   * @private
+   */
+  const _checkSessionTimeout = function() {
+    // Si no hay usuario, no verificar
+    if (!isAuthenticated()) {
+      return;
+    }
+    
+    const currentTime = Date.now();
+    const timeSinceLastActivity = currentTime - _lastActivity;
+    
+    // Si ha pasado más del tiempo de sesión, cerrar sesión
+    if (timeSinceLastActivity > SESSION_DURATION) {
+      console.warn('[AUTH] Sesión expirada por inactividad');
+      logout({ redirect: true });
+    } 
+    // Si está cerca de expirar (5 minutos antes), mostrar advertencia
+    else if (timeSinceLastActivity > (SESSION_DURATION - 5 * 60 * 1000) && !_sessionTimeoutWarning) {
+      _showSessionTimeoutWarning();
+    }
+  };
+  
+  /**
+   * Muestra advertencia de expiración de sesión
+   * @private
+   */
+  const _showSessionTimeoutWarning = function() {
+    // Evitar mostrar múltiples advertencias
+    if (_sessionTimeoutWarning) return;
+    
+    // Crear elemento de advertencia
+    const warningElement = document.createElement('div');
+    warningElement.className = 'session-timeout-warning';
+    warningElement.innerHTML = `
+      <div class="session-timeout-content">
+        <h3>La sesión está por expirar</h3>
+        <p>Su sesión expirará en menos de 5 minutos por inactividad.</p>
+        <div class="session-timeout-actions">
+          <button id="session-extend">Extender sesión</button>
+          <button id="session-logout">Cerrar sesión</button>
+        </div>
+      </div>
+    `;
+    
+    // Estilos
+    warningElement.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    `;
+    
+    // Agregar al DOM
+    document.body.appendChild(warningElement);
+    
+    // Guardar referencia
+    _sessionTimeoutWarning = warningElement;
+    
+    // Configurar handlers
+    document.getElementById('session-extend').addEventListener('click', () => {
+      _extendSession();
+      _removeSessionTimeoutWarning();
+    });
+    
+    document.getElementById('session-logout').addEventListener('click', () => {
+      logout({ redirect: true });
     });
   };
   
   /**
-   * Stores authentication data in local storage
-   * @param {Object} authData - Authentication data
+   * Elimina la advertencia de expiración de sesión
+   * @private
    */
-  const _setAuthData = function(authData) {
-    const { token, refreshToken, user } = authData;
-    
-    // Store token with expiration
-    localStorage.setItem(config.auth.tokenKey, token);
-    localStorage.setItem(config.auth.refreshTokenKey, refreshToken);
-    
-    // Store user data
-    if (user) {
-      localStorage.setItem(config.auth.userKey, JSON.stringify(user));
+  const _removeSessionTimeoutWarning = function() {
+    if (_sessionTimeoutWarning) {
+      document.body.removeChild(_sessionTimeoutWarning);
+      _sessionTimeoutWarning = null;
     }
-    
-    // Parse token to get expiry date
-    try {
-      const tokenData = JSON.parse(atob(token.split('.')[1]));
-      if (tokenData.exp) {
-        localStorage.setItem(config.auth.expiryKey, tokenData.exp * 1000);
-      }
-    } catch (e) {
-      console.error('Error parsing token:', e);
-    }
-    
-    // Start inactivity tracking
-    _startInactivityTimer();
   };
   
   /**
-   * Clears authentication data from local storage
+   * Extiende la sesión actual
+   * @private
    */
-  const _clearAuthData = function() {
-    localStorage.removeItem(config.auth.tokenKey);
-    localStorage.removeItem(config.auth.refreshTokenKey);
-    localStorage.removeItem(config.auth.userKey);
-    localStorage.removeItem(config.auth.expiryKey);
+  const _extendSession = function() {
+    // Actualizar timestamp de última actividad
+    _lastActivity = Date.now();
     
-    // Clear inactivity timer
-    if (_inactivityTimer) {
-      clearTimeout(_inactivityTimer);
-      _inactivityTimer = null;
-    }
+    // Intentar refrescar token
+    refreshToken().catch(error => {
+      console.error('[AUTH] Error al extender sesión:', error.message);
+    });
   };
   
-  // Public API
-  return {
-    /**
-     * Attempts to login a user
-     * @param {Object} credentials - User credentials
-     * @returns {Promise<Object>} - User data if successful
-     */
-    login: async function(credentials) {
-      try {
-        console.log('[DEBUG] Login attempt - Starting login process');
-        console.log('[DEBUG] Login credentials (without password):', { codigoCIP: credentials.codigoCIP, remember: credentials.remember });
-        
-        // Full API URL logging with protocol and host for CORS debugging
-        const apiUrl = `${config.api.baseUrl}/auth/login`;
-        console.log('[DEBUG] API URL being used:', apiUrl);
-        console.log('[DEBUG] Current document.location:', document.location.href);
-        console.log('[DEBUG] Origin:', window.location.origin);
-        console.log('[DEBUG] Browser User-Agent:', navigator.userAgent);
-        
-        // Detailed request configuration logging
-        const requestConfig = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify(credentials),
-          credentials: 'include', // Include cookies in request
-          mode: 'cors'
-        };
-        
-        console.log('[DEBUG] Request configuration:', JSON.stringify(requestConfig, (key, value) => 
-          key === 'body' ? '***REDACTED***' : value
-        ));
-        
-        // Call login API endpoint with extensive error handling
-        console.log('[DEBUG] About to send fetch request to login endpoint');
-        let response;
-        try {
-          response = await fetch(apiUrl, requestConfig);
-          console.log('[DEBUG] Fetch response received - Status:', response.status, response.statusText);
-          console.log('[DEBUG] Response headers:', Object.fromEntries([...response.headers.entries()]));
-        } catch (fetchError) {
-          console.error('[DEBUG] Network error during fetch:', fetchError);
-          console.error('[DEBUG] Error name:', fetchError.name);
-          console.error('[DEBUG] Error message:', fetchError.message);
-          console.error('[DEBUG] CORS issue likely - Check server CORS configuration');
-          throw new Error(`Network error: ${fetchError.message}. Possible CORS issue.`);
-        }
-        
-        if (!response.ok) {
-          console.log('[DEBUG] Response not OK - Attempting to parse error data');
-          const errorData = await response.json();
-          console.log('[DEBUG] Error data received:', errorData);
-          throw new Error(errorData.error?.message || 'Login failed');
-        }
-        
-        console.log('[DEBUG] Response OK - Attempting to parse auth data');
-        const authData = await response.json();
-        console.log('[DEBUG] Auth data received (token length):', authData.token ? authData.token.length : 'no token');
-        
-        // Validate and store auth data
-        if (!authData.token || !authData.user) {
-          console.log('[DEBUG] Invalid auth data - Missing token or user');
-          throw new Error('Invalid response from server');
-        }
-        
-        console.log('[DEBUG] Setting auth data in localStorage');
-        _setAuthData(authData);
-        
-        // Log successful login if security auditing enabled
-        if (config.features.securityAudit) {
-          console.info('User logged in:', authData.user.codigoCIP);
-        }
-        
-        console.log('[DEBUG] Login successful - Returning user data');
-        return authData.user;
-      } catch (error) {
-        console.error('[DEBUG] Login error - Full error:', error);
-        console.error('[DEBUG] Login error - Error name:', error.name);
-        console.error('[DEBUG] Login error - Error message:', error.message);
-        console.error('[DEBUG] Login error - Error stack:', error.stack);
-        throw error;
-      }
-    },
+  /**
+   * Configura tracking de actividad del usuario
+   * @private
+   */
+  const _setupActivityTracking = function() {
+    // Lista de eventos a monitorear
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
     
-    /**
-     * Logs out the current user
-     * @param {Object} options - Logout options
-     * @returns {Promise<boolean>} - Success indicator
-     */
-    logout: async function(options = {}) {
-      try {
-        const token = this.getToken();
-        
-        // If user is logged in, call logout API
-        if (token && !options.skipRequest) {
-          try {
-            await OFICRI.apiClient.post('/auth/logout');
-          } catch (error) {
-            console.warn('Error during logout request:', error);
-          }
-        }
-        
-        // Always clear auth data locally
-        _clearAuthData();
-        
-        // Redirect to login page if specified
-        if (options.redirect !== false) {
-          window.location.href = '/';
-        }
-        
-        return true;
-      } catch (error) {
-        console.error('Logout error:', error);
-        return false;
-      }
-    },
+    // Throttle para no actualizar en cada evento
+    let throttleTimeout = null;
+    const throttle = 10000; // 10 segundos
     
-    /**
-     * Attempts to refresh the authentication token
-     * @returns {Promise<boolean>} - Success indicator
-     */
-    refreshToken: async function() {
-      try {
-        const refreshToken = this.getRefreshToken();
-        
-        if (!refreshToken) {
-          return false;
-        }
-        
-        // Call refresh token API (using direct fetch)
-        const response = await fetch(`${config.api.baseUrl}/auth/refresh-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ refreshToken })
-        });
-        
-        if (!response.ok) {
-          return false;
-        }
-        
-        const authData = await response.json();
-        
-        // Validate and store new tokens
-        if (!authData.token || !authData.refreshToken) {
-          return false;
-        }
-        
-        _setAuthData(authData);
-        return true;
-      } catch (error) {
-        console.error('Token refresh error:', error);
-        return false;
+    // Función para actualizar timestamp de actividad
+    const updateActivity = () => {
+      if (!throttleTimeout) {
+        throttleTimeout = setTimeout(() => {
+          _lastActivity = Date.now();
+          throttleTimeout = null;
+        }, throttle);
       }
-    },
+    };
     
-    /**
-     * Gets the current authentication token
-     * @returns {string|null} - JWT token or null if not authenticated
-     */
-    getToken: function() {
-      return localStorage.getItem(config.auth.tokenKey);
-    },
+    // Agregar listeners a los eventos
+    events.forEach(event => {
+      window.addEventListener(event, updateActivity, { passive: true });
+    });
+  };
+  
+  /**
+   * Limpia los datos de sesión
+   * @private
+   */
+  const _clearSession = function() {
+    // Limpiar localStorage
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     
-    /**
-     * Gets the current refresh token
-     * @returns {string|null} - Refresh token or null if not available
-     */
-    getRefreshToken: function() {
-      return localStorage.getItem(config.auth.refreshTokenKey);
-    },
+    // Limpiar variables de memoria
+    _currentUser = null;
     
-    /**
-     * Gets the currently authenticated user
-     * @returns {Object|null} - User object or null if not authenticated
-     */
-    getUser: function() {
-      const userJson = localStorage.getItem(config.auth.userKey);
-      return userJson ? JSON.parse(userJson) : null;
-    },
-    
-    /**
-     * Checks if user is authenticated
-     * @returns {boolean} - Authentication status
-     */
-    isAuthenticated: function() {
-      const token = this.getToken();
-      const expiry = localStorage.getItem(config.auth.expiryKey);
-      
-      if (!token || !expiry) {
-        return false;
-      }
-      
-      // Check if token is expired
-      const now = Date.now();
-      return now < parseInt(expiry, 10);
-    },
-    
-    /**
-     * Checks if user has required permission
-     * @param {number} permission - Permission bit to check
-     * @returns {boolean} - Whether user has permission
-     */
-    hasPermission: function(permission) {
-      const user = this.getUser();
-      
-      if (!user || !user.role) {
-        return false;
-      }
-      
-      // Admin role has all permissions
-      if (user.role === 'admin') {
-        return true;
-      }
-      
-      // Check specific permission bit
-      if (user.permissions !== undefined) {
-        return (user.permissions & permission) === permission;
-      }
-      
-      return false;
+    // Limpiar intervalo de verificación
+    if (_sessionCheckInterval) {
+      clearInterval(_sessionCheckInterval);
+      _sessionCheckInterval = null;
     }
+    
+    // Limpiar advertencia de timeout
+    _removeSessionTimeoutWarning();
+  };
+  
+  // Inicializar el servicio cuando se carga el script
+  init();
+  
+  // API pública
+  return {
+    login,
+    logout,
+    refreshToken,
+    isAuthenticated,
+    getToken,
+    getRefreshToken,
+    getUser,
+    hasRole,
+    resetPassword,
+    changePassword
   };
 })(); 
+
+// Exportar para ES modules
+export { authService };
+
+// Para compatibilidad con navegadores antiguos
+window.OFICRI.authService = authService; 

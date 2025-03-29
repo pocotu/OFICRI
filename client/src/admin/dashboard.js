@@ -3,6 +3,11 @@
  * Módulo para la gestión del dashboard principal del administrador
  */
 
+// Importar módulos necesarios
+import { config } from '../config/app.config.js';
+import { apiClient } from '../api/apiClient.js';
+import { notifications } from '../ui/notifications.js';
+
 // Crear el namespace si no existe
 window.OFICRI = window.OFICRI || {};
 window.OFICRI.dashboard = window.OFICRI.dashboard || {};
@@ -57,7 +62,7 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     actividadContainer.innerHTML = '<p class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Cargando actividad reciente...</p>';
     
     // Cargar datos de la API
-    OFICRI.apiClient.get('/actividad', { limit: 5 })
+    apiClient.get('/actividad', { limit: 5 })
       .then(response => {
         if (response.success && response.data) {
           _renderActividad(response.data, actividadContainer);
@@ -142,7 +147,7 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     container.innerHTML = '<p class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Cargando documentos pendientes...</p>';
     
     // Cargar datos de documentos pendientes
-    OFICRI.apiClient.get('/documentos', { 
+    apiClient.get('/documentos', { 
       estado: 'EN_PROCESO',
       limit: 5,
       sort: 'fechaRegistro',
@@ -236,8 +241,8 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     _loadDocumentosPendientes();
     
     // Notificar al usuario
-    if (OFICRI.notifications) {
-      OFICRI.notifications.info('Datos del dashboard actualizados');
+    if (notifications) {
+      notifications.info('Datos del dashboard actualizados');
     }
   };
   

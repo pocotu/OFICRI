@@ -3,6 +3,12 @@
  * Entry point for the application
  */
 
+// Importar módulos necesarios
+import { config } from './config/app.config.js';
+import { apiClient } from './api/apiClient.js';
+import { authService } from './services/authService.js';
+import { notifications } from './ui/notifications.js';
+
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
 
@@ -35,6 +41,9 @@ OFICRI.app = (function() {
         corsEnabled: typeof config.corsOptions !== 'undefined'
       });
     }
+    
+    // Inicializar sistema de monitoreo
+    initApiMonitor();
   };
   
   /**
@@ -161,6 +170,160 @@ OFICRI.app = (function() {
     }
   };
   
+  /**
+   * Inicializa el monitor de API para depuración
+   */
+  const initApiMonitor = function() {
+    // Solo inicializar si está en modo debug
+    if (!config.features.debugging) return;
+    
+    console.log('Inicializando API Monitor');
+    
+    // Crear elemento flotante para mostrar peticiones activas
+    const monitorElement = document.createElement('div');
+    monitorElement.id = 'api-monitor';
+    monitorElement.style.cssText = `
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 10000;
+      display: none;
+    `;
+    
+    // Crear botón para mostrar/ocultar
+    const toggleButton = document.createElement('button');
+    toggleButton.id = 'api-monitor-toggle';
+    toggleButton.textContent = 'API';
+    toggleButton.style.cssText = `
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 10001;
+    `;
+    
+    document.body.appendChild(monitorElement);
+    document.body.appendChild(toggleButton);
+    
+    // Botón para limpiar logs
+    const clearButton = document.createElement('button');
+    clearButton.textContent = 'Limpiar';
+    clearButton.style.cssText = `
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 2px 6px;
+      margin-left: 10px;
+      cursor: pointer;
+      font-size: 10px;
+    `;
+    
+    // Título del monitor
+    const titleElement = document.createElement('div');
+    titleElement.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      font-weight: bold;
+    `;
+    titleElement.innerHTML = '<span>API Monitor</span>';
+    titleElement.appendChild(clearButton);
+    monitorElement.appendChild(titleElement);
+    
+    // Contenedor para las peticiones
+    const requestsContainer = document.createElement('div');
+    requestsContainer.id = 'api-monitor-requests';
+    monitorElement.appendChild(requestsContainer);
+    
+    // Toggle de visibilidad
+    let isVisible = false;
+    toggleButton.addEventListener('click', function() {
+      isVisible = !isVisible;
+      monitorElement.style.display = isVisible ? 'block' : 'none';
+      toggleButton.style.backgroundColor = isVisible ? '#28a745' : '#007bff';
+      
+      if (isVisible) {
+        updateMonitor();
+      }
+    });
+    
+    // Limpiar logs
+    clearButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      apiClient.clearRequestLog();
+      updateMonitor();
+    });
+    
+    // Función para actualizar el monitor
+    const updateMonitor = function() {
+      if (!isVisible) return;
+      
+      const requestLog = apiClient.getRequestLog();
+      const requestsElement = document.getElementById('api-monitor-requests');
+      
+      // Limpiar contenedor
+      requestsElement.innerHTML = '';
+      
+      if (requestLog.length === 0) {
+        requestsElement.innerHTML = '<div style="font-style: italic">No hay peticiones registradas</div>';
+        return;
+      }
+      
+      // Mostrar las peticiones más recientes primero
+      const reversedLog = [...requestLog].reverse();
+      
+      // Crear elementos para cada petición
+      reversedLog.forEach(entry => {
+        const requestElement = document.createElement('div');
+        requestElement.style.cssText = `
+          margin-bottom: 4px;
+          padding: 2px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        `;
+        
+        // Color según status
+        let statusColor = 'white';
+        if (entry.status === 200 || entry.status === 304) statusColor = '#28a745';
+        else if (entry.status >= 400) statusColor = '#dc3545';
+        else if (entry.status >= 300) statusColor = '#ffc107';
+        
+        requestElement.innerHTML = `
+          <div style="display:flex; justify-content:space-between">
+            <span>${entry.method} ${entry.url.split('/').pop()}</span>
+            <span style="color:${statusColor}">${entry.status}</span>
+          </div>
+          <div style="font-size:10px; opacity:0.7">
+            ${new Date(entry.timestamp).toLocaleTimeString()} 
+            ${entry.duration ? `(${entry.duration}ms)` : ''}
+          </div>
+        `;
+        
+        requestsElement.appendChild(requestElement);
+      });
+    };
+    
+    // Actualizar cada 2 segundos
+    setInterval(updateMonitor, 2000);
+  };
+  
   // Public API
   return {
     init: _init,
@@ -173,4 +336,7 @@ OFICRI.app = (function() {
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
   OFICRI.app.init();
-}); 
+});
+
+// Export for modules
+export const app = OFICRI.app; 

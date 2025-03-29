@@ -237,4 +237,55 @@ Para contribuir a este proyecto:
 
 ## Licencia
 
-Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles. 
+Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## Desarrollo OFICRI
+
+### Inicio Rápido
+
+Para iniciar el desarrollo tanto del frontend como del backend simultáneamente:
+
+```bash
+npm run dev:all
+```
+
+Este comando inicia:
+- El servidor backend en el puerto 3000
+- El cliente frontend en el puerto 3001
+
+### Comandos Disponibles
+
+#### Desarrollo
+
+- `npm run dev:all` - Inicia tanto el servidor como el cliente en modo desarrollo
+- `npm run dev:server` - Inicia solo el servidor backend
+- `npm run dev:client` - Inicia solo el cliente frontend
+- `npm run dev:mock` - Inicia el servidor mock y el cliente
+
+#### Producción
+
+- `npm start` - Inicia la aplicación en modo producción
+- `npm run build:client` - Construye el cliente para producción
+
+#### Otros Comandos Útiles
+
+- `npm run test` - Ejecuta las pruebas
+- `npm run lint` - Verifica el código con ESLint
+- `npm run format` - Formatea el código con Prettier
+
+### Estructura del Proyecto
+
+```
+/
+├── client/           # Frontend
+│   ├── public/       # Archivos estáticos
+│   ├── src/          # Código fuente del cliente
+│   └── package.json  # Dependencias del cliente
+├── server/           # Backend
+│   ├── api/          # Endpoints de la API
+│   ├── core/         # Núcleo del servidor
+│   ├── models/       # Modelos de datos
+│   └── services/     # Servicios de negocio
+├── package.json      # Dependencias principales
+└── README.md         # Documentación
+``` 

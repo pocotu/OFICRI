@@ -3,6 +3,10 @@
  * Central configuration for the application
  */
 
+// Create namespace if it doesn't exist
+window.OFICRI = window.OFICRI || {};
+
+// Config object
 const config = {
   // API Configuration
   api: {
@@ -71,4 +75,11 @@ if (config.features.debugging) {
 }
 
 // Freeze config to prevent modifications
-Object.freeze(config); 
+Object.freeze(config);
+
+// Para compatibilidad con ES modules y UMD
+// El build process convertirá esto a formato compatible con navegadores
+export { config };
+
+// Para compatibilidad con código que usa window.OFICRI.config
+window.OFICRI.config = config; 

@@ -3,6 +3,13 @@
  * Script principal para la interfaz de administración
  */
 
+// Importar módulos necesarios
+import { config } from '../config/app.config.js';
+import { apiClient } from '../api/apiClient.js';
+import { authService } from '../services/authService.js';
+import { notifications } from '../ui/notifications.js';
+import './dashboard.js';
+
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
 
@@ -217,13 +224,13 @@ OFICRI.adminApp = (function() {
 // Inicializar la aplicación cuando se cargue la página
 document.addEventListener('DOMContentLoaded', function() {
   // Crear directorios anidados para módulos
-  window.OFICRI.dashboard = {};
-  window.OFICRI.usuarios = {};
-  window.OFICRI.roles = {};
-  window.OFICRI.areas = {};
-  window.OFICRI.documentos = {};
-  window.OFICRI.auditoria = {};
-  window.OFICRI.exportar = {};
+  window.OFICRI.dashboard = window.OFICRI.dashboard || {};
+  window.OFICRI.usuarios = window.OFICRI.usuarios || {};
+  window.OFICRI.roles = window.OFICRI.roles || {};
+  window.OFICRI.areas = window.OFICRI.areas || {};
+  window.OFICRI.documentos = window.OFICRI.documentos || {};
+  window.OFICRI.auditoria = window.OFICRI.auditoria || {};
+  window.OFICRI.exportar = window.OFICRI.exportar || {};
   
   // Inicializar la aplicación
   OFICRI.adminApp.init();
