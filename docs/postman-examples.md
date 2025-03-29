@@ -1,378 +1,363 @@
-# Ejemplos de Uso de API con Postman
+# Ejemplos de Postman para la API de OFICRI
 
-Este documento proporciona ejemplos detallados para utilizar la API de OFICRI con Postman, complementando la documentación técnica principal.
+*Última actualización: 30/07/2024*
 
-## Configuración Inicial en Postman
+## Configuración del Entorno
 
-### 1. Crear una Nueva Colección
+Crea un entorno en Postman con las siguientes variables:
 
-1. Abra Postman
-2. Haga clic en "Collections" en el panel izquierdo
-3. Haga clic en el botón "+" para crear una nueva colección
-4. Nombre la colección "OFICRI API"
-
-### 2. Configurar Variables de Entorno
-
-1. Haga clic en "Environments" en el panel izquierdo
-2. Haga clic en el botón "+" para crear un nuevo entorno
-3. Nombre el entorno "OFICRI Sandbox"
-4. Añada las siguientes variables:
-
-| Variable | Valor Inicial | Valor Actual |
+| Variable | Valor inicial | Valor actual |
 |----------|---------------|--------------|
-| baseUrl  | http://localhost:3000/api | http://localhost:3000/api |
-| token    | (vacío)        | (vacío)      |
+| `base_url` | `http://localhost:3000/api` | `http://localhost:3000/api` |
+| `token` | [vacío] | [se actualizará automáticamente] |
+| `refreshToken` | [vacío] | [se actualizará automáticamente] |
 
-5. Guarde el entorno y selecciónelo en el selector de entornos en la parte superior derecha
+## Autenticación
 
-## Ejemplos de Solicitudes
+### Login
 
-### Autenticación
+```
+POST {{base_url}}/auth/login
+```
 
-#### Login
-
-1. Cree una nueva solicitud:
-   - Método: POST
-   - URL: {{baseUrl}}/auth/login
-   - Headers: Content-Type: application/json
-
-2. En la pestaña "Body", seleccione "raw" y "JSON", y añada:
+**Body (raw - JSON):**
 ```json
 {
-  "codigoCIP": "12345678",
-  "password": "admin123"
+  "CodigoCIP": "12345678",
+  "password": "contraseña_segura"
 }
 ```
 
-> **Nota**: En entorno de desarrollo, el sistema acepta "admin123" como contraseña válida para cualquier usuario para facilitar las pruebas. Este comportamiento está desactivado automáticamente en producción por seguridad.
-
-3. En la pestaña "Tests", añada el siguiente script para guardar automáticamente el token:
+**Script de prueba (Tests):**
 ```javascript
 var jsonData = pm.response.json();
-if (jsonData.token) {
-    pm.environment.set("token", jsonData.token);
-    console.log("Token guardado: " + jsonData.token);
+if (jsonData.success && jsonData.data.token) {
+    pm.environment.set("token", jsonData.data.token);
+    pm.environment.set("refreshToken", jsonData.data.refreshToken);
 }
 ```
 
-4. Ejecute la solicitud. El token se guardará automáticamente en la variable de entorno si la autenticación es exitosa.
+### Logout
 
-#### Verificar Token
+```
+POST {{base_url}}/auth/logout
+```
 
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/auth/verificar-token
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
 
-2. Ejecute la solicitud para verificar que su token sea válido.
+### Refrescar Token
 
-### Gestión de Usuarios
+```
+POST {{base_url}}/auth/refresh-token
+```
 
-#### Listar Usuarios
-
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/users
-   - Headers: Authorization: Bearer {{token}}
-
-2. Parámetros opcionales (en "Params"):
-   - page: 1
-   - limit: 10
-   - search: (texto para buscar)
-   - area: (ID de área)
-   - role: (ID de rol)
-
-#### Obtener Usuario por ID
-
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/users/1
-   - Headers: Authorization: Bearer {{token}}
-
-#### Crear Usuario
-
-1. Cree una nueva solicitud:
-   - Método: POST
-   - URL: {{baseUrl}}/users
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
-
-2. En la pestaña "Body", seleccione "raw" y "JSON", y añada:
+**Body (raw - JSON):**
 ```json
 {
-  "CodigoCIP": "87654321",
-  "Nombres": "Nuevo",
-  "Apellidos": "Usuario",
-  "Grado": "Teniente",
-  "IDArea": 2,
-  "IDRol": 2,
-  "Password": "Abcd1234!"
+  "refreshToken": "{{refreshToken}}"
 }
 ```
 
-### Gestión de Documentos
-
-#### Listar Documentos
-
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/documents
-   - Headers: Authorization: Bearer {{token}}
-
-2. Parámetros opcionales (en "Params"):
-   - page: 1
-   - limit: 10
-   - search: (texto para buscar)
-   - estado: RECIBIDO
-   - area: (ID de área)
-   - fechaInicio: 2023-01-01
-   - fechaFin: 2023-01-31
-
-#### Obtener Documento por ID
-
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/documents/1
-   - Headers: Authorization: Bearer {{token}}
-
-#### Crear Documento
-
-1. Cree una nueva solicitud:
-   - Método: POST
-   - URL: {{baseUrl}}/documents
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
-
-2. En la pestaña "Body", seleccione "raw" y "JSON", y añada:
-```json
-{
-  "IDMesaPartes": 1,
-  "IDAreaActual": 2,
-  "NroRegistro": "REG-2023-010",
-  "NumeroOficioDocumento": "OF-2023-010",
-  "FechaDocumento": "2023-01-20",
-  "OrigenDocumento": "EXTERNO",
-  "Procedencia": "Comisaría Central",
-  "Contenido": "Solicitud de análisis forense"
+**Script de prueba (Tests):**
+```javascript
+var jsonData = pm.response.json();
+if (jsonData.success && jsonData.data.token) {
+    pm.environment.set("token", jsonData.data.token);
+    pm.environment.set("refreshToken", jsonData.data.refreshToken);
 }
 ```
 
-#### Derivar Documento
+## Gestión de Usuarios
 
-1. Cree una nueva solicitud:
-   - Método: POST
-   - URL: {{baseUrl}}/documents/1/derivar
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
+### Listar Usuarios
 
-2. En la pestaña "Body", seleccione "raw" y "JSON", y añada:
+```
+GET {{base_url}}/usuarios
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
+
+**Parámetros (Query Params):**
+- `page`: 1
+- `limit`: 10
+- `search`: "Carlos" (opcional)
+- `IDRol`: 2 (opcional)
+- `IDArea`: 3 (opcional)
+- `sort`: "Apellidos" (opcional)
+- `order`: "asc" (opcional)
+
+### Obtener Usuario por ID
+
+```
+GET {{base_url}}/usuarios/1
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
+
+### Obtener Usuario por CIP
+
+```
+GET {{base_url}}/usuarios/cip/12345678
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
+
+### Crear Usuario
+
+```
+POST {{base_url}}/usuarios
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
+
+**Body (form-data):**
+- `Nombres`: "Juan Carlos"
+- `Apellidos`: "Pérez Gómez"
+- `CodigoCIP`: "87654321"
+- `Grado`: "Teniente"
+- `password`: "Contraseña123!"
+- `IDRol`: 2
+- `IDArea`: 3
+- `avatar`: [archivo] (opcional)
+
+### Actualizar Usuario
+
+```
+PUT {{base_url}}/usuarios/3
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
+
+**Body (form-data):**
+- `Nombres`: "Juan Modificado"
+- `Apellidos`: "Pérez Actualizado"
+- `Grado`: "Capitán"
+- `IDRol`: 2
+- `IDArea`: 3
+- `avatar`: [archivo] (opcional)
+
+### Cambiar Contraseña
+
+```
+PUT {{base_url}}/usuarios/3/password
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+Content-Type: application/json
+```
+
+**Body (raw - JSON):**
 ```json
 {
-  "IDAreaDestino": 3,
-  "IDUsuarioDeriva": 2,
-  "IDUsuarioRecibe": 3,
-  "Observaciones": "Derivado para análisis"
+  "currentPassword": "Contraseña123!",
+  "newPassword": "NuevaContraseña456!"
 }
 ```
 
-#### Cambiar Estado de Documento
+### Activar/Desactivar Usuario
 
-1. Cree una nueva solicitud:
-   - Método: PATCH
-   - URL: {{baseUrl}}/documents/1/estado
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
+```
+PATCH {{base_url}}/usuarios/3/status
+```
 
-2. En la pestaña "Body", seleccione "raw" y "JSON", y añada:
+**Headers:**
+```
+Authorization: Bearer {{token}}
+Content-Type: application/json
+```
+
+**Body (raw - JSON):**
 ```json
 {
-  "nuevoEstado": "EN_PROCESO",
-  "observaciones": "Documento en proceso de análisis"
+  "active": false
 }
 ```
 
-### Áreas Especializadas
+## Gestión de Documentos
 
-#### Listar Áreas
+### Listar Documentos
 
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/areas
-   - Headers: Authorization: Bearer {{token}}
+```
+GET {{base_url}}/documentos
+```
 
-2. Parámetros opcionales (en "Params"):
-   - activas: true
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
 
-### Gestión de Roles
+**Parámetros (Query Params):**
+- `page`: 1
+- `limit`: 10
+- `search`: "Oficio" (opcional)
+- `fechaInicio`: "2024-01-01" (opcional)
+- `fechaFin`: "2024-12-31" (opcional)
+- `estado`: "EN_PROCESO" (opcional)
+- `IDArea`: 3 (opcional)
+- `sort`: "FechaCreacion" (opcional)
+- `order`: "desc" (opcional)
 
-#### Listar Roles
+### Crear Documento
 
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/roles
-   - Headers: Authorization: Bearer {{token}}
+```
+POST {{base_url}}/documentos
+```
 
-#### Obtener Rol por ID
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
 
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/roles/1
-   - Headers: Authorization: Bearer {{token}}
+**Body (form-data):**
+- `Titulo`: "Oficio Nº 123-2024"
+- `Descripcion`: "Solicitud de información"
+- `TipoDocumento`: "OFICIO"
+- `NumeroDocumento`: "123-2024"
+- `FechaDocumento`: "2024-07-30"
+- `IDAreaOrigen`: 2
+- `IDAreaDestino`: 3
+- `Prioridad`: "ALTA"
+- `archivo`: [archivo PDF]
 
-### Dashboard
+### Obtener Documento
 
-#### Obtener Estadísticas
+```
+GET {{base_url}}/documentos/1
+```
 
-1. Cree una nueva solicitud:
-   - Método: GET
-   - URL: {{baseUrl}}/dashboard/stats
-   - Headers: Authorization: Bearer {{token}}
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
 
-## Manejo de Errores
+### Actualizar Documento
 
-A continuación se muestran ejemplos de respuestas de error que puede recibir:
+```
+PUT {{base_url}}/documentos/1
+```
 
-### Error de Autenticación (401)
+**Headers:**
+```
+Authorization: Bearer {{token}}
+```
 
+**Body (form-data):**
+- `Titulo`: "Oficio Nº 123-2024 (Actualizado)"
+- `Descripcion`: "Solicitud de información actualizada"
+- `Prioridad`: "MEDIA"
+- `archivo`: [archivo PDF] (opcional)
+
+### Cambiar Estado de Documento
+
+```
+PATCH {{base_url}}/documentos/1/estado
+```
+
+**Headers:**
+```
+Authorization: Bearer {{token}}
+Content-Type: application/json
+```
+
+**Body (raw - JSON):**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "UNAUTHORIZED",
-    "message": "No autorizado - Token no proporcionado"
-  },
-  "timestamp": "2023-01-15T10:30:00Z"
+  "Estado": "COMPLETADO",
+  "Observaciones": "Documento procesado correctamente"
 }
 ```
 
-### Error de Permisos (403)
+### Descargar Archivo
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "FORBIDDEN",
-    "message": "No tiene permisos para realizar esta acción"
-  },
-  "timestamp": "2023-01-15T10:30:00Z"
-}
+```
+GET {{base_url}}/documentos/1/archivo
 ```
 
-### Recurso No Encontrado (404)
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Recurso no encontrado"
-  },
-  "timestamp": "2023-01-15T10:30:00Z"
-}
+**Headers:**
 ```
-
-### Error de Validación (422)
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Error de validación",
-    "details": {
-      "password": "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales"
-    }
-  },
-  "timestamp": "2023-01-15T10:30:00Z"
-}
+Authorization: Bearer {{token}}
 ```
 
 ## Consejos Avanzados
 
-### Pre-request Scripts
+### Manejo de Errores
 
-Para manejar automáticamente tokens expirados, puede añadir este script en la pestaña "Pre-request Script" de su colección:
+Para probar respuestas de error, puedes intentar:
 
-```javascript
-// Verificar si el token está a punto de expirar
-const token = pm.environment.get('token');
-if (token) {
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const expiryTime = payload.exp * 1000; // Convertir a milisegundos
-        const currentTime = Date.now();
-        
-        // Si el token expira en menos de 5 minutos, obtener uno nuevo
-        if (expiryTime - currentTime < 300000) {
-            console.log("Token a punto de expirar, obteniendo uno nuevo...");
-            
-            // Crear una solicitud para obtener nuevo token
-            const refreshRequest = {
-                url: pm.environment.get('baseUrl') + '/auth/refresh-token',
-                method: 'POST',
-                header: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: {
-                    mode: 'raw',
-                    raw: JSON.stringify({
-                        refreshToken: pm.environment.get('refreshToken')
-                    })
-                }
-            };
-            
-            // Ejecutar la solicitud
-            pm.sendRequest(refreshRequest, (err, res) => {
-                if (err) {
-                    console.error(err);
-                } else if (res.code === 200) {
-                    const jsonData = res.json();
-                    if (jsonData.token) {
-                        pm.environment.set("token", jsonData.token);
-                        console.log("Nuevo token obtenido y guardado");
-                    }
-                }
-            });
-        }
-    } catch (e) {
-        console.error("Error decodificando token:", e);
-    }
-}
-```
+1. Usar credenciales incorrectas en el login
+2. Usar un token expirado o inválido
+3. Solicitar un recurso que no existe (por ejemplo, `/usuarios/999`)
+4. Enviar datos inválidos (por ejemplo, un CIP con formato incorrecto)
 
-### Tests Automatizados
+### Pruebas Automatizadas
 
-Puede añadir pruebas automatizadas a sus solicitudes. Ejemplo para verificar una respuesta exitosa:
+Ejemplo de script de prueba para verificar la creación exitosa de un usuario:
 
 ```javascript
-pm.test("Estado 200 OK", function () {
-    pm.response.to.have.status(200);
+pm.test("Status code is 201", function () {
+    pm.response.to.have.status(201);
 });
 
-pm.test("Respuesta con éxito", function () {
+pm.test("Success flag is true", function () {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
 });
 
-pm.test("Tiempo de respuesta aceptable", function () {
-    pm.expect(pm.response.responseTime).to.be.below(500);
+pm.test("User data is returned", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data).to.have.property('IDUsuario');
+    pm.expect(jsonData.data).to.have.property('CodigoCIP');
+    pm.expect(jsonData.data).to.have.property('Nombres');
+    pm.expect(jsonData.data).to.have.property('Apellidos');
 });
+
+// Guardar el ID para pruebas posteriores
+if (pm.response.json().data && pm.response.json().data.IDUsuario) {
+    pm.environment.set("test_user_id", pm.response.json().data.IDUsuario);
+}
 ```
 
-## Importar Colección Completa
+### Uso de Variables de Entorno en Tests
 
-Para facilitar el proceso, puede importar directamente la colección completa de OFICRI a Postman siguiendo estos pasos:
+Ejemplo para encadenar pruebas (obtener usuario recién creado):
 
-1. Descargue el archivo `OFICRI_API_Collection.json` adjunto
-2. En Postman, haga clic en "Import" (arriba a la izquierda)
-3. Arrastre el archivo descargado o haga clic en "Upload Files" y selecciónelo
-4. Confirme la importación
+```javascript
+// En la prueba de creación de usuario
+pm.environment.set("new_user_id", pm.response.json().data.IDUsuario);
 
-La colección incluirá todas las solicitudes preconfiguradas, scripts de prueba y ejemplos mencionados en esta documentación. 
+// Luego en la prueba GET /api/usuarios/:id
+const url = pm.environment.get("base_url") + "/usuarios/" + pm.environment.get("new_user_id");
+pm.sendRequest({
+    url: url,
+    method: 'GET',
+    header: {
+        'Authorization': 'Bearer ' + pm.environment.get("token")
+    }
+}, function (err, res) {
+    pm.test("User can be retrieved", function () {
+        pm.expect(res.code).to.equal(200);
+        pm.expect(res.json().success).to.be.true;
+        pm.expect(res.json().data.IDUsuario).to.equal(parseInt(pm.environment.get("new_user_id")));
+    });
+});
+``` 

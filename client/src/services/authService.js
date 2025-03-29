@@ -2,6 +2,7 @@
  * OFICRI Auth Service
  * Servicio de autenticación que maneja el login, logout y sesión
  * Cumple con ISO/IEC 27001 para control de acceso y gestión de identidad
+ * Sistema específico para la Policía Nacional del Perú
  */
 
 // Importar módulos
@@ -45,26 +46,64 @@ const authService = (function() {
   };
   
   /**
-   * Autentica al usuario con credenciales
-   * @param {string} username - Nombre de usuario o código CIP
-   * @param {string} password - Contraseña
-   * @param {Object} options - Opciones adicionales
+   * Autentica al usuario policial con sus credenciales
+   * @param {Object|string} credentials - Credenciales o nombre de usuario
+   * @param {string} [password] - Contraseña (si el primer parámetro es username)
+   * @param {Object} [options] - Opciones adicionales
    * @returns {Promise} Promesa que resuelve con los datos del usuario autenticado
    */
-  const login = async function(username, password, options = {}) {
+  const login = async function(credentials, password, options = {}) {
+    let username, pwd, opts;
+    
+    // Verificar si se pasó un objeto de credenciales o parámetros individuales
+    if (typeof credentials === 'object' && credentials !== null) {
+      // Formato: login({codigoCIP: '12345', password: 'pwd'})
+      username = credentials.codigoCIP || credentials.username;
+      pwd = credentials.password;
+      opts = password || {}; // El segundo parámetro sería options
+    } else {
+      // Formato antiguo: login('username', 'password', {})
+      username = credentials;
+      pwd = password;
+      opts = options;
+    }
+    
     // Validar entradas
-    if (!validateInput(username, 'username') || !validateInput(password, 'password')) {
-      throw new Error('Credenciales inválidas');
+    if (!username || !pwd) {
+      throw new Error('Credenciales inválidas: falta Código CIP o contraseña');
     }
     
     try {
-      // Realizar petición de login
-      const response = await apiClient.post('/auth/login', {
-        username,
-        password,
-        // No incluir captcha si no se especifica
-        captcha: options.captcha || undefined
+      console.log('[AUTH] Intentando login con usuario policial:', username);
+      
+      // Preparar objeto de request
+      const loginData = {
+        username: username,
+        password: pwd
+      };
+      
+      // Si se recibió como codigoCIP, incluirlo también para compatibilidad
+      if (credentials.codigoCIP) {
+        loginData.codigoCIP = credentials.codigoCIP;
+      }
+      
+      // Incluir opciones adicionales si existen
+      if (credentials.remember || opts.remember) {
+        loginData.remember = true;
+      }
+      
+      if (opts.captcha) {
+        loginData.captcha = opts.captcha;
+      }
+      
+      console.log('[AUTH] Datos de login (sin password):', { 
+        username: loginData.username, 
+        codigoCIP: loginData.codigoCIP,
+        remember: loginData.remember 
       });
+      
+      // Realizar petición de login
+      const response = await apiClient.post('/auth/login', loginData);
       
       // Verificar respuesta
       if (!response || !response.token) {
@@ -82,7 +121,8 @@ const authService = (function() {
       return response.user;
     } catch (error) {
       // Registrar intento fallido (solo el intento, no la contraseña)
-      console.warn(`[AUTH] Intento de login fallido para usuario: ${username}`);
+      console.warn(`[AUTH] Intento de login fallido para usuario policial: ${username}`);
+      console.error('[AUTH] Error durante login:', error.message);
       
       // Lanzar error para manejo en UI
       throw error;
@@ -90,7 +130,7 @@ const authService = (function() {
   };
   
   /**
-   * Cierra la sesión del usuario actual
+   * Cierra la sesión del usuario policial actual
    * @param {Object} options - Opciones adicionales
    * @returns {Promise} Promesa que resuelve cuando se completa el logout
    */
@@ -152,7 +192,7 @@ const authService = (function() {
   };
   
   /**
-   * Verifica si el usuario está autenticado
+   * Verifica si el usuario policial está autenticado
    * @returns {boolean} True si está autenticado
    */
   const isAuthenticated = function() {
@@ -176,7 +216,7 @@ const authService = (function() {
   };
   
   /**
-   * Obtiene el usuario actual
+   * Obtiene el usuario policial actual
    * @returns {Object|null} Datos del usuario o null si no hay sesión
    */
   const getUser = function() {
@@ -212,49 +252,108 @@ const authService = (function() {
   };
   
   /**
-   * Resetea la contraseña del usuario
-   * @param {string} email - Email del usuario
+   * Verifica si el usuario actual es administrador
+   * @returns {boolean} True si el usuario tiene permisos de administrador
+   */
+  const isAdmin = function() {
+    const user = getUser();
+    
+    // Si no hay usuario o no tiene permisos, devolver false
+    if (!user || !user.Permisos) {
+      return false;
+    }
+    
+    // Verificar el bit 7 (128) que corresponde al permiso de administrador
+    return (user.Permisos & 128) === 128;
+  };
+  
+  /**
+   * Resetea la contraseña del usuario policial
+   * @param {string|Object} userIdentifier - CodigoCIP del usuario
    * @returns {Promise} Promesa que resuelve con la respuesta del servidor
    */
-  const resetPassword = async function(email) {
-    // Validar entrada
-    if (!validateInput(email, 'email')) {
-      throw new Error('Email inválido');
+  const resetPassword = async function(userIdentifier) {
+    // Verificar si el usuario actual tiene permisos de administrador
+    if (!isAdmin()) {
+      throw new Error('Solo usuarios con rol de Administrador pueden resetear contraseñas');
+    }
+    
+    let requestData = {};
+    
+    // Comprobar si es un objeto o un string
+    if (typeof userIdentifier === 'object') {
+      // Si es un objeto, extraer codigoCIP
+      if (userIdentifier.codigoCIP) {
+        requestData.codigoCIP = userIdentifier.codigoCIP;
+      } else {
+        throw new Error('Debe proporcionar el Código CIP del usuario');
+      }
+    } else {
+      // Asumir que es un string con codigoCIP
+      requestData.codigoCIP = userIdentifier;
+      
+      // Validar codigoCIP
+      if (!validateInput(requestData.codigoCIP, 'codigoCIP')) {
+        throw new Error('Código CIP inválido. Debe ser numérico y tener 8 dígitos como máximo');
+      }
     }
     
     try {
       // Solicitar reset de contraseña
-      const response = await apiClient.post('/auth/reset-password', {
-        email
-      });
+      const response = await apiClient.post('/auth/reset-password', requestData);
       
       return response;
-      } catch (error) {
-        throw error;
-      }
+    } catch (error) {
+      throw error;
+    }
   };
   
   /**
-   * Cambia la contraseña del usuario
+   * Cambia la contraseña del usuario policial
    * @param {string} currentPassword - Contraseña actual
    * @param {string} newPassword - Nueva contraseña
+   * @param {number} [userId] - ID del usuario (solo para administradores)
    * @returns {Promise} Promesa que resuelve con la respuesta del servidor
    */
-  const changePassword = async function(currentPassword, newPassword) {
+  const changePassword = async function(currentPassword, newPassword, userId) {
+    // Si se proporciona un userId y no es el propio usuario, verificar si es admin
+    const currentUser = getUser();
+    const isChangingOwnPassword = !userId || (currentUser && currentUser.IDUsuario === userId);
+    
+    if (!isChangingOwnPassword && !isAdmin()) {
+      throw new Error('Solo administradores pueden cambiar la contraseña de otros usuarios');
+    }
+    
     // Validar entradas
-    if (!validateInput(currentPassword, 'password') || !validateInput(newPassword, 'newPassword')) {
-      throw new Error('Contraseñas inválidas');
+    if (!isAdmin() && !validateInput(currentPassword, 'password')) {
+      throw new Error('Contraseña actual inválida');
+    }
+    
+    if (!validateInput(newPassword, 'newPassword')) {
+      throw new Error('La nueva contraseña no cumple con los requisitos de seguridad');
     }
     
     try {
-      // Solicitar cambio de contraseña
-      const response = await apiClient.post('/auth/change-password', {
-        currentPassword,
+      // Preparar datos para la petición
+      const requestData = {
         newPassword
-      });
+      };
+      
+      // Incluir contraseña actual solo si no es admin o está cambiando su propia contraseña
+      if (!isAdmin() || isChangingOwnPassword) {
+        requestData.currentPassword = currentPassword;
+      }
+      
+      // Incluir el ID de usuario si se proporciona y no es el propio usuario
+      if (userId && !isChangingOwnPassword) {
+        requestData.userId = userId;
+      }
+      
+      // Solicitar cambio de contraseña
+      const response = await apiClient.post('/auth/change-password', requestData);
       
       return response;
-          } catch (error) {
+    } catch (error) {
       throw error;
     }
   };
@@ -492,6 +591,7 @@ const authService = (function() {
     getRefreshToken,
     getUser,
     hasRole,
+    isAdmin,
     resetPassword,
     changePassword
   };

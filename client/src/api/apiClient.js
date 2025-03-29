@@ -21,6 +21,55 @@ const apiClient = (function() {
   let _maxLogSize = 50;
   
   /**
+   * Procesa un error de API para darle formato consistente
+   * @param {Object} response - Respuesta de fetch 
+   * @param {Object} data - Datos de la respuesta
+   * @param {Error} [originalError] - Error original en caso de error de red
+   * @returns {Error} Error con información adicional
+   * @private
+   */
+  const _processApiError = async function(response, data, originalError = null) {
+    let error;
+    
+    if (originalError) {
+      // Error de red
+      error = new Error(originalError.message || 'Error de red');
+      error.name = 'NetworkError';
+      error.status = 0;
+      error.originalError = originalError;
+    } else if (response) {
+      // Error del servidor
+      let message = 'Error del servidor';
+      
+      // Intentar extraer mensaje de error de la respuesta
+      if (data) {
+        if (typeof data === 'string') {
+          message = data;
+        } else if (data.message) {
+          message = data.message;
+        } else if (data.error) {
+          message = typeof data.error === 'string' ? data.error : data.error.message || 'Error desconocido';
+        }
+      }
+      
+      error = new Error(message);
+      error.name = 'ApiError';
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.data = data;
+    } else {
+      // Error genérico
+      error = new Error('Error desconocido');
+      error.name = 'UnknownError';
+    }
+    
+    // Añadir información adicional para depuración
+    error.timestamp = new Date().toISOString();
+    
+    return error;
+  };
+  
+  /**
    * Registra una petición en el historial
    */
   const _logRequest = function(request, response, error) {
@@ -115,6 +164,15 @@ const apiClient = (function() {
     
     // Add request body for non-GET requests
     if (method !== 'GET' && data) {
+      // Si estamos enviando un login y hay un codigoCIP pero no username, adaptarlo
+      if (endpoint.includes('/auth/login') && data.codigoCIP && !data.username) {
+        data = {
+          ...data,
+          username: data.codigoCIP
+        };
+        console.log('[DEBUG-API] Adaptando formato para login - añadiendo username a partir de codigoCIP');
+      }
+      
       requestOptions.body = JSON.stringify(data);
       console.log('[DEBUG-API] Request body:', method !== 'POST' || !endpoint.includes('login') ? JSON.stringify(data) : 'Password hidden for security');
     }
@@ -174,12 +232,19 @@ const apiClient = (function() {
       
       console.log('[DEBUG-API] Response content type:', contentType);
       
-      if (contentType && contentType.includes('application/json')) {
-        console.log('[DEBUG-API] Parsing JSON response');
-        responseData = await response.json();
-      } else {
-        console.log('[DEBUG-API] Parsing text response');
-        responseData = await response.text();
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          console.log('[DEBUG-API] Parsing JSON response');
+          responseData = await response.json();
+        } else {
+          console.log('[DEBUG-API] Parsing text response');
+          responseData = await response.text();
+        }
+      } catch (parseError) {
+        console.error('[DEBUG-API] Error parsing response:', parseError);
+        const error = await _processApiError(response, null, parseError);
+        _logRequest(requestLog, response, error);
+        throw error;
       }
       
       // Registrar en el log
@@ -198,42 +263,43 @@ const apiClient = (function() {
           return _request({ ...options, retries: retries - 1 });
         }
         
-        // Format error for client
-        const error = new Error(responseData.error?.message || 'Request failed');
-        error.status = response.status;
-        error.data = responseData;
+        // Format and throw error
+        const error = await _processApiError(response, responseData);
+        _logRequest(requestLog, response, error);
         throw error;
       }
       
-      console.log('[DEBUG-API] Request successful');
+      // Return parsed response data
       return responseData;
     } catch (error) {
-      console.error('[DEBUG-API] Request error:', error.name, error.message);
+      // Actualizar tiempo de finalización
+      requestLog.endTime = Date.now();
       
-      // Registrar en el log
-      _logRequest(requestLog, null, error);
+      console.error('[DEBUG-API] Fetch error:', error);
       
-      // Handle network errors with retries
-      if (error.name === 'AbortError' || error.name === 'TypeError') {
+      // Check if it's a network error
+      if (!error.status) {
+        console.log('[DEBUG-API] Network error detected');
+        
+        // Retry network errors if retries remaining
         if (retries > 0) {
-          console.log('[DEBUG-API] Network error - Retrying request');
+          console.log('[DEBUG-API] Retrying request after network error');
           
           // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, 1000));
           return _request({ ...options, retries: retries - 1 });
         }
+        
+        // Format and throw error
+        const apiError = await _processApiError(null, null, error);
+        _logRequest(requestLog, null, apiError);
+        throw apiError;
       }
       
-      // Log error if debugging enabled
-      if (config.features.debugging) {
-        console.error('[DEBUG-API] API Request Error Details:', {
-          errorName: error.name,
-          errorMessage: error.message,
-          errorStack: error.stack
-        });
-      }
+      // Registrar en el log
+      _logRequest(requestLog, null, error);
       
-      // Rethrow for handler
+      // Re-throw the error
       throw error;
     }
   };

@@ -15,24 +15,25 @@ const { validateUserData } = require('../middleware/validation/user.validator');
  */
 const getAllUsers = async (req, res) => {
   try {
-    const { limit = 10, offset = 0, search = '', sort = 'nombre', order = 'asc' } = req.query;
+    const { limit = 10, offset = 0, search = '', sort = 'Nombres', order = 'asc' } = req.query;
     
     let query = `
-      SELECT u.id, u.nombre, u.apellido, u.codigoCIP, u.email, u.activo, 
-             u.bloqueado, u.idRol, r.nombre as rolNombre, u.idArea, 
-             a.nombre as areaNombre, u.permisos, u.fechaCreacion
-      FROM usuarios u
-      LEFT JOIN roles r ON u.idRol = r.id
-      LEFT JOIN areas a ON u.idArea = a.id
-      WHERE (u.nombre ILIKE $1 OR u.apellido ILIKE $1 OR u.codigoCIP ILIKE $1 OR u.email ILIKE $1)
+      SELECT u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+             u.IDArea, a.NombreArea as AreaNombre, u.IDRol, 
+             r.NombreRol, r.Permisos, u.UltimoAcceso, 
+             u.Bloqueado, u.IntentosFallidos
+      FROM Usuario u
+      LEFT JOIN Rol r ON u.IDRol = r.IDRol
+      LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+      WHERE (u.Nombres LIKE $1 OR u.Apellidos LIKE $1 OR u.CodigoCIP LIKE $1)
       ORDER BY ${sort} ${order === 'desc' ? 'DESC' : 'ASC'}
       LIMIT $2 OFFSET $3
     `;
 
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM usuarios u
-      WHERE (u.nombre ILIKE $1 OR u.apellido ILIKE $1 OR u.codigoCIP ILIKE $1 OR u.email ILIKE $1)
+      FROM Usuario u
+      WHERE (u.Nombres LIKE $1 OR u.Apellidos LIKE $1 OR u.CodigoCIP LIKE $1)
     `;
 
     const searchParam = `%${search}%`;
@@ -44,7 +45,7 @@ const getAllUsers = async (req, res) => {
     
     // Eliminar datos sensibles como contraseñas antes de enviar
     const safeUsers = users.rows.map(user => {
-      const { password, ...safeUser } = user;
+      const { PasswordHash, ...safeUser } = user;
       return safeUser;
     });
     
@@ -82,13 +83,14 @@ const getUserById = async (req, res) => {
     }
     
     const query = `
-      SELECT u.id, u.nombre, u.apellido, u.codigoCIP, u.email, u.activo, 
-             u.bloqueado, u.idRol, r.nombre as rolNombre, u.idArea, 
-             a.nombre as areaNombre, u.permisos, u.fechaCreacion
-      FROM usuarios u
-      LEFT JOIN roles r ON u.idRol = r.id
-      LEFT JOIN areas a ON u.idArea = a.id
-      WHERE u.id = $1
+      SELECT u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+             u.IDArea, a.NombreArea as AreaNombre, u.IDRol, 
+             r.NombreRol, r.Permisos, u.UltimoAcceso, 
+             u.Bloqueado, u.IntentosFallidos
+      FROM Usuario u
+      LEFT JOIN Rol r ON u.IDRol = r.IDRol
+      LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+      WHERE u.IDUsuario = $1
     `;
     
     const result = await pool.query(query, [id]);
@@ -101,7 +103,7 @@ const getUserById = async (req, res) => {
     }
     
     // Eliminar datos sensibles como contraseñas antes de enviar
-    const { password, ...safeUser } = result.rows[0];
+    const { PasswordHash, ...safeUser } = result.rows[0];
     
     return res.status(200).json({
       success: true,
@@ -120,16 +122,71 @@ const getUserById = async (req, res) => {
 };
 
 /**
+ * Obtener usuario por CodigoCIP
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ */
+const getUserByCIP = async (req, res) => {
+  try {
+    const { codigoCIP } = req.params;
+    
+    if (!codigoCIP) {
+      return res.status(400).json({
+        success: false,
+        message: 'Código CIP inválido'
+      });
+    }
+    
+    const query = `
+      SELECT u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado,
+             u.IDArea, a.NombreArea as AreaNombre, u.IDRol, 
+             r.NombreRol, r.Permisos, u.UltimoAcceso, 
+             u.Bloqueado, u.IntentosFallidos
+      FROM Usuario u
+      LEFT JOIN Rol r ON u.IDRol = r.IDRol
+      LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+      WHERE u.CodigoCIP = $1
+    `;
+    
+    const result = await pool.query(query, [codigoCIP]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+    
+    // Eliminar datos sensibles como contraseñas antes de enviar
+    const { PasswordHash, ...safeUser } = result.rows[0];
+    
+    return res.status(200).json({
+      success: true,
+      data: safeUser,
+      message: 'Usuario obtenido correctamente'
+    });
+  } catch (error) {
+    logger.error('Error al obtener usuario por CIP', { codigoCIP: req.params.codigoCIP, error: error.message, stack: error.stack });
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener usuario',
+      error: 'Error en el servidor'
+    });
+  }
+};
+
+/**
  * Crear nuevo usuario
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  */
 const createUser = async (req, res) => {
   try {
-    const { nombre, apellido, codigoCIP, email, password, idRol, idArea, permisos } = req.body;
+    const { Nombres, Apellidos, CodigoCIP, Grado, password, IDRol, IDArea } = req.body;
     
     // Validación básica
-    if (!nombre || !apellido || !codigoCIP || !email || !password || !idRol) {
+    if (!Nombres || !Apellidos || !CodigoCIP || !Grado || !password || !IDRol || !IDArea) {
       return res.status(400).json({
         success: false,
         message: 'Faltan campos obligatorios'
@@ -137,34 +194,34 @@ const createUser = async (req, res) => {
     }
     
     // Verificar si el usuario ya existe
-    const existsQuery = 'SELECT id FROM usuarios WHERE codigoCIP = $1 OR email = $2';
-    const existsResult = await pool.query(existsQuery, [codigoCIP, email]);
+    const existsQuery = 'SELECT IDUsuario FROM Usuario WHERE CodigoCIP = $1';
+    const existsResult = await pool.query(existsQuery, [CodigoCIP]);
     
     if (existsResult.rows.length > 0) {
       return res.status(409).json({
         success: false,
-        message: 'El código CIP o email ya está registrado'
+        message: 'El código CIP ya está registrado'
       });
     }
     
     // Cifrar la contraseña conforme a ISO/IEC 27001
     const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const PasswordHash = await bcrypt.hash(password, salt);
     
     // Crear el usuario
     const insertQuery = `
-      INSERT INTO usuarios 
-        (nombre, apellido, codigoCIP, email, password, idRol, idArea, permisos, activo)
+      INSERT INTO Usuario 
+        (CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDRol, IDArea, Bloqueado)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, true)
-      RETURNING id, nombre, apellido, codigoCIP, email, idRol, idArea, permisos, fechaCreacion
+        ($1, $2, $3, $4, $5, $6, $7, FALSE)
+      RETURNING IDUsuario, CodigoCIP, Nombres, Apellidos, Grado, IDRol, IDArea
     `;
     
     const result = await pool.query(insertQuery, [
-      nombre, apellido, codigoCIP, email, hashedPassword, idRol, idArea || null, permisos || 0
+      CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDRol, IDArea
     ]);
     
-    logger.info('Usuario creado', { id: result.rows[0].id, nombre, codigoCIP });
+    logger.info('Usuario creado', { id: result.rows[0].IDUsuario, CodigoCIP, Nombres });
     
     return res.status(201).json({
       success: true,
@@ -190,7 +247,7 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, email, idRol, idArea, permisos, activo } = req.body;
+    const { Nombres, Apellidos, Grado, IDRol, IDArea } = req.body;
     
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({
@@ -200,7 +257,7 @@ const updateUser = async (req, res) => {
     }
     
     // Verificar si el usuario existe
-    const existsQuery = 'SELECT id FROM usuarios WHERE id = $1';
+    const existsQuery = 'SELECT IDUsuario FROM Usuario WHERE IDUsuario = $1';
     const existsResult = await pool.query(existsQuery, [id]);
     
     if (existsResult.rows.length === 0) {
@@ -215,39 +272,29 @@ const updateUser = async (req, res) => {
     const values = [];
     let paramCounter = 1;
     
-    if (nombre !== undefined) {
-      updates.push(`nombre = $${paramCounter++}`);
-      values.push(nombre);
+    if (Nombres !== undefined) {
+      updates.push(`Nombres = $${paramCounter++}`);
+      values.push(Nombres);
     }
     
-    if (apellido !== undefined) {
-      updates.push(`apellido = $${paramCounter++}`);
-      values.push(apellido);
+    if (Apellidos !== undefined) {
+      updates.push(`Apellidos = $${paramCounter++}`);
+      values.push(Apellidos);
     }
     
-    if (email !== undefined) {
-      updates.push(`email = $${paramCounter++}`);
-      values.push(email);
+    if (Grado !== undefined) {
+      updates.push(`Grado = $${paramCounter++}`);
+      values.push(Grado);
     }
     
-    if (idRol !== undefined) {
-      updates.push(`idRol = $${paramCounter++}`);
-      values.push(idRol);
+    if (IDRol !== undefined) {
+      updates.push(`IDRol = $${paramCounter++}`);
+      values.push(IDRol);
     }
     
-    if (idArea !== undefined) {
-      updates.push(`idArea = $${paramCounter++}`);
-      values.push(idArea);
-    }
-    
-    if (permisos !== undefined) {
-      updates.push(`permisos = $${paramCounter++}`);
-      values.push(permisos);
-    }
-    
-    if (activo !== undefined) {
-      updates.push(`activo = $${paramCounter++}`);
-      values.push(activo);
+    if (IDArea !== undefined) {
+      updates.push(`IDArea = $${paramCounter++}`);
+      values.push(IDArea);
     }
     
     if (updates.length === 0) {
@@ -261,10 +308,10 @@ const updateUser = async (req, res) => {
     values.push(id);
     
     const updateQuery = `
-      UPDATE usuarios 
-      SET ${updates.join(', ')}, fechaActualizacion = NOW()
-      WHERE id = $${paramCounter}
-      RETURNING id, nombre, apellido, codigoCIP, email, idRol, idArea, permisos, activo, fechaActualizacion
+      UPDATE Usuario 
+      SET ${updates.join(', ')}
+      WHERE IDUsuario = $${paramCounter}
+      RETURNING IDUsuario, CodigoCIP, Nombres, Apellidos, Grado, IDRol, IDArea
     `;
     
     const result = await pool.query(updateQuery, values);
@@ -288,13 +335,14 @@ const updateUser = async (req, res) => {
 };
 
 /**
- * Eliminar usuario por ID
+ * Cambiar contraseña de usuario
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  */
-const deleteUser = async (req, res) => {
+const changePassword = async (req, res) => {
   try {
     const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
     
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({
@@ -303,53 +351,74 @@ const deleteUser = async (req, res) => {
       });
     }
     
-    // Verificar si el usuario existe
-    const existsQuery = 'SELECT id FROM usuarios WHERE id = $1';
-    const existsResult = await pool.query(existsQuery, [id]);
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requieren las contraseñas actual y nueva'
+      });
+    }
     
-    if (existsResult.rows.length === 0) {
+    // Verificar si el usuario existe y obtener su contraseña actual
+    const userQuery = 'SELECT IDUsuario, PasswordHash FROM Usuario WHERE IDUsuario = $1';
+    const userResult = await pool.query(userQuery, [id]);
+    
+    if (userResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Usuario no encontrado'
       });
     }
     
-    // Por seguridad, en lugar de eliminar físicamente, desactivamos el usuario
+    const user = userResult.rows[0];
+    
+    // Verificar la contraseña actual
+    const isPasswordCorrect = await bcrypt.compare(currentPassword, user.PasswordHash);
+    
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: 'Contraseña actual incorrecta'
+      });
+    }
+    
+    // Generar y almacenar la nueva contraseña
+    const salt = await bcrypt.genSalt(12);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+    
     const updateQuery = `
-      UPDATE usuarios 
-      SET activo = false, fechaBaja = NOW()
-      WHERE id = $1
-      RETURNING id
+      UPDATE Usuario 
+      SET PasswordHash = $1
+      WHERE IDUsuario = $2
     `;
     
-    await pool.query(updateQuery, [id]);
+    await pool.query(updateQuery, [newPasswordHash, id]);
     
-    logger.info('Usuario eliminado', { id });
+    logger.info('Contraseña actualizada', { id });
     
     return res.status(200).json({
       success: true,
-      message: 'Usuario eliminado correctamente'
+      message: 'Contraseña actualizada correctamente'
     });
   } catch (error) {
-    logger.error('Error al eliminar usuario', { id: req.params.id, error: error.message, stack: error.stack });
+    logger.error('Error al cambiar contraseña', { id: req.params.id, error: error.message, stack: error.stack });
     
     return res.status(500).json({
       success: false,
-      message: 'Error al eliminar usuario',
+      message: 'Error al cambiar contraseña',
       error: 'Error en el servidor'
     });
   }
 };
 
 /**
- * Bloquear/Desbloquear usuario
+ * Desactivar/Activar usuario (soft delete)
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  */
-const blockUser = async (req, res) => {
+const toggleUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { blocked } = req.body;
+    const { active } = req.body;
     
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({
@@ -358,15 +427,15 @@ const blockUser = async (req, res) => {
       });
     }
     
-    if (blocked === undefined) {
+    if (active === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Se requiere indicar el estado de bloqueo'
+        message: 'Se requiere indicar el estado del usuario'
       });
     }
     
     // Verificar si el usuario existe
-    const existsQuery = 'SELECT id FROM usuarios WHERE id = $1';
+    const existsQuery = 'SELECT IDUsuario FROM Usuario WHERE IDUsuario = $1';
     const existsResult = await pool.query(existsQuery, [id]);
     
     if (existsResult.rows.length === 0) {
@@ -376,18 +445,18 @@ const blockUser = async (req, res) => {
       });
     }
     
-    // Actualizar el estado de bloqueo
+    // Actualizar campo Bloqueado (usado para soft delete)
     const updateQuery = `
-      UPDATE usuarios 
-      SET bloqueado = $1, fechaActualizacion = NOW()
-      WHERE id = $2
-      RETURNING id, nombre, apellido, codigoCIP, email, bloqueado, fechaActualizacion
+      UPDATE Usuario 
+      SET Bloqueado = NOT($1)
+      WHERE IDUsuario = $2
+      RETURNING IDUsuario, CodigoCIP, Nombres, Apellidos, Bloqueado
     `;
     
-    const result = await pool.query(updateQuery, [blocked, id]);
+    const result = await pool.query(updateQuery, [active, id]);
     
-    const action = blocked ? 'bloqueado' : 'desbloqueado';
-    logger.info(`Usuario ${action}`, { id, bloqueado: blocked });
+    const action = active ? 'activado' : 'desactivado';
+    logger.info(`Usuario ${action}`, { id, active });
     
     return res.status(200).json({
       success: true,
@@ -395,7 +464,7 @@ const blockUser = async (req, res) => {
       message: `Usuario ${action} correctamente`
     });
   } catch (error) {
-    logger.error('Error al cambiar estado de bloqueo del usuario', { 
+    logger.error('Error al cambiar estado del usuario', { 
       id: req.params.id, 
       error: error.message, 
       stack: error.stack 
@@ -403,7 +472,7 @@ const blockUser = async (req, res) => {
     
     return res.status(500).json({
       success: false,
-      message: 'Error al cambiar estado de bloqueo del usuario',
+      message: 'Error al cambiar estado del usuario',
       error: 'Error en el servidor'
     });
   }
@@ -412,8 +481,9 @@ const blockUser = async (req, res) => {
 module.exports = {
   getAllUsers,
   getUserById,
+  getUserByCIP,
   createUser,
   updateUser,
-  deleteUser,
-  blockUser
+  changePassword,
+  toggleUserStatus
 }; 

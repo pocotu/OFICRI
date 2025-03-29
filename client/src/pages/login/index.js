@@ -6,7 +6,7 @@
 // Importar módulos necesarios
 import { config } from '../../config/app.config.js';
 import { authService } from '../../services/authService.js';
-import { validators } from '../../utils/validators.js';
+import { validateInput } from '../../utils/validators.js';
 import { notifications } from '../../ui/notifications.js';
 
 // Create namespace if it doesn't exist
@@ -198,16 +198,23 @@ OFICRI.loginPage = (function() {
       // Success - redirect to app
       _redirectToApp();
     } catch (error) {
-      console.error('[DEBUG-LOGIN] Login error in handler:', error);
-      console.error('[DEBUG-LOGIN] Error name:', error.name);
-      console.error('[DEBUG-LOGIN] Error message:', error.message);
-      console.error('[DEBUG-LOGIN] Error stack:', error.stack);
+      console.error('[DEBUG-LOGIN] Login error:', error.message);
       
-      // Show error message
-      _showAlert(error.message || 'Credenciales inválidas. Por favor, intente nuevamente.');
+      // Handle specific error messages
+      let errorMessage = 'Error al iniciar sesión. Por favor, intente de nuevo.';
       
-      // Reset loading state
+      if (error.message.includes('Invalid credentials')) {
+        errorMessage = 'Credenciales inválidas. Verifique su código CIP y contraseña.';
+      } else if (error.message.includes('Account locked')) {
+        errorMessage = 'Cuenta bloqueada. Contacte al administrador.';
+      }
+      
+      _showAlert(errorMessage);
+      notifications.error(errorMessage);
+    } finally {
+      // Hide loading state
       _setLoading(false);
+      console.log('[DEBUG-LOGIN] Loading state set to false');
     }
   };
   
@@ -215,22 +222,23 @@ OFICRI.loginPage = (function() {
    * Toggles password visibility
    */
   const _togglePasswordVisibility = function() {
-    const passwordInput = document.getElementById('password');
+    const passwordField = document.getElementById('password');
     const passwordToggle = document.getElementById('password-toggle');
     
-    if (!passwordInput || !passwordToggle) {
+    if (!passwordField || !passwordToggle) {
       return;
     }
     
     _passwordVisible = !_passwordVisible;
     
-    // Update input type
-    passwordInput.type = _passwordVisible ? 'text' : 'password';
+    // Toggle password field type
+    passwordField.type = _passwordVisible ? 'text' : 'password';
     
-    // Update icon
-    passwordToggle.innerHTML = _passwordVisible 
-      ? '<i class="fa-regular fa-eye-slash"></i>' 
-      : '<i class="fa-regular fa-eye"></i>';
+    // Toggle icon
+    const icon = passwordToggle.querySelector('i');
+    if (icon) {
+      icon.className = _passwordVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+    }
   };
   
   /**
@@ -240,10 +248,8 @@ OFICRI.loginPage = (function() {
   const _handleForgotPassword = function(event) {
     event.preventDefault();
     
-    notifications.info(
-      'Póngase en contacto con el administrador del sistema para restablecer su contraseña.',
-      { title: 'Recuperación de Contraseña' }
-    );
+    // Mostrar modal de recuperación de contraseña (implementación pendiente)
+    alert('La función de recuperación de contraseña estará disponible próximamente. Por favor contacte al administrador para restablecer su contraseña.');
   };
   
   /**
@@ -256,6 +262,7 @@ OFICRI.loginPage = (function() {
     const errorElement = document.getElementById(`${fieldName}-error`);
     
     if (!field || !errorElement) {
+      console.error(`[DEBUG-LOGIN] No se encontró el campo ${fieldName} o su elemento de error`);
       return false;
     }
     
@@ -263,20 +270,30 @@ OFICRI.loginPage = (function() {
     let isValid = true;
     let errorMessage = '';
     
+    console.log(`[DEBUG-LOGIN] Validando campo ${fieldName} con valor: "${value}"`);
+    
     // Field-specific validation
     switch (fieldName) {
       case 'codigoCIP':
-        if (!validators.required(value)) {
+        const cipRequired = validateInput(value, 'string', { required: true });
+        const cipFormat = validateInput(value, 'codigoCIP');
+        
+        console.log(`[DEBUG-LOGIN] Validación CIP - requerido: ${cipRequired}, formato: ${cipFormat}`);
+        
+        if (!cipRequired) {
           isValid = false;
           errorMessage = 'El código CIP es requerido';
-        } else if (!validators.codigoCIP(value)) {
+        } else if (!cipFormat) {
           isValid = false;
-          errorMessage = 'Ingrese un código CIP válido';
+          errorMessage = 'Ingrese un código CIP válido (debe tener 8 dígitos)';
         }
         break;
         
       case 'password':
-        if (!validators.required(value)) {
+        const pwdRequired = validateInput(value, 'string', { required: true });
+        console.log(`[DEBUG-LOGIN] Validación password - requerido: ${pwdRequired}`);
+        
+        if (!pwdRequired) {
           isValid = false;
           errorMessage = 'La contraseña es requerida';
         }
@@ -287,9 +304,11 @@ OFICRI.loginPage = (function() {
     if (isValid) {
       field.classList.remove('is-invalid');
       errorElement.textContent = '';
+      console.log(`[DEBUG-LOGIN] Campo ${fieldName} válido`);
     } else {
       field.classList.add('is-invalid');
       errorElement.textContent = errorMessage;
+      console.log(`[DEBUG-LOGIN] Campo ${fieldName} inválido: ${errorMessage}`);
     }
     
     return isValid;

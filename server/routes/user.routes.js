@@ -42,7 +42,7 @@ const userController = require('../controllers/user.controller');
 // Import middleware
 const { verifyToken, validatePermissions } = require('../middleware/auth');
 const { validateSchema } = require('../middleware/validation');
-const { userSchema, userUpdateSchema } = require('../middleware/validation/user.validator');
+const { userCreateSchema, userUpdateSchema, passwordChangeSchema, toggleStatusSchema } = require('../middleware/validation/user.validator');
 
 /**
  * @swagger
@@ -69,14 +69,14 @@ const { userSchema, userUpdateSchema } = require('../middleware/validation/user.
  *         name: search
  *         schema:
  *           type: string
- *         description: Búsqueda por nombre, apellido o email
+ *         description: Búsqueda por nombre, apellido o código CIP
  *       - in: query
- *         name: idRol
+ *         name: IDRol
  *         schema:
  *           type: integer
  *         description: Filtrar por rol
  *       - in: query
- *         name: idArea
+ *         name: IDArea
  *         schema:
  *           type: integer
  *         description: Filtrar por área
@@ -97,7 +97,7 @@ const { userSchema, userUpdateSchema } = require('../middleware/validation/user.
 router.get('/', 
   verifyToken, 
   validatePermissions(8), // bit 3 (Ver)
-  userController.listarUsuarios
+  userController.getAllUsers
 );
 
 /**
@@ -128,7 +128,38 @@ router.get('/',
 router.get('/:id', 
   verifyToken, 
   validatePermissions(8), // bit 3 (Ver)
-  userController.obtenerUsuario
+  userController.getUserById
+);
+
+/**
+ * @swagger
+ * /api/usuarios/cip/{codigoCIP}:
+ *   get:
+ *     summary: Obtener un usuario por Código CIP
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: codigoCIP
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código CIP del usuario
+ *     responses:
+ *       200:
+ *         description: Datos del usuario
+ *       403:
+ *         description: No tiene permisos para ver este usuario
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/cip/:codigoCIP', 
+  verifyToken, 
+  validatePermissions(8), // bit 3 (Ver)
+  userController.getUserByCIP
 );
 
 /**
@@ -146,35 +177,36 @@ router.get('/:id',
  *           schema:
  *             type: object
  *             required:
- *               - nombre
- *               - apellido
- *               - email
+ *               - Nombres
+ *               - Apellidos
+ *               - CodigoCIP
+ *               - Grado
  *               - password
- *               - idRol
+ *               - IDRol
+ *               - IDArea
  *             properties:
- *               nombre:
+ *               Nombres:
  *                 type: string
- *                 description: Nombre del usuario
- *               apellido:
+ *                 description: Nombres del usuario
+ *               Apellidos:
  *                 type: string
- *                 description: Apellido del usuario
- *               email:
+ *                 description: Apellidos del usuario
+ *               CodigoCIP:
  *                 type: string
- *                 format: email
- *                 description: Correo electrónico del usuario
+ *                 description: Código CIP único del usuario
+ *               Grado:
+ *                 type: string
+ *                 description: Grado del usuario
  *               password:
  *                 type: string
  *                 format: password
  *                 description: Contraseña del usuario
- *               idRol:
+ *               IDRol:
  *                 type: integer
  *                 description: ID del rol asignado
- *               idArea:
+ *               IDArea:
  *                 type: integer
- *                 description: ID del área asignada (opcional)
- *               telefono:
- *                 type: string
- *                 description: Número de teléfono (opcional)
+ *                 description: ID del área asignada
  *               avatar:
  *                 type: string
  *                 format: binary
@@ -187,7 +219,7 @@ router.get('/:id',
  *       403:
  *         description: No tiene permisos para crear usuarios
  *       409:
- *         description: El email ya está registrado
+ *         description: El código CIP ya está registrado
  *       500:
  *         description: Error del servidor
  */
@@ -195,8 +227,8 @@ router.post('/',
   verifyToken, 
   validatePermissions(1), // bit 0 (Crear)
   upload.single('avatar'),
-  validateSchema(userSchema),
-  userController.crearUsuario
+  validateSchema(userCreateSchema),
+  userController.createUser
 );
 
 /**
@@ -221,25 +253,21 @@ router.post('/',
  *           schema:
  *             type: object
  *             properties:
- *               nombre:
+ *               Nombres:
  *                 type: string
- *                 description: Nombre del usuario
- *               apellido:
+ *                 description: Nombres del usuario
+ *               Apellidos:
  *                 type: string
- *                 description: Apellido del usuario
- *               email:
+ *                 description: Apellidos del usuario
+ *               Grado:
  *                 type: string
- *                 format: email
- *                 description: Correo electrónico del usuario
- *               idRol:
+ *                 description: Grado del usuario
+ *               IDRol:
  *                 type: integer
  *                 description: ID del rol asignado
- *               idArea:
+ *               IDArea:
  *                 type: integer
  *                 description: ID del área asignada
- *               telefono:
- *                 type: string
- *                 description: Número de teléfono
  *               avatar:
  *                 type: string
  *                 format: binary
@@ -250,11 +278,9 @@ router.post('/',
  *       400:
  *         description: Datos inválidos
  *       403:
- *         description: No tiene permisos para editar este usuario
+ *         description: No tiene permisos para actualizar usuarios
  *       404:
  *         description: Usuario no encontrado
- *       409:
- *         description: El email ya está en uso
  *       500:
  *         description: Error del servidor
  */
@@ -263,45 +289,14 @@ router.put('/:id',
   validatePermissions(2), // bit 1 (Editar)
   upload.single('avatar'),
   validateSchema(userUpdateSchema),
-  userController.actualizarUsuario
+  userController.updateUser
 );
 
 /**
  * @swagger
- * /api/usuarios/{id}:
- *   delete:
- *     summary: Eliminar un usuario
- *     tags: [Usuarios]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del usuario
- *     responses:
- *       200:
- *         description: Usuario eliminado correctamente
- *       403:
- *         description: No tiene permisos para eliminar usuarios
- *       404:
- *         description: Usuario no encontrado
- *       500:
- *         description: Error del servidor
- */
-router.delete('/:id', 
-  verifyToken, 
-  validatePermissions(4), // bit 2 (Eliminar)
-  userController.eliminarUsuario
-);
-
-/**
- * @swagger
- * /api/usuarios/{id}/cambiar-estado:
+ * /api/usuarios/{id}/password:
  *   put:
- *     summary: Cambiar estado de un usuario
+ *     summary: Cambiar contraseña de usuario
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -319,28 +314,79 @@ router.delete('/:id',
  *           schema:
  *             type: object
  *             required:
- *               - estado
+ *               - currentPassword
+ *               - newPassword
  *             properties:
- *               estado:
+ *               currentPassword:
  *                 type: string
- *                 enum: [ACTIVO, INACTIVO, BLOQUEADO]
- *                 description: Nuevo estado
+ *                 description: Contraseña actual
+ *               newPassword:
+ *                 type: string
+ *                 description: Nueva contraseña
  *     responses:
  *       200:
- *         description: Estado del usuario cambiado correctamente
+ *         description: Contraseña actualizada correctamente
  *       400:
  *         description: Datos inválidos
+ *       401:
+ *         description: Contraseña actual incorrecta
  *       403:
- *         description: No tiene permisos para cambiar el estado de usuarios
+ *         description: No tiene permisos para cambiar la contraseña
  *       404:
  *         description: Usuario no encontrado
  *       500:
  *         description: Error del servidor
  */
-router.put('/:id/cambiar-estado', 
+router.put('/:id/password', 
   verifyToken, 
-  validatePermissions(2), // bit 1 (Editar)
-  userController.cambiarEstadoUsuario
+  validateSchema(passwordChangeSchema),
+  userController.changePassword
+);
+
+/**
+ * @swagger
+ * /api/usuarios/{id}/status:
+ *   patch:
+ *     summary: Activar/Desactivar usuario
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - active
+ *             properties:
+ *               active:
+ *                 type: boolean
+ *                 description: Estado del usuario (true = activo, false = inactivo)
+ *     responses:
+ *       200:
+ *         description: Estado del usuario actualizado correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       403:
+ *         description: No tiene permisos para cambiar el estado del usuario
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+router.patch('/:id/status', 
+  verifyToken, 
+  validatePermissions(4), // bit 2 (Eliminar/Desactivar)
+  validateSchema(toggleStatusSchema),
+  userController.toggleUserStatus
 );
 
 /**

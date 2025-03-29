@@ -159,15 +159,54 @@ OFICRI.app = (function() {
   const _handleGlobalError = function(error) {
     if (!error) return;
     
-    console.error('Unhandled error:', error);
+    // Detalle del error para depuración
+    const errorDetails = {
+      message: error.message || 'Error sin mensaje',
+      name: error.name || 'Error desconocido',
+      stack: error.stack,
+      time: new Date().toISOString()
+    };
     
-    // In production, show a user-friendly message
-    if (config.environment.isProduction) {
-      OFICRI.notifications.error(
+    // Añadir información de API si existe
+    if (error.status) {
+      errorDetails.status = error.status;
+      errorDetails.statusText = error.statusText;
+      errorDetails.endpoint = error.url;
+      
+      if (error.data) {
+        errorDetails.serverResponse = error.data;
+      }
+    }
+    
+    console.error('Unhandled error:', errorDetails);
+    
+    // En entorno de desarrollo, mostrar detalles completos
+    if (config.environment.isDevelopment) {
+      notifications.error(
+        `Error: ${error.message || 'Error desconocido'} (${error.name || 'Unknown'})${error.status ? ` [${error.status}]` : ''}`,
+        { 
+          title: 'Error no controlado', 
+          duration: 10000,
+          onClick: function() {
+            console.info('Detalles completos del error:', errorDetails);
+          }
+        }
+      );
+    } else {
+      // En producción, mensaje genérico
+      notifications.error(
         'Ha ocurrido un error inesperado. Por favor, refresque la página o contacte a soporte.',
         { title: 'Error' }
       );
+      
+      // Enviar error a servicio de tracking (si está disponible)
+      if (typeof window.errorTrackingService !== 'undefined') {
+        window.errorTrackingService.captureException(error, { extra: errorDetails });
+      }
     }
+    
+    // Devolver true para indicar que se ha manejado el error
+    return true;
   };
   
   /**

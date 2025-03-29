@@ -1,289 +1,312 @@
 /**
- * OFICRI Validators Module
- * Proporciona funciones de validación para diferentes tipos de datos
- * Cumple con ISO/IEC 27001 para validación de entradas
+ * Módulo de validación
+ * 
+ * Proporciona funciones de validación para diversos tipos de datos
+ * Específico para el Sistema OFICRI de la Policía Nacional
+ * Cumple con ISO/IEC 27001:2013
  */
 
-// Namespace para compatibilidad
-window.OFICRI = window.OFICRI || {};
+// Constantes para validación
+const REGEXES = {
+  // Validadores básicos
+  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  
+  // Validadores específicos para la Policía Nacional
+  codigoCIP: /^\d{1,8}$/,                  // Código de Identificación Policial
+  gradoPolicial: /^[A-Z]{2,5}$/,           // Código de grado policial
+
+  // Validadores de formatos
+  numbers: /^\d+$/,
+  alphanumeric: /^[a-zA-Z0-9]+$/,
+  alphanumericWithSpaces: /^[a-zA-Z0-9\s]+$/,
+  
+  // Validadores específicos del sistema OFICRI
+  codigoDocumento: /^[A-Z0-9]{2,3}-\d{1,6}-\d{4}$/, // Formato de código de documento
+  numeroDenuncia: /^[A-Z0-9]{3,10}$/,              // Número de denuncia
+};
+
+const VALIDATION_RULES = {
+  // Reglas para contraseñas de la Policía Nacional (ISO/IEC 27001)
+  password: {
+    minLength: 8,
+    maxLength: 30,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSpecial: true,
+    restrictCommonPasswords: true,
+  },
+  
+  // Reglas para nombres policiales
+  nombre: {
+    minLength: 2,
+    maxLength: 50,
+    noNumbers: true,
+  },
+  
+  // Validación de códigos y documentos policiales
+  codigoCIP: {
+    minLength: 1,
+    maxLength: 8, 
+    numbersOnly: true,
+  },
+  
+  // Otras reglas específicas de sistema OFICRI
+  codigoDocumento: {
+    pattern: "XX-123456-2023", // Ejemplo de formato
+    maxLength: 20,
+  }
+};
 
 /**
- * Validación de entrada de datos
- * @param {*} value - Valor a validar
- * @param {string} type - Tipo de validación
- * @param {Object} options - Opciones adicionales de validación
- * @returns {boolean} True si la validación es exitosa
+ * Valida una entrada según el tipo especificado
+ * 
+ * @param {*} input - Entrada a validar
+ * @param {string} type - Tipo de validación a realizar
+ * @returns {boolean} - Resultado de la validación
  */
-export const validateInput = function(value, type, options = {}) {
-  // Si el valor es null o undefined, devolver false
-  if (value === null || value === undefined) {
+const validateInput = function(input, type) {
+  // Si la entrada es undefined o null, siempre es inválida
+  if (input === undefined || input === null) {
     return false;
   }
   
-  // Opciones por defecto
-  const defaults = {
-    minLength: 0,
-    maxLength: Number.MAX_SAFE_INTEGER,
-    required: true,
-    allowEmpty: false
-  };
+  // Convertir a string si no lo es
+  const value = typeof input !== 'string' ? input.toString() : input;
   
-  // Combinar opciones
-  const config = { ...defaults, ...options };
-  
-  // Si el valor es string, validar longitud
-  if (typeof value === 'string') {
-    // Convertir a string si no lo es
-    const strValue = String(value);
-    
-    // Si es requerido y está vacío, devolver false
-    if (config.required && !config.allowEmpty && strValue.trim() === '') {
-      return false;
-    }
-    
-    // Validar longitud
-    if (strValue.length < config.minLength || strValue.length > config.maxLength) {
-      return false;
-    }
-  }
-  
-  // Validar según tipo
+  // Validar según el tipo
   switch (type) {
-    case 'string':
-      return typeof value === 'string';
-      
-    case 'email':
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      
-    case 'username':
-      // Alfanumérico, punto, guión y guión bajo
-      return /^[a-zA-Z0-9._-]{3,50}$/.test(value);
-      
-    case 'codigoCIP':
-      // Código CIP formato: NNNNN (5 dígitos)
-      return /^\d{5}$/.test(value);
-      
+    // Validadores básicos para datos del personal policial
     case 'password':
-      // Mínimo 8 caracteres, al menos una letra y un número
-      return typeof value === 'string' && 
-        value.length >= 8 && 
-        /[A-Za-z]/.test(value) && 
-        /[0-9]/.test(value);
+      return REGEXES.password.test(value);
+    
+    // Validadores para datos específicos de la Policía Nacional  
+    case 'codigoCIP':
+      return REGEXES.codigoCIP.test(value) && value.length <= 8;
       
+    case 'gradoPolicial':
+      return REGEXES.gradoPolicial.test(value);
+    
+    // Validadores para nombres y texto
+    case 'nombre':
+      return value.length >= 2 && value.length <= 50 && !/\d/.test(value);
+      
+    case 'apellido':
+      return value.length >= 2 && value.length <= 50 && !/\d/.test(value);
+      
+    case 'texto':
+      return value.length > 0 && value.length <= 500;
+    
+    // Validadores de formato generales
+    case 'numerico':
+      return REGEXES.numbers.test(value);
+      
+    case 'alfanumerico':
+      return REGEXES.alphanumeric.test(value);
+    
+    // Validadores específicos del sistema OFICRI para documentación policial
+    case 'codigoDocumento':
+      return REGEXES.codigoDocumento.test(value);
+      
+    case 'numeroDenuncia':
+      return REGEXES.numeroDenuncia.test(value);
+    
+    // Validadores de seguridad
     case 'newPassword':
-      // Requisitos más estrictos para nuevas contraseñas
-      return typeof value === 'string' && 
-        value.length >= 8 && 
-        /[A-Z]/.test(value) && // Mayúscula
-        /[a-z]/.test(value) && // Minúscula
-        /[0-9]/.test(value) && // Número
-        /[^A-Za-z0-9]/.test(value); // Carácter especial
+      // Contraseñas nuevas deben cumplir con los estándares de seguridad de la Policía Nacional
+      const hasUppercase = /[A-Z]/.test(value);
+      const hasLowercase = /[a-z]/.test(value);
+      const hasNumbers = /\d/.test(value);
+      const hasSpecial = /[@$!%*?&]/.test(value);
+      const hasValidLength = value.length >= 8 && value.length <= 30;
       
-    case 'date':
-      // Verificar si es Date válido
-      if (value instanceof Date) {
-        return !isNaN(value.getTime());
-      }
-      // Intentar convertir a Date
-      else if (typeof value === 'string') {
-        const date = new Date(value);
-        return !isNaN(date.getTime());
-      }
-      return false;
+      return hasUppercase && hasLowercase && hasNumbers && hasSpecial && hasValidLength;
+    
+    // Validadores específicos del dominio
+    case 'IDArea':
+      // IDs de áreas en la estructura policial deben ser numéricos positivos
+      return /^\d+$/.test(value) && parseInt(value) > 0;
       
-    case 'number':
-      // Verificar si es número
-      if (typeof value === 'number') {
-        return !isNaN(value);
-      }
-      // Intentar convertir a número
-      else if (typeof value === 'string') {
-        return !isNaN(Number(value));
-      }
-      return false;
-      
-    case 'integer':
-      // Verificar si es entero
-      if (typeof value === 'number') {
-        return Number.isInteger(value);
-      }
-      // Intentar convertir a entero
-      else if (typeof value === 'string') {
-        const num = Number(value);
-        return !isNaN(num) && Number.isInteger(num);
-      }
-      return false;
-      
-    case 'boolean':
-      return typeof value === 'boolean' || value === 'true' || value === 'false';
-      
-    case 'url':
-      try {
-        new URL(value);
-        return true;
-      } catch (e) {
-        return false;
-      }
-      
-    case 'documentNumber':
-      // Números de documentos: alfanumérico con guiones y puntos
-      return /^[a-zA-Z0-9.-]{1,30}$/.test(value);
-      
-    case 'dni':
-      // DNI peruano: 8 dígitos
-      return /^\d{8}$/.test(value);
-      
+    case 'IDRol':
+      // IDs de roles en la estructura policial deben ser numéricos positivos
+      return /^\d+$/.test(value) && parseInt(value) > 0;
+    
+    // Por defecto, rechazar
     default:
-      // Para tipos no definidos, pasar la validación
-      return true;
+      console.warn(`Tipo de validación no reconocido: ${type}`);
+      return false;
   }
 };
 
 /**
- * Sanitiza texto para prevenir XSS
- * @param {string} text - Texto a sanitizar
- * @returns {string} Texto sanitizado
+ * Valida un objeto completo según un esquema específico para el sistema OFICRI
+ * 
+ * @param {Object} data - Objeto a validar
+ * @param {Object} schema - Esquema de validación con campos y tipos
+ * @returns {Object} - Resultado de la validación { isValid, errors }
  */
-export const sanitizeText = function(text) {
-  if (typeof text !== 'string') {
-    return '';
-  }
-  
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-};
-
-/**
- * Valida y sanitiza un objeto de datos
- * @param {Object} data - Objeto con datos a validar
- * @param {Object} schema - Esquema de validación
- * @returns {Object} Objeto con errores y datos sanitizados
- */
-export const validateObject = function(data, schema) {
+const validateObject = function(data, schema) {
+  // Resultado por defecto
   const result = {
     isValid: true,
-    sanitized: {},
     errors: {}
   };
   
-  // Recorrer propiedades del esquema
+  // Validar cada campo según el esquema
   Object.keys(schema).forEach(field => {
     const fieldSchema = schema[field];
     const value = data[field];
     
-    // Validar campo
-    const isValid = validateInput(value, fieldSchema.type, fieldSchema);
-    
-    if (!isValid) {
+    // Si es requerido y no existe o es vacío
+    if (fieldSchema.required && (value === undefined || value === null || value === '')) {
       result.isValid = false;
-      result.errors[field] = fieldSchema.errorMessage || `El campo ${field} no es válido`;
+      result.errors[field] = `El campo ${field} es requerido`;
+      return;
     }
     
-    // Sanitizar valor si es string
-    if (typeof value === 'string' && fieldSchema.sanitize !== false) {
-      result.sanitized[field] = sanitizeText(value);
-    } else {
-      result.sanitized[field] = value;
+    // Si existe valor y hay tipo de validación
+    if (value !== undefined && value !== null && value !== '' && fieldSchema.type) {
+      const isValid = validateInput(value, fieldSchema.type);
+      
+      if (!isValid) {
+        result.isValid = false;
+        result.errors[field] = fieldSchema.errorMessage || `El campo ${field} no es válido`;
+      }
+    }
+    
+    // Validaciones personalizadas si existen
+    if (fieldSchema.validate && typeof fieldSchema.validate === 'function') {
+      const customValidation = fieldSchema.validate(value, data);
+      
+      if (customValidation !== true) {
+        result.isValid = false;
+        result.errors[field] = customValidation;
+      }
     }
   });
   
   return result;
 };
 
-/**
- * Valida un formulario HTML
- * @param {HTMLFormElement} form - Formulario a validar
- * @param {Object} schema - Esquema de validación
- * @param {Object} options - Opciones adicionales
- * @returns {Object} Resultado de validación
- */
-export const validateForm = function(form, schema, options = {}) {
-  if (!(form instanceof HTMLFormElement)) {
-    throw new Error('El formulario debe ser un elemento HTMLFormElement');
-  }
-  
-  // Opciones por defecto
-  const defaults = {
-    showErrors: true,     // Mostrar errores en el formulario
-    errorClass: 'error',  // Clase para elementos con error
-    errorElement: 'span'  // Etiqueta para mensajes de error
-  };
-  
-  // Combinar opciones
-  const config = { ...defaults, ...options };
-  
-  // Crear objeto con datos del formulario
-  const formData = {};
-  const formElements = form.elements;
-  
-  for (let i = 0; i < formElements.length; i++) {
-    const element = formElements[i];
-    
-    // Ignorar elementos sin nombre o botones
-    if (!element.name || element.type === 'button' || element.type === 'submit') {
-      continue;
+// Esquemas predefinidos para la validación de entidades policiales
+const schemas = {
+  // Esquema para usuario policial
+  usuario: {
+    codigoCIP: { 
+      type: 'codigoCIP', 
+      required: true,
+      errorMessage: 'El Código CIP debe ser numérico y tener máximo 8 dígitos' 
+    },
+    nombre: { 
+      type: 'nombre', 
+      required: true,
+      errorMessage: 'El nombre debe tener entre 2 y 50 caracteres sin números' 
+    },
+    apellidos: { 
+      type: 'nombre', 
+      required: true,
+      errorMessage: 'Los apellidos deben tener entre 2 y 50 caracteres sin números' 
+    },
+    gradoPolicial: { 
+      type: 'gradoPolicial', 
+      required: true,
+      errorMessage: 'El grado policial no es válido' 
+    },
+    IDRol: { 
+      type: 'IDRol', 
+      required: true,
+      errorMessage: 'El rol seleccionado no es válido' 
     }
-    
-    // Obtener valor según tipo
-    if (element.type === 'checkbox') {
-      formData[element.name] = element.checked;
-    } else if (element.type === 'radio') {
-      if (element.checked) {
-        formData[element.name] = element.value;
-      }
-    } else {
-      formData[element.name] = element.value;
+  },
+  
+  // Esquema para documento policial
+  documento: {
+    titulo: { 
+      type: 'texto', 
+      required: true,
+      errorMessage: 'El título es requerido y debe tener entre 1 y 200 caracteres' 
+    },
+    codigo: { 
+      type: 'codigoDocumento', 
+      required: true,
+      errorMessage: 'El código del documento no tiene el formato correcto (XX-123456-2023)' 
+    },
+    IDArea: { 
+      type: 'IDArea', 
+      required: true,
+      errorMessage: 'El área seleccionada no es válida' 
+    },
+    contenido: { 
+      type: 'texto', 
+      required: true,
+      errorMessage: 'El contenido es requerido' 
+    }
+  },
+  
+  // Esquema para denuncia policial
+  denuncia: {
+    numeroDenuncia: { 
+      type: 'numeroDenuncia', 
+      required: true,
+      errorMessage: 'El número de denuncia no es válido' 
+    },
+    fechaRegistro: { 
+      required: true,
+      validate: (value) => {
+        // Validar que la fecha no sea futura
+        const date = new Date(value);
+        const today = new Date();
+        return date <= today || 'La fecha no puede ser futura';
+      },
+      errorMessage: 'La fecha de registro no es válida' 
+    },
+    denunciante: { 
+      type: 'texto', 
+      required: true,
+      errorMessage: 'El denunciante es requerido' 
+    },
+    descripcion: { 
+      type: 'texto', 
+      required: true,
+      errorMessage: 'La descripción es requerida' 
+    }
+  },
+  
+  // Esquema para login de usuario policial
+  login: {
+    codigoCIP: { 
+      type: 'codigoCIP', 
+      required: true,
+      errorMessage: 'El Código CIP debe ser numérico y tener máximo 8 dígitos' 
+    },
+    password: { 
+      type: 'password', 
+      required: true,
+      errorMessage: 'La contraseña no cumple con los requisitos de seguridad' 
+    }
+  },
+  
+  // Esquema para cambio de contraseña de usuario policial
+  cambioPassword: {
+    currentPassword: { 
+      type: 'password', 
+      required: true,
+      errorMessage: 'La contraseña actual es requerida' 
+    },
+    newPassword: { 
+      type: 'newPassword', 
+      required: true,
+      errorMessage: 'La nueva contraseña no cumple con los requisitos de seguridad' 
+    },
+    confirmPassword: { 
+      required: true,
+      validate: (value, data) => {
+        return value === data.newPassword || 'Las contraseñas no coinciden';
+      },
+      errorMessage: 'Las contraseñas no coinciden' 
     }
   }
-  
-  // Validar datos
-  const result = validateObject(formData, schema);
-  
-  // Mostrar errores si se especifica
-  if (config.showErrors) {
-    // Limpiar errores existentes
-    const errorElements = form.querySelectorAll(`.${config.errorClass}`);
-    errorElements.forEach(el => el.remove());
-    
-    // Quitar clase de error a todos los elementos
-    Array.from(formElements).forEach(el => {
-      if (el.classList && el.name) {
-        el.classList.remove(config.errorClass);
-      }
-    });
-    
-    // Agregar mensajes de error
-    Object.keys(result.errors).forEach(field => {
-      const fieldElement = form.elements[field];
-      
-      if (fieldElement) {
-        // Agregar clase de error
-        fieldElement.classList.add(config.errorClass);
-        
-        // Crear elemento de error
-        const errorElement = document.createElement(config.errorElement);
-        errorElement.className = config.errorClass;
-        errorElement.textContent = result.errors[field];
-        
-        // Insertar después del elemento
-        if (fieldElement.parentNode) {
-          fieldElement.parentNode.insertBefore(errorElement, fieldElement.nextSibling);
-        }
-      }
-    });
-  }
-  
-  return result;
 };
 
-// Exponer módulo para compatibilidad con navegadores
-window.OFICRI.validators = {
-  validateInput,
-  sanitizeText,
-  validateObject,
-  validateForm
-}; 
+// Exportar funciones y esquemas
+export { validateInput, validateObject, schemas, REGEXES, VALIDATION_RULES }; 

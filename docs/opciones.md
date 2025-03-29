@@ -1,223 +1,300 @@
-
 # Sistema de Permisos OFICRI: Implementación y Configuración
+
+_Versión: 1.0.0 (Actualizado: Junio 2024)_
 
 ## **1. Modelo de Permisos (Bits 0..7)**
 
-1. **bit 0** (1) = Crear
-2. **bit 1** (2) = Editar
-3. **bit 2** (4) = Eliminar
-4. **bit 3** (8) = Ver
-5. **bit 4** (16) = Derivar
-6. **bit 5** (32) = Auditar
-7. **bit 6** (64) = Exportar
-8. **bit 7** (128) = Bloquear
+| Bit | Valor | Descripción                         |
+|-----|-------|-------------------------------------|
+| 0   | 1     | Crear/Registrar                     |
+| 1   | 2     | Editar/Modificar                    |
+| 2   | 4     | Eliminar                            |
+| 3   | 8     | Ver/Listar/Consultar                |
+| 4   | 16    | Derivar (específico de documentos)  |
+| 5   | 32    | Auditar                             |
+| 6   | 64    | Exportar                            |
+| 7   | 128   | Administrar                         |
 
-### Roles
+### Roles Predefinidos
 
-- **Administrador**: bits 0..7 (todos, valor 255) - Acceso completo a todas las funcionalidades incluyendo eliminar y gestionar cualquier recurso.
+- **Administrador**: bits 0..7 (todos, valor 255) - Acceso completo a todas las funcionalidades.
 - **Mesa de Partes**: bits 0,1,3,4,6 (Crear, Editar, Ver, Derivar, Exportar) = valor 91.
 - **Responsable de Área**: bits 0,1,3,4,6 (igual a Mesa de Partes) = valor 91.
+- **Operador**: bits 0,1,3,4 (Crear, Editar, Ver, Derivar) = valor 27.
 
-*(Los administradores, al tener todos los bits, pueden realizar cualquier operación en el sistema, incluyendo eliminar documentos y gestionar cualquier recurso sin restricciones contextuales)*
+### Implementación en Base de Datos
 
-### Implementación Base de Datos (Existente)
+Los permisos se almacenan en la tabla `Rol` mediante el campo `Permisos` (TINYINT UNSIGNED), donde cada bit representa un permiso específico.
 
----
+#### Ejemplo de Consulta SQL para Verificar Permisos
 
-## **2. Página de Login**
+```sql
+SELECT 
+    IDRol,
+    NombreRol,
+    Permisos,
+    (Permisos & 1) AS PuedeCrear,
+    (Permisos & 2) AS PuedeEditar,
+    (Permisos & 4) AS PuedeEliminar,
+    (Permisos & 8) AS PuedeVer,
+    (Permisos & 16) AS PuedeDerivar,
+    (Permisos & 32) AS PuedeAuditar,
+    (Permisos & 64) AS PuedeExportar,
+    (Permisos & 128) AS PuedeAdministrar
+FROM Rol;
+```
 
-- **Formulario** con:
-    - **Código CIP** (texto)
-    - **Contraseña** (password)
-- **Botón** "Iniciar Sesión".
-- Al autenticarse, el backend determina el rol y los bits → redirige a Admin.html, MesaPartes.html o Area.html.
+## **2. Permisos Contextuales**
 
-### Implementación Backend para Autenticación
+Además del sistema de permisos basado en bits, OFICRI implementa permisos contextuales que permiten definir reglas específicas según el contexto:
 
----
+### Tipos de Contextos
 
-## **3. Interfaz de Administrador** (Bits 0..7)
+1. **Propiedad**: Permisos especiales para el creador/propietario de un recurso
+2. **Área**: Permisos limitados al área del usuario
+3. **Tiempo**: Permisos que varían según tiempo transcurrido
+4. **Estado**: Permisos que varían según el estado de un documento
 
-El **Admin** tiene todos los bits, por lo que ve **todas** las subopciones y puede realizar cualquier acción:
+### Implementación en Base de Datos
+
+Los permisos contextuales se almacenan en la tabla `PermisoContextual` con la siguiente estructura:
+
+```sql
+CREATE TABLE PermisoContextual (
+    IDPermisoContextual INT AUTO_INCREMENT PRIMARY KEY,
+    IDRol INT NOT NULL,
+    IDArea INT NOT NULL,
+    TipoRecurso VARCHAR(50) NOT NULL, -- 'DOCUMENTO', 'USUARIO', etc.
+    ReglaContexto TEXT NOT NULL, -- JSON con reglas
+    Activo BOOLEAN DEFAULT TRUE
+);
+```
+
+### Ejemplos de Reglas Contextuales (JSON)
+
+1. **Propiedad**: Permitir eliminar solo documentos creados por el usuario
+   ```json
+   {
+     "tipo": "PROPIEDAD",
+     "accion": "ELIMINAR",
+     "condicion": "ES_CREADOR"
+   }
+   ```
+
+2. **Área**: Permitir ver documentos solo del área del usuario
+   ```json
+   {
+     "tipo": "AREA",
+     "accion": "VER",
+     "condicion": "MISMA_AREA"
+   }
+   ```
+
+3. **Tiempo**: Permitir editar documentos solo en las primeras 24 horas
+   ```json
+   {
+     "tipo": "TIEMPO",
+     "accion": "EDITAR",
+     "condicion": "MENOS_DE_24_HORAS"
+   }
+   ```
+
+## **3. Interfaces de Usuario según Permisos**
+
+### 3.1 Administrador (Bits 0..7)
+
+El **Administrador** tiene acceso completo al sistema:
 
 1. **Gestión de Usuarios**
-    - **Ver Usuarios** (bit 3)
-    - **Crear/Editar Usuarios** (bits 0,1)
-    - **Eliminar Usuarios** (bit 2)
-    - **Bloquear/Desbloquear Usuarios** (bit 7)
-2. **Gestión de Roles**
-    - **Ver Roles** (bit 3)
-    - **Crear/Editar Roles** (bits 0,1)
-    - **Eliminar Roles** (bit 2)
+   - Ver, crear, editar, eliminar y bloquear usuarios
+   - Asignar roles y áreas
+   - Reiniciar contraseñas
+
+2. **Gestión de Roles y Permisos**
+   - Configurar permisos por bits
+   - Crear y editar roles
+   - Asignar permisos contextuales
+
 3. **Gestión de Áreas**
-    - **Ver Áreas** (bit 3)
-    - **Crear/Editar Áreas** (bits 0,1)
-    - **Eliminar Áreas** (bit 2)
-    - **Visión Global por Área**:
-        - Subopción "Historial de Documentos del Área" (bit 3)
-        - Permite al Admin ver qué documentos pasaron por cada área, fechas, etc.
+   - Ver, crear, editar y eliminar áreas
+   - Configurar jerarquías y relaciones
+
 4. **Gestión de Documentos**
-    - **Ver Documentos** (bit 3)
-    - **Crear Documento** (bit 0)
-    - **Editar Documento** (bit 1)
-    - **Eliminar Documento** (bit 2)
-    - **Derivar Documento** (bit 4)
-    - **Trazabilidad**: En "Ver Documentos", puede abrir el detalle de un documento y ver su historial de derivaciones.
-5. **Registros del Sistema / Auditoría** (bit 5)
-    - **Ver Logs de Usuario** (bloqueos, cambios de rol, etc.)
-    - **Ver Logs de Documentos** (creaciones, ediciones, derivaciones, etc.)
-    - **Ver Logs de Áreas, Roles, Permisos, Mesa de Partes**
-6. **Exportar** (bit 6)
-    - **Exportar Logs** (por rango de fechas)
-    - **Exportar Documentos** (global, filtrado por estado, etc.)
-    - **Backups** de la BD
-7. **Dashboard** (bit 3: Ver)
-    - **Estadísticas Globales** (usuarios activos, documentos en proceso, etc.)
+   - Acceso global a todos los documentos
+   - Puede eliminar cualquier documento
+   - Derivar a cualquier área
+   - Ver trazabilidad completa
 
-### Implementación API para Administrador
+5. **Auditoría**
+   - Acceso completo a logs del sistema
+   - Registro de actividades de usuarios
+   - Cambios en documentos y registros
 
----
+6. **Reportes y Exportación**
+   - Generar reportes globales
+   - Exportar datos en múltiples formatos
+   - Estadísticas del sistema
 
-## **4. Interfaz de Mesa de Partes** (Bits 0,1,3,4,6)
+### 3.2 Mesa de Partes (Bits 0,1,3,4,6)
 
-La **Mesa de Partes** tiene acceso limitado a funciones específicas sin Eliminar (bit 2), Auditar (bit 5) ni Bloquear (bit 7):
+La **Mesa de Partes** se enfoca en la recepción y distribución de documentos:
 
-### Acceso y Funciones Disponibles
+1. **Recepción de Documentos**
+   - Registrar nuevos documentos entrantes
+   - Asignar clasificación y prioridad
+   - Digitalizar documentos físicos
 
-1. **Documentos Recibidos**
-    - **Ver** lista de expedientes (bit 3)
-    - Puede filtrar por fecha, tipo, estado
-    - Visualiza expedientes entrantes pero solo aquellos asignados a su área
-2. **Registro de Expediente**
-    - **Crear** un nuevo documento (bit 0)
-    - Formulario para ingresar datos del expediente:
-        - Tipo de documento
-        - Número/referencia
-        - Fecha
-        - Remitente
-        - Asunto
-        - Prioridad
-        - Archivos adjuntos
-3. **Actualización de Expediente**
-    - **Editar** datos del documento (bit 1)
-    - Permite modificar expedientes creados por el mismo usuario o su área
-    - Campos editables: estado, prioridad, observaciones
-4. **Transferencia / Derivación**
-    - **Derivar** a otra área (bit 4)
-    - Interfaz para seleccionar área destino
-    - Campo para observaciones de derivación
-    - Opción para establecer prioridad
-5. **Trazabilidad**
-    - **Ver** historial de un documento (bit 3)
-    - Muestra línea de tiempo con:
-        - Creación
-        - Derivaciones
-        - Cambios de estado
-        - Fechas y usuarios responsables
-6. **Documentos En Proceso / Completados**
-    - **Ver** documentos en proceso (bit 3)
-    - **Ver** documentos completados (bit 3)
-    - Filtros por estado, fecha, tipo
-    - Acceso solo a documentos de su área
-7. **Exportar / Generación de Reportes** (bit 6)
-    - **Exportar** listados de documentos en Excel o PDF
-    - Filtros por fecha, tipo, estado
-    - Sólo documentos de su área
+2. **Derivación**
+   - Transferir documentos a áreas correspondientes
+   - Registrar observaciones en derivaciones
+   - Seguimiento de documentos derivados
 
-*(Mesa de Partes NO ve las opciones de, "Auditoría", o "Bloquear Usuario" porque no tiene los bits 2, 5, y 7)*
+3. **Consulta**
+   - Ver documentos en proceso
+   - Buscar documentos por diversos criterios
+   - Acceso a documentos de su área
 
----
+4. **Reportes**
+   - Exportar listados de documentos recibidos
+   - Generar reportes de productividad
+   - Estadísticas de tiempos de atención
 
-## **5. Interfaz de Responsable de Área** (Bits 0,1,3,4,6)
+### 3.3 Responsable de Área (Bits 0,1,3,4,6)
 
-Los **Responsables de Área** tienen los mismos bits que Mesa de Partes pero con un enfoque en documentos específicos de su área:
+El **Responsable de Área** gestiona documentos específicos de su área:
 
-### Acceso y Funciones Disponibles
+1. **Gestión Documental**
+   - Ver documentos asignados a su área
+   - Crear documentos internos
+   - Editar documentos en proceso
 
-1. **Documentos Recibidos**
-    - **Ver** los expedientes asignados a su área (bit 3)
-    - Filtrado por fecha, remitente, tipo
-    - Priorización visual de documentos urgentes
-2. **Registro de Expediente / Informe**
-    - **Crear** informes y documentos internos (bit 0)
-    - Formulario especializado para:
-        - Informes periciales
-        - Respuestas a solicitudes
-        - Documentos técnicos
-3. **Edición / Actualización de Resultados**
-    - **Editar** informes y documentos (bit 1)
-    - Actualizar estado, conclusiones, resultados
-    - Adjuntar evidencias o archivos complementarios
-4. **Derivar**
-    - **Transferir** documentos a otra área (bit 4)
-    - Selección de área destino
-    - Campo de observaciones y prioridad
-    - Opción para adjuntar archivos a la derivación
-5. **Trazabilidad**
-    - **Ver** historial completo de un documento (bit 3)
-    - Línea de tiempo interactiva
-    - Acceso a todas las observaciones y archivos adjuntos
-6. **Documentos en Proceso / Completados**
-    - **Ver** listados filtrados por estado (bit 3)
-    - Estadísticas de tiempos de proceso
-    - Alertas para documentos próximos a vencer
-7. **Exportar** (bit 6)
-    - **Exportar** informes específicos del área
-    - Generar estadísticas y reportes de gestión
-    - Incluir métricas de eficiencia y cumplimiento
+2. **Procesamiento**
+   - Asignar documentos a operadores
+   - Actualizar estado de documentos
+   - Registrar resultados y conclusiones
 
-*(Responsable de Área NO ve las opciones de, "Auditoría", o "Bloquear Usuario" porque no tiene los bits 2, 5, y 7)*
+3. **Derivación**
+   - Transferir documentos a otras áreas
+   - Devolver documentos a Mesa de Partes
+   - Finalizar trámites
 
----
+4. **Monitoreo**
+   - Seguimiento de documentos de su área
+   - Alertas de documentos pendientes
+   - Estadísticas de rendimiento
 
-## **6. Gestión de Permisos Contextuales**
+## **4. Implementación para Frontend**
 
-### Implementación de Permisos Contextuales
+### 4.1 Verificación de Permisos en UI
 
----
+Utilizar componentes condicionales para mostrar u ocultar elementos según permisos:
 
-## **7. Papelera de Reciclaje (Nueva Funcionalidad)**
+```jsx
+// Componente PermissionGate
+function PermissionGate({ permission, children, fallback = null }) {
+  const hasPermission = permissionService.hasPermission(permission);
+  return hasPermission ? children : fallback;
+}
 
-### Acceso por Roles
+// Ejemplo de uso
+<PermissionGate permission={PERMISSION_BITS.ELIMINAR}>
+  <button className="btn-delete">Eliminar</button>
+</PermissionGate>
+```
 
-- **Administrador**: Ve todos los documentos en papelera y puede restaurar o eliminar permanentemente cualquiera
-- **Mesa de Partes**: Ve documentos en papelera que creó o que están en su área
-- **Responsable de Área**: Ve documentos en papelera de su área
+### 4.2 Protección de Rutas
 
-### Funcionalidades por Permiso
+Implementar HOC (High Order Component) para proteger rutas según permisos:
 
-- **Ver documentos en papelera**: Bit 3 (Ver)
-- **Restaurar documentos**: Bit 1 (Editar)
-- **Eliminar permanentemente**: Bit 2 (Eliminar) - Solo Admin
+```jsx
+// Componente ProtectedRoute
+function ProtectedRoute({ requiredPermission, children }) {
+  const hasPermission = permissionService.hasPermission(requiredPermission);
+  return hasPermission ? children : <Navigate to="/acceso-denegado" />;
+}
 
-### Ejemplo de Implementación Frontend (Componente)
+// Ejemplo de uso en React Router
+<Route 
+  path="/documentos/crear" 
+  element={
+    <ProtectedRoute requiredPermission={PERMISSION_BITS.CREAR}>
+      <CrearDocumento />
+    </ProtectedRoute>
+  } 
+/>
+```
 
----
+### 4.3 Servicio de Verificación de Permisos
 
-## **8. Lógica de Implementación del Sistema de Permisos**
+```javascript
+// servicio para verificar permisos
+const hasPermission = (permissionBit) => {
+  const user = getUserFromLocalStorage();
+  if (!user || !user.Permisos) return false;
+  return (user.Permisos & permissionBit) === permissionBit;
+};
 
-### 1. Mostrar/Ocultar Elementos de UI según Bits de Permisos
+// verificación de permisos contextuales
+const checkContextualPermission = async (resourceId, resourceType, action) => {
+  try {
+    const response = await apiClient.post('/permisos/verificar', {
+      idRecurso: resourceId,
+      tipoRecurso: resourceType,
+      accion: action
+    });
+    return response.data.tienePermiso;
+  } catch (error) {
+    console.error('Error verificando permiso contextual', error);
+    return false;
+  }
+};
+```
 
-### 2. Modularidad: Separación en módulos por entidad
+## **5. Papelera de Reciclaje**
 
-### 3. Módulo central de permisos
+La funcionalidad de papelera permite la recuperación de documentos eliminados:
 
----
+### 5.1 Acceso según Permisos
 
-## **9. Recomendaciones de Implementación DevOps**
+- **Ver papelera**: Requiere bit 3 (Ver)
+- **Restaurar documentos**: Requiere bit 1 (Editar)
+- **Eliminar permanentemente**: Requiere bit 2 (Eliminar) y bit 7 (Administrar)
 
-### 1. Plan de Migración Segura
+### 5.2 Implementación
 
-### 3. Herramienta de diagnóstico de permisos para problemas en producción
+- Los documentos "eliminados" se marcan con `IsActive = FALSE`
+- La papelera muestra estos documentos filtrados
+- La restauración actualiza `IsActive = TRUE`
+- La eliminación permanente remueve el registro de la base de datos
 
-### 4. Script de monitoreo de rendimiento de permisos
+### 5.3 Restricciones Contextuales
 
----
+- Administradores pueden ver y restaurar cualquier documento
+- Usuarios regulares solo pueden ver/restaurar documentos de su área o que crearon
+- Eliminación permanente restringida a administradores
 
-## **10. Consideraciones de Seguridad para la Implementación**
+## **6. Auditoría de Permisos**
 
-### 1. Protección contra manipulación de permisos en el frontend
+### 6.1 Registro de Cambios
 
-### 2. Logging de auditoría para cambios de permisos
+Cada cambio en permisos se registra en la tabla `UsuarioLog`:
 
-### 3. Herramienta de emergencia para restablecer permisos
+```sql
+INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso) 
+VALUES (?, 'CAMBIO_PERMISOS', ?, ?, TRUE);
+```
+
+### 6.2 Reportes de Auditoría
+
+- Historial de cambios de permisos por usuario
+- Registro de intentos de acceso no autorizado
+- Análisis de uso de permisos por rol
+
+## **7. Recomendaciones para Implementación**
+
+1. **Validación en Ambas Capas**: Verificar permisos tanto en frontend (UI) como en backend (API)
+2. **Caché de Permisos**: Almacenar permisos en localStorage para consultas rápidas, pero validar en backend
+3. **Mensajes Claros**: Proporcionar feedback útil cuando se deniegue un acceso
+4. **Actualización Dinámica**: Refrescar permisos al cambiar de rol o recibir actualizaciones
+5. **Seguridad**: Evitar exponer lógica de permisos en el código cliente
+6. **Pruebas**: Implementar tests automatizados para verificar correcta aplicación de permisos
