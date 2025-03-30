@@ -60,7 +60,7 @@ export function renderLoginForm(container) {
               required
             >
             <span class="password-toggle-container">
-              <i class="fas fa-eye password-toggle" id="password-toggle"></i>
+              <i class="fas fa-eye-slash password-toggle" id="password-toggle"></i>
             </span>
           </div>
           <div id="password-feedback" class="invalid-feedback"></div>
@@ -100,8 +100,8 @@ export function setupPasswordToggle() {
   passwordToggle.addEventListener('click', function() {
     passwordVisible = !passwordVisible;
     passwordInput.type = passwordVisible ? 'text' : 'password';
-    passwordToggle.classList.toggle('fa-eye', !passwordVisible);
-    passwordToggle.classList.toggle('fa-eye-slash', passwordVisible);
+    passwordToggle.classList.toggle('fa-eye', passwordVisible);
+    passwordToggle.classList.toggle('fa-eye-slash', !passwordVisible);
   });
 }
 
