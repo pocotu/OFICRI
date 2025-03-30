@@ -16,36 +16,41 @@ export function renderLoginForm(container) {
 
   // Generar HTML del formulario de login
   const loginHTML = `
-    <div class="login-container">
-      <div class="login-card">
-        <div class="login-header">
-          <img src="assets/img/logoOficri2x2.png" alt="Logo OFICRI" class="login-logo">
-          <h1 class="login-title">Sistema OFICRI</h1>
-          <p class="login-subtitle">Gestión Documental</p>
-        </div>
+    <div class="login-card">
+      <div class="login-header">
+        <img src="assets/img/logoOficri2x2.png" alt="Logo OFICRI" class="login-logo">
+        <h2 class="login-title">Sistema de Gestión OFICRI</h2>
+      </div>
 
-        <div class="alert alert-danger d-none" id="login-general-error" role="alert"></div>
-        <div class="alert alert-success d-none" id="login-success-message" role="alert"></div>
+      <div class="alert alert-danger d-none" id="login-general-error" role="alert"></div>
+      <div class="alert alert-success d-none" id="login-success-message" role="alert"></div>
 
-        <form id="login-form" class="login-form" novalidate>
-          <div class="form-group">
-            <label for="codigoCIP">Código CIP</label>
-            <i class="fas fa-user input-icon"></i>
+      <form id="login-form" class="login-form" novalidate>
+        <div class="form-group">
+          <label for="codigoCIP">CIP</label>
+          <div class="input-group">
+            <span class="input-icon-container">
+              <i class="fas fa-user input-icon"></i>
+            </span>
             <input 
               type="text" 
               class="form-control" 
               id="codigoCIP" 
               name="codigoCIP" 
-              placeholder="Ingrese su código CIP" 
+              placeholder="Ingrese su CIP" 
               autocomplete="off" 
               required
             >
-            <div id="codigoCIP-feedback" class="invalid-feedback"></div>
           </div>
+          <div id="codigoCIP-feedback" class="invalid-feedback"></div>
+        </div>
 
-          <div class="form-group">
-            <label for="password">Contraseña</label>
-            <i class="fas fa-lock input-icon"></i>
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <div class="input-group">
+            <span class="input-icon-container">
+              <i class="fas fa-lock input-icon"></i>
+            </span>
             <input 
               type="password" 
               class="form-control" 
@@ -54,27 +59,19 @@ export function renderLoginForm(container) {
               placeholder="Ingrese su contraseña" 
               required
             >
-            <i class="fas fa-eye password-toggle" id="password-toggle"></i>
-            <div id="password-feedback" class="invalid-feedback"></div>
+            <span class="password-toggle-container">
+              <i class="fas fa-eye password-toggle" id="password-toggle"></i>
+            </span>
           </div>
-
-          <div class="form-check mb-3">
-            <input type="checkbox" class="form-check-input" id="remember-me">
-            <label class="form-check-label" for="remember-me">Recordar sesión</label>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" id="login-submit" class="login-btn">
-              Iniciar Sesión
-            </button>
-          </div>
-        </form>
-
-        <div class="login-footer">
-          <p>&copy; ${new Date().getFullYear()} OFICRI - Todos los derechos reservados</p>
-          <img src="assets/img/logoPolicia2x2.png" alt="Logo PNP" height="30">
+          <div id="password-feedback" class="invalid-feedback"></div>
         </div>
-      </div>
+
+        <div class="form-actions">
+          <button type="submit" id="login-submit" class="login-btn">
+            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+          </button>
+        </div>
+      </form>
     </div>
   `;
 
@@ -236,7 +233,7 @@ export function prepareLoginForm(authStateCleanerFn) {
   const submitButton = document.getElementById('login-submit');
   if (submitButton) {
     submitButton.disabled = false;
-    submitButton.innerHTML = 'Iniciar Sesión';
+    submitButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
   }
   
   // Si se proporcionó una función para limpiar estados de autenticación, usarla

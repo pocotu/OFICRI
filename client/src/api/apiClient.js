@@ -362,7 +362,7 @@ const apiClient = (function() {
     _pendingRefreshPromise = new Promise(async (resolve) => {
       try {
         // Intentar refrescar token
-        const success = await authService.refreshToken();
+      const success = await authService.refreshToken();
       
         // Pequeño timeout para permitir que los cambios en el almacenamiento se completen
         await new Promise(r => setTimeout(r, 100));
@@ -374,18 +374,18 @@ const apiClient = (function() {
           // Si falló, resolver con null
           resolve(null);
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error al refrescar token:', error.message);
         resolve(null);
-      } finally {
+    } finally {
         // Restaurar estado
-        _isRefreshing = false;
+      _isRefreshing = false;
         
         // Limpiar estado solo si seguimos en refreshing
         if (authStateManager.getState() === authStateManager.STATES.REFRESHING) {
           authStateManager.setState(null);
         }
-      }
+    }
     });
     
     return _pendingRefreshPromise;

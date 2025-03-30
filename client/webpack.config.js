@@ -8,12 +8,15 @@ module.exports = {
     // API y servicios
     'api/apiClient': './src/api/apiClient.js',
     'services/authService': './src/services/authService.js',
+    'services/userService': './src/services/userService.js',
     
     // Utilidades
     'utils/validators': './src/utils/validators.js',
     'utils/errorHandlerUtil': './src/utils/errorHandlerUtil.js',
     'utils/httpUtil': './src/utils/httpUtil.js',
+    'utils/authStateManager': './src/utils/authStateManager.js',
     'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
+    'utils/loginUtils/loginLayoutRenderer': './src/utils/loginUtils/loginLayoutRenderer.js',
     'ui/notifications': './src/ui/notifications.js',
     
     // Páginas
@@ -35,7 +38,7 @@ module.exports = {
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'public/js'),
-    libraryTarget: 'umd'
+    publicPath: 'js/'
   },
   resolve: {
     extensions: ['.js']

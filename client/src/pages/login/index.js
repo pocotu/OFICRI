@@ -18,6 +18,7 @@ import {
   clearAllErrors,
   prepareLoginForm
 } from '../../utils/loginUtils/loginFormRenderer.js';
+import { renderLoginLayout } from '../../utils/loginUtils/loginLayoutRenderer.js';
 
 // Create namespace
 window.OFICRI = window.OFICRI || {};
@@ -34,6 +35,7 @@ const loginPage = (function() {
   let _passwordInput = null;
   let _submitButton = null;
   let _rememberCheck = null;
+  let _appContainer = null;
   let _loginContainer = null;
   let _isSubmitting = false;
   let _loginAttempts = 0;
@@ -152,7 +154,7 @@ const loginPage = (function() {
       .finally(() => {
         // Reactivar botón
         submitButton.disabled = false;
-        submitButton.innerHTML = 'Iniciar Sesión';
+        submitButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
       });
   };
 
@@ -183,14 +185,22 @@ const loginPage = (function() {
     sessionStorage.removeItem('oficri_user');
     sessionStorage.removeItem('oficri_last_page');
     
-    // Obtener el contenedor de login
-    _loginContainer = document.getElementById('login-container');
-    if (!_loginContainer) {
-      console.error('[Login] No se encontró el contenedor de login (#login-container)');
+    // Obtener el contenedor principal de la aplicación
+    _appContainer = document.getElementById('app');
+    if (!_appContainer) {
+      console.error('[Login] No se encontró el contenedor de la aplicación (#app)');
       return;
     }
     
-    // Renderizar el formulario de login usando el módulo
+    // Renderizar el layout principal
+    _loginContainer = renderLoginLayout(_appContainer);
+    
+    if (!_loginContainer) {
+      console.error('[Login] Error al renderizar el layout de login');
+      return;
+    }
+    
+    // Renderizar el formulario de login dentro del contenedor
     _form = renderLoginForm(_loginContainer);
     
     // Configurar toggle de contraseña

@@ -385,13 +385,13 @@ const notifications = (function() {
     if (options.animated) {
       // Animación de salida
       element.classList.remove('oficri-show');
-      element.style.opacity = '0';
-      element.style.transform = 'translateY(-20px)';
-      
+    element.style.opacity = '0';
+    element.style.transform = 'translateY(-20px)';
+    
       // Eliminar después de la animación
-      setTimeout(() => {
-        if (element.parentNode) {
-          element.parentNode.removeChild(element);
+    setTimeout(() => {
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
           
           // Ejecutar callback si existe
           if (typeof options.callback === 'function') {

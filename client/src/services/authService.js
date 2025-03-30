@@ -50,7 +50,7 @@ const authService = (function() {
     _isInitialized = true;
     
     if (config.isDevelopment()) {
-      console.log('[AUTH] Inicializando servicio de autenticación');
+    console.log('[AUTH] Inicializando servicio de autenticación');
     }
     
     // Verificar si hay estado previo (login en proceso, etc)
@@ -387,10 +387,10 @@ const authService = (function() {
       });
       
       return response;
-    } catch (error) {
+      } catch (error) {
       console.error('[AUTH] Error al solicitar reset de contraseña:', error.message);
-      throw error;
-    }
+        throw error;
+      }
   };
   
   /**
@@ -450,7 +450,7 @@ const authService = (function() {
       const response = await apiClient.post('/auth/change-password', requestData);
       
       return response;
-    } catch (error) {
+          } catch (error) {
       console.error('[AUTH] Error al cambiar contraseña:', error.message);
       throw error;
     }
@@ -581,16 +581,16 @@ const authService = (function() {
     const style = document.createElement('style');
     style.textContent = `
       .session-timeout-warning {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
       }
       .session-timeout-content {
         background-color: white;
@@ -689,7 +689,7 @@ const authService = (function() {
     
     // Definir función de actualización de actividad
     const updateActivity = () => {
-      _lastActivity = Date.now();
+          _lastActivity = Date.now();
     };
     
     // Aplicar a eventos
@@ -725,7 +725,7 @@ const authService = (function() {
     resetPassword,
     changePassword
   };
-})();
+})(); 
 
 // Para compatibilidad con ES modules y UMD
 // El build process convertirá esto a formato compatible con navegadores
