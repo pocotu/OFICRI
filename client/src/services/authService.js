@@ -28,6 +28,8 @@ const authService = (function() {
   let _sessionCheckInterval = null;
   let _lastActivity = Date.now();
   let _sessionTimeoutWarning = null;
+  let _isAuthenticating = false; // Bandera para evitar múltiples intentos simultáneos
+  let _isRedirecting = false; // Bandera para evitar múltiples redirecciones
   
   /**
    * Inicializa el servicio de autenticación
@@ -53,27 +55,35 @@ const authService = (function() {
    * @returns {Promise} Promesa que resuelve con los datos del usuario autenticado
    */
   const login = async function(credentials, password, options = {}) {
-    let username, pwd, opts;
-    
-    // Verificar si se pasó un objeto de credenciales o parámetros individuales
-    if (typeof credentials === 'object' && credentials !== null) {
-      // Formato: login({codigoCIP: '12345', password: 'pwd'})
-      username = credentials.codigoCIP || credentials.username;
-      pwd = credentials.password;
-      opts = password || {}; // El segundo parámetro sería options
-    } else {
-      // Formato antiguo: login('username', 'password', {})
-      username = credentials;
-      pwd = password;
-      opts = options;
+    // Evitar intentos múltiples de login simultáneos
+    if (_isAuthenticating) {
+      console.warn('[AUTH] Ya hay un proceso de autenticación en curso');
+      return Promise.reject(new Error('Ya hay un proceso de autenticación en curso'));
     }
     
-    // Validar entradas
-    if (!username || !pwd) {
-      throw new Error('Credenciales inválidas: falta Código CIP o contraseña');
-    }
+    _isAuthenticating = true;
     
     try {
+      let username, pwd, opts;
+      
+      // Verificar si se pasó un objeto de credenciales o parámetros individuales
+      if (typeof credentials === 'object' && credentials !== null) {
+        // Formato: login({codigoCIP: '12345', password: 'pwd'})
+        username = credentials.codigoCIP || credentials.username;
+        pwd = credentials.password;
+        opts = password || {}; // El segundo parámetro sería options
+      } else {
+        // Formato antiguo: login('username', 'password', {})
+        username = credentials;
+        pwd = password;
+        opts = options;
+      }
+      
+      // Validar entradas
+      if (!username || !pwd) {
+        throw new Error('Credenciales inválidas: falta Código CIP o contraseña');
+      }
+      
       console.log('[AUTH] Intentando login con usuario policial:', username);
       
       // Preparar objeto de request
@@ -107,6 +117,7 @@ const authService = (function() {
       
       // Verificar respuesta
       if (!response || !response.token) {
+        console.error('[AUTH] Respuesta de login inválida:', response);
         throw new Error('Respuesta de login inválida');
       }
       
@@ -117,15 +128,20 @@ const authService = (function() {
       // Iniciar verificación de sesión
       _setupSessionCheck();
       
+      console.log('[AUTH] Login exitoso para usuario:', response.user.CodigoCIP);
+      
       // Devolver usuario
       return response.user;
     } catch (error) {
       // Registrar intento fallido (solo el intento, no la contraseña)
-      console.warn(`[AUTH] Intento de login fallido para usuario policial: ${username}`);
+      console.warn(`[AUTH] Intento de login fallido para usuario policial: ${credentials.codigoCIP || credentials.username || credentials}`);
       console.error('[AUTH] Error durante login:', error.message);
       
       // Lanzar error para manejo en UI
       throw error;
+    } finally {
+      // Siempre marcar como no autenticando al final
+      _isAuthenticating = false;
     }
   };
   
@@ -135,6 +151,14 @@ const authService = (function() {
    * @returns {Promise} Promesa que resuelve cuando se completa el logout
    */
   const logout = async function(options = {}) {
+    // Evitar múltiples logouts simultáneos
+    if (_isRedirecting) {
+      console.warn('[AUTH] Ya hay una redirección en proceso');
+      return;
+    }
+    
+    _isRedirecting = true;
+    
     try {
       // Si hay token, intentar hacer logout en el servidor
       const token = getToken();
@@ -143,6 +167,7 @@ const authService = (function() {
           await apiClient.post('/auth/logout', {}, {}, {
             'Authorization': `Bearer ${token}`
           });
+          console.log('[AUTH] Logout exitoso en el servidor');
         } catch (error) {
           // Ignorar errores al hacer logout en el servidor
           console.warn('[AUTH] Error al hacer logout en el servidor:', error.message);
@@ -154,7 +179,16 @@ const authService = (function() {
       
       // Redirigir a página de login si se especifica
       if (options.redirect !== false) {
-        window.location.href = options.redirectUrl || '/';
+        const redirectUrl = options.redirectUrl || '/';
+        console.log('[AUTH] Redirigiendo a:', redirectUrl);
+        
+        // Usar setTimeout para evitar problemas de redirección
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+          _isRedirecting = false;
+        }, 100);
+      } else {
+        _isRedirecting = false;
       }
     }
   };
@@ -200,110 +234,99 @@ const authService = (function() {
   };
   
   /**
-   * Obtiene el token actual
-   * @returns {string|null} Token JWT o null si no hay sesión
+   * Obtiene el token de autenticación actual
+   * @returns {string|null} Token JWT o null si no hay token
    */
   const getToken = function() {
     return localStorage.getItem(TOKEN_KEY);
   };
   
   /**
-   * Obtiene el token de refresco
-   * @returns {string|null} Token de refresco o null si no hay
+   * Obtiene el refresh token actual
+   * @returns {string|null} Refresh token o null si no hay token
    */
   const getRefreshToken = function() {
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   };
   
   /**
-   * Obtiene el usuario policial actual
-   * @returns {Object|null} Datos del usuario o null si no hay sesión
+   * Obtiene los datos del usuario actual
+   * @param {boolean} refresh - Si es true, recarga los datos desde localStorage
+   * @returns {Object|null} Datos del usuario o null si no hay usuario
    */
-  const getUser = function() {
-    // Si ya tenemos el usuario en memoria, devolverlo
-    if (_currentUser) {
-      return _currentUser;
+  const getUser = function(refresh = false) {
+    if (refresh || !_currentUser) {
+      _loadUserFromStorage();
     }
-    
-    // Intentar cargar desde localStorage
-    _loadUserFromStorage();
     
     return _currentUser;
   };
   
   /**
-   * Verifica si el usuario tiene un rol específico
-   * @param {string|Array<string>} roles - Rol o array de roles a verificar
-   * @returns {boolean} True si tiene alguno de los roles especificados
+   * Verifica si el usuario tiene el rol especificado
+   * @param {string|Array} roles - Rol o array de roles a verificar
+   * @returns {boolean} True si el usuario tiene el rol
    */
   const hasRole = function(roles) {
     const user = getUser();
     
-    // Si no hay usuario o no tiene rol, devolver false
-    if (!user || !user.rol) {
+    if (!user || !user.NombreRol) {
       return false;
     }
     
-    // Convertir roles a array si es string
-    const rolesArray = Array.isArray(roles) ? roles : [roles];
+    if (Array.isArray(roles)) {
+      return roles.includes(user.NombreRol);
+    }
     
-    // Verificar si el usuario tiene alguno de los roles
-    return rolesArray.includes(user.rol);
+    return user.NombreRol === roles;
   };
   
   /**
-   * Verifica si el usuario actual es administrador
-   * @returns {boolean} True si el usuario tiene permisos de administrador
+   * Verifica si el usuario es administrador
+   * @returns {boolean} True si el usuario es administrador
    */
   const isAdmin = function() {
     const user = getUser();
     
-    // Si no hay usuario o no tiene permisos, devolver false
-    if (!user || !user.Permisos) {
+    if (!user) {
       return false;
     }
     
-    // Verificar el bit 7 (128) que corresponde al permiso de administrador
-    return (user.Permisos & 128) === 128;
+    // Verificar si tiene el rol de administrador o el permiso bit 7 (128)
+    return hasRole('ADMINISTRADOR') || 
+           (user.Permisos && (user.Permisos & 128) === 128);
   };
   
   /**
-   * Resetea la contraseña del usuario policial
-   * @param {string|Object} userIdentifier - CodigoCIP del usuario
-   * @returns {Promise} Promesa que resuelve con la respuesta del servidor
+   * Solicita un reset de contraseña para un usuario policial
+   * @param {string} userIdentifier - Código CIP del usuario
+   * @returns {Promise} Promesa que resuelve cuando se completa la solicitud
    */
   const resetPassword = async function(userIdentifier) {
-    // Verificar si el usuario actual tiene permisos de administrador
-    if (!isAdmin()) {
-      throw new Error('Solo usuarios con rol de Administrador pueden resetear contraseñas');
-    }
-    
-    let requestData = {};
-    
-    // Comprobar si es un objeto o un string
-    if (typeof userIdentifier === 'object') {
-      // Si es un objeto, extraer codigoCIP
-      if (userIdentifier.codigoCIP) {
-        requestData.codigoCIP = userIdentifier.codigoCIP;
-      } else {
-        throw new Error('Debe proporcionar el Código CIP del usuario');
-      }
-    } else {
-      // Asumir que es un string con codigoCIP
-      requestData.codigoCIP = userIdentifier;
-      
-      // Validar codigoCIP
-      if (!validateInput(requestData.codigoCIP, 'codigoCIP')) {
-        throw new Error('Código CIP inválido. Debe ser numérico y tener 8 dígitos como máximo');
-      }
-    }
-    
     try {
-      // Solicitar reset de contraseña
-      const response = await apiClient.post('/auth/reset-password', requestData);
+      if (!userIdentifier) {
+        throw new Error('Se requiere el Código CIP del usuario');
+      }
+      
+      // Solo administradores pueden resetear contraseñas
+      const user = getUser();
+      if (!user || !isAdmin()) {
+        throw new Error('No tiene permisos para realizar esta operación');
+      }
+      
+      // Verificar formato de identificador (solo CIP, no email)
+      if (!/^\d{6,8}$/.test(userIdentifier)) {
+        throw new Error('Código CIP inválido. Debe ser un número de 6-8 dígitos');
+      }
+      
+      // Enviar solicitud de reset
+      const response = await apiClient.post('/auth/reset-password', {
+        codigoCIP: userIdentifier
+      });
       
       return response;
     } catch (error) {
+      console.error('[AUTH] Error al solicitar reset de contraseña:', error.message);
       throw error;
     }
   };
@@ -313,55 +336,68 @@ const authService = (function() {
    * @param {string} currentPassword - Contraseña actual
    * @param {string} newPassword - Nueva contraseña
    * @param {number} [userId] - ID del usuario (solo para administradores)
-   * @returns {Promise} Promesa que resuelve con la respuesta del servidor
+   * @returns {Promise} Promesa que resuelve cuando se completa el cambio
    */
   const changePassword = async function(currentPassword, newPassword, userId) {
-    // Si se proporciona un userId y no es el propio usuario, verificar si es admin
-    const currentUser = getUser();
-    const isChangingOwnPassword = !userId || (currentUser && currentUser.IDUsuario === userId);
-    
-    if (!isChangingOwnPassword && !isAdmin()) {
-      throw new Error('Solo administradores pueden cambiar la contraseña de otros usuarios');
-    }
-    
-    // Validar entradas
-    if (!isAdmin() && !validateInput(currentPassword, 'password')) {
-      throw new Error('Contraseña actual inválida');
-    }
-    
-    if (!validateInput(newPassword, 'newPassword')) {
-      throw new Error('La nueva contraseña no cumple con los requisitos de seguridad');
-    }
-    
     try {
-      // Preparar datos para la petición
+      if (!currentPassword || !newPassword) {
+        throw new Error('Se requieren la contraseña actual y la nueva contraseña');
+      }
+      
+      // Verificar si la solicitud es para cambiar la contraseña de otro usuario (solo administradores)
+      if (userId) {
+        const user = getUser();
+        if (!user || !isAdmin()) {
+          throw new Error('No tiene permisos para cambiar la contraseña de otro usuario');
+        }
+      }
+      
+      // Validar nueva contraseña (seguridad)
+      if (newPassword.length < 8) {
+        throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
+      }
+      
+      if (!/[A-Z]/.test(newPassword)) {
+        throw new Error('La nueva contraseña debe incluir al menos una letra mayúscula');
+      }
+      
+      if (!/[a-z]/.test(newPassword)) {
+        throw new Error('La nueva contraseña debe incluir al menos una letra minúscula');
+      }
+      
+      if (!/[0-9]/.test(newPassword)) {
+        throw new Error('La nueva contraseña debe incluir al menos un número');
+      }
+      
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
+        throw new Error('La nueva contraseña debe incluir al menos un carácter especial');
+      }
+      
+      // Preparar solicitud
       const requestData = {
+        currentPassword,
         newPassword
       };
       
-      // Incluir contraseña actual solo si no es admin o está cambiando su propia contraseña
-      if (!isAdmin() || isChangingOwnPassword) {
-        requestData.currentPassword = currentPassword;
-      }
-      
-      // Incluir el ID de usuario si se proporciona y no es el propio usuario
-      if (userId && !isChangingOwnPassword) {
+      // Si se especifica un ID de usuario, agregarlo (solo administradores)
+      if (userId) {
         requestData.userId = userId;
       }
       
-      // Solicitar cambio de contraseña
+      // Enviar solicitud
       const response = await apiClient.post('/auth/change-password', requestData);
       
       return response;
     } catch (error) {
+      console.error('[AUTH] Error al cambiar contraseña:', error.message);
       throw error;
     }
   };
   
   /**
-   * Guarda los tokens en localStorage
+   * Guarda los tokens de autenticación
    * @param {string} token - Token JWT
-   * @param {string} refreshToken - Token de refresco
+   * @param {string} refreshToken - Refresh token
    * @private
    */
   const _setTokens = function(token, refreshToken) {
@@ -375,25 +411,28 @@ const authService = (function() {
   };
   
   /**
-   * Guarda los datos del usuario en localStorage y memoria
+   * Guarda los datos del usuario
    * @param {Object} user - Datos del usuario
    * @private
    */
   const _setUser = function(user) {
-    if (!user) return;
+    if (!user) {
+      _currentUser = null;
+      localStorage.removeItem(USER_KEY);
+      return;
+    }
     
-    // Guardar en localStorage
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    
-    // Guardar en memoria
     _currentUser = user;
     
-    // Actualizar timestamp de última actividad
-    _lastActivity = Date.now();
+    try {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch (error) {
+      console.error('[AUTH] Error al guardar usuario en localStorage:', error.message);
+    }
   };
   
   /**
-   * Carga el usuario desde localStorage a memoria
+   * Carga los datos del usuario desde localStorage
    * @private
    */
   const _loadUserFromStorage = function() {
@@ -402,6 +441,8 @@ const authService = (function() {
       
       if (userJson) {
         _currentUser = JSON.parse(userJson);
+      } else {
+        _currentUser = null;
       }
     } catch (error) {
       console.error('[AUTH] Error al cargar usuario desde localStorage:', error.message);
@@ -410,7 +451,7 @@ const authService = (function() {
   };
   
   /**
-   * Configura la verificación periódica de sesión
+   * Configura la verificación periódica de la sesión
    * @private
    */
   const _setupSessionCheck = function() {
@@ -419,7 +460,7 @@ const authService = (function() {
       clearInterval(_sessionCheckInterval);
     }
     
-    // Crear nuevo intervalo
+    // Configurar nuevo intervalo
     _sessionCheckInterval = setInterval(() => {
       _checkSessionTimeout();
     }, 60000); // Verificar cada minuto
@@ -430,7 +471,7 @@ const authService = (function() {
    * @private
    */
   const _checkSessionTimeout = function() {
-    // Si no hay usuario, no verificar
+    // Si no está autenticado, no hacer nada
     if (!isAuthenticated()) {
       return;
     }
@@ -438,13 +479,11 @@ const authService = (function() {
     const currentTime = Date.now();
     const timeSinceLastActivity = currentTime - _lastActivity;
     
-    // Si ha pasado más del tiempo de sesión, cerrar sesión
+    // Si ha pasado más tiempo del permitido de inactividad
     if (timeSinceLastActivity > SESSION_DURATION) {
       console.warn('[AUTH] Sesión expirada por inactividad');
-      logout({ redirect: true });
-    } 
-    // Si está cerca de expirar (5 minutos antes), mostrar advertencia
-    else if (timeSinceLastActivity > (SESSION_DURATION - 5 * 60 * 1000) && !_sessionTimeoutWarning) {
+      
+      // Mostrar advertencia antes de cerrar sesión
       _showSessionTimeoutWarning();
     }
   };
@@ -455,50 +494,100 @@ const authService = (function() {
    */
   const _showSessionTimeoutWarning = function() {
     // Evitar mostrar múltiples advertencias
-    if (_sessionTimeoutWarning) return;
+    if (_sessionTimeoutWarning) {
+      return;
+    }
     
     // Crear elemento de advertencia
-    const warningElement = document.createElement('div');
-    warningElement.className = 'session-timeout-warning';
-    warningElement.innerHTML = `
+    const warningDiv = document.createElement('div');
+    warningDiv.className = 'session-timeout-warning';
+    warningDiv.innerHTML = `
       <div class="session-timeout-content">
-        <h3>La sesión está por expirar</h3>
-        <p>Su sesión expirará en menos de 5 minutos por inactividad.</p>
+        <h3>Sesión por expirar</h3>
+        <p>Su sesión está por expirar debido a inactividad.</p>
         <div class="session-timeout-actions">
-          <button id="session-extend">Extender sesión</button>
-          <button id="session-logout">Cerrar sesión</button>
+          <button id="session-extend-btn" class="btn btn-primary">Extender sesión</button>
+          <button id="session-logout-btn" class="btn btn-secondary">Cerrar sesión</button>
+        </div>
+        <div class="session-timeout-timer">
+          <span id="session-timer">60</span> segundos
         </div>
       </div>
     `;
     
-    // Estilos
-    warningElement.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
+    // Agregar estilos inline
+    const style = document.createElement('style');
+    style.textContent = `
+      .session-timeout-warning {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .session-timeout-content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        max-width: 400px;
+        text-align: center;
+      }
+      .session-timeout-actions {
+        margin: 20px 0;
+      }
+      .session-timeout-timer {
+        font-weight: bold;
+      }
     `;
     
     // Agregar al DOM
-    document.body.appendChild(warningElement);
+    document.head.appendChild(style);
+    document.body.appendChild(warningDiv);
     
     // Guardar referencia
-    _sessionTimeoutWarning = warningElement;
+    _sessionTimeoutWarning = {
+      div: warningDiv,
+      style: style
+    };
     
-    // Configurar handlers
-    document.getElementById('session-extend').addEventListener('click', () => {
+    // Configurar contador regresivo
+    let timeLeft = 60;
+    const timerElement = document.getElementById('session-timer');
+    const timerInterval = setInterval(() => {
+      timeLeft--;
+      
+      if (timerElement) {
+        timerElement.textContent = timeLeft;
+      }
+      
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        logout({
+          redirect: true,
+          redirectUrl: '/'
+        });
+      }
+    }, 1000);
+    
+    // Configurar botones
+    document.getElementById('session-extend-btn').addEventListener('click', () => {
+      clearInterval(timerInterval);
       _extendSession();
       _removeSessionTimeoutWarning();
     });
     
-    document.getElementById('session-logout').addEventListener('click', () => {
-      logout({ redirect: true });
+    document.getElementById('session-logout-btn').addEventListener('click', () => {
+      clearInterval(timerInterval);
+      _removeSessionTimeoutWarning();
+      logout({
+        redirect: true,
+        redirectUrl: '/'
+      });
     });
   };
   
@@ -508,7 +597,14 @@ const authService = (function() {
    */
   const _removeSessionTimeoutWarning = function() {
     if (_sessionTimeoutWarning) {
-      document.body.removeChild(_sessionTimeoutWarning);
+      if (_sessionTimeoutWarning.div && _sessionTimeoutWarning.div.parentNode) {
+        _sessionTimeoutWarning.div.parentNode.removeChild(_sessionTimeoutWarning.div);
+      }
+      
+      if (_sessionTimeoutWarning.style && _sessionTimeoutWarning.style.parentNode) {
+        _sessionTimeoutWarning.style.parentNode.removeChild(_sessionTimeoutWarning.style);
+      }
+      
       _sessionTimeoutWarning = null;
     }
   };
@@ -518,67 +614,67 @@ const authService = (function() {
    * @private
    */
   const _extendSession = function() {
-    // Actualizar timestamp de última actividad
+    // Actualizar tiempo de última actividad
     _lastActivity = Date.now();
     
-    // Intentar refrescar token
+    // Refrescar token si es posible
     refreshToken().catch(error => {
-      console.error('[AUTH] Error al extender sesión:', error.message);
+      console.warn('[AUTH] Error al refrescar token:', error.message);
     });
   };
   
   /**
-   * Configura tracking de actividad del usuario
+   * Configura el seguimiento de actividad del usuario
    * @private
    */
   const _setupActivityTracking = function() {
-    // Lista de eventos a monitorear
-    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    // Eventos que consideramos como actividad
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
     
-    // Throttle para no actualizar en cada evento
-    let throttleTimeout = null;
-    const throttle = 10000; // 10 segundos
-    
-    // Función para actualizar timestamp de actividad
+    // Definir función de actualización de actividad
     const updateActivity = () => {
-      if (!throttleTimeout) {
-        throttleTimeout = setTimeout(() => {
-          _lastActivity = Date.now();
-          throttleTimeout = null;
-        }, throttle);
-      }
+      _lastActivity = Date.now();
     };
     
-    // Agregar listeners a los eventos
-    events.forEach(event => {
-      window.addEventListener(event, updateActivity, { passive: true });
+    // Aplicar a eventos
+    activityEvents.forEach(eventType => {
+      document.addEventListener(eventType, updateActivity, { passive: true });
     });
+    
+    // Actualizar en primer evento de red (XHR o fetch)
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      updateActivity();
+      return originalFetch.apply(this, args);
+    };
+    
+    // Inicializar tiempo de última actividad
+    updateActivity();
   };
   
   /**
-   * Limpia los datos de sesión
+   * Limpia todos los datos de sesión
    * @private
    */
   const _clearSession = function() {
-    // Limpiar localStorage
+    // Limpiar tokens de localStorage
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     
-    // Limpiar variables de memoria
+    // Limpiar datos en memoria
     _currentUser = null;
     
-    // Limpiar intervalo de verificación
+    // Limpiar verificación de sesión
     if (_sessionCheckInterval) {
       clearInterval(_sessionCheckInterval);
       _sessionCheckInterval = null;
     }
     
-    // Limpiar advertencia de timeout
-    _removeSessionTimeoutWarning();
+    console.log('[AUTH] Sesión limpiada exitosamente');
   };
   
-  // Inicializar el servicio cuando se carga el script
+  // Inicializar
   init();
   
   // API pública
@@ -595,10 +691,11 @@ const authService = (function() {
     resetPassword,
     changePassword
   };
-})(); 
+})();
 
-// Exportar para ES modules
+// Para compatibilidad con ES modules y UMD
+// El build process convertirá esto a formato compatible con navegadores
 export { authService };
 
-// Para compatibilidad con navegadores antiguos
+// Para compatibilidad con código que usa la variable global
 window.OFICRI.authService = authService; 

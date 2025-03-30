@@ -1,385 +1,467 @@
 /**
- * OFICRI Login Page Module
- * Handles login page functionality
+ * OFICRI - Página de Login
+ * Implementa el acceso seguro al sistema mediante Código CIP y contraseña
+ * Cumple con ISO/IEC 27001 para el control de acceso
  */
 
-// Create namespace if it doesn't exist
+// Importar dependencias
+import { authService } from '../services/authService.js';
+import { validateInput } from '../utils/validators.js';
+import { uiManager } from '../utils/uiManager.js';
+import { config } from '../config/app.config.js';
+
+// Inicializar namespace
 window.OFICRI = window.OFICRI || {};
 
 // Login Page Module
-OFICRI.loginPage = (function() {
+const loginPage = (function() {
   'use strict';
   
-  // Private variables
-  let _isLoading = false;
-  let _passwordVisible = false;
-  let _loginForm = null;
+  // Referencias a elementos DOM
+  let _form = null;
+  let _cipInput = null;
+  let _passwordInput = null;
+  let _rememberCheck = null;
+  let _submitButton = null;
+  let _errorContainer = null;
+  
+  // Estado del formulario
+  let _isSubmitting = false;
+  let _loginAttempts = 0;
+  let _maxLoginAttempts = 5;
+  let _isBlocked = false;
+  let _blockTimeout = null;
   
   /**
-   * Initializes the login page
+   * Inicializa la página de login
    */
-  const _init = function() {
-    // Render login page
-    _renderLoginPage();
+  const init = function() {
+    console.log('[LOGIN] Inicializando página de login');
     
-    // Initialize form elements
-    _loginForm = document.getElementById('login-form');
+    // Si ya está autenticado, redirigir al dashboard
+    _checkAuthentication();
     
-    // Add event listeners
-    _setupEventListeners();
+    // Capturar referencias a elementos
+    _form = document.getElementById('login-form');
+    _cipInput = document.getElementById('cip-input');
+    _passwordInput = document.getElementById('password-input');
+    _rememberCheck = document.getElementById('remember-check');
+    _submitButton = document.querySelector('#login-form button[type="submit"]');
+    _errorContainer = document.getElementById('login-error');
     
-    // Check if user is already logged in
-    if (OFICRI.authService.isAuthenticated()) {
-      _redirectToApp();
-    }
-  };
-  
-  /**
-   * Renders the login page HTML
-   */
-  const _renderLoginPage = function() {
-    const loginContainer = document.getElementById('login-container');
-    
-    if (!loginContainer) {
-      console.error('Login container not found');
+    // Si alguno no existe, mostrar error
+    if (!_form || !_cipInput || !_passwordInput || !_submitButton) {
+      console.error('[LOGIN] Error al inicializar: faltan elementos en el DOM');
       return;
     }
     
-    // Set login container class for styling
-    loginContainer.className = 'login-container';
+    // Configurar eventos
+    _setupEvents();
     
-    // Render login form
-    loginContainer.innerHTML = `
-      <div class="login-card">
-        <div class="login-header">
-          <div class="d-flex justify-content-center align-items-center mb-3">
-            <img src="assets/img/logoPolicia2x2.png" alt="Logo PNP" class="login-logo me-3" style="max-height: 70px;">
-            <img src="assets/img/logoOficri2x2.png" alt="Logo OFICRI" class="login-logo" style="max-height: 80px;">
-          </div>
-          <h1 class="login-title">OFICRI</h1>
-          <p class="login-subtitle">Sistema de Gestión Documental</p>
-        </div>
-        
-        <form id="login-form" class="login-form">
-          <!-- Alert for errors -->
-          <div id="login-alert" class="login-alert" style="display: none;">
-            <i class="fa-solid fa-circle-exclamation login-alert-icon"></i>
-            <span id="login-alert-message"></span>
-          </div>
-          
-          <!-- Username (CIP) field -->
-          <div class="form-group">
-            <label for="codigoCIP">Código CIP</label>
-            <i class="fa-solid fa-user input-icon"></i>
-            <input type="text" id="codigoCIP" name="codigoCIP" placeholder="Ingrese su código CIP" autocomplete="username" required>
-            <div class="invalid-feedback" id="codigoCIP-error"></div>
-          </div>
-          
-          <!-- Password field -->
-          <div class="form-group">
-            <label for="password">Contraseña</label>
-            <i class="fa-solid fa-lock input-icon"></i>
-            <input type="password" id="password" name="password" placeholder="Ingrese su contraseña" autocomplete="current-password" required>
-            <span class="password-toggle" id="password-toggle">
-              <i class="fa-regular fa-eye"></i>
-            </span>
-            <div class="invalid-feedback" id="password-error"></div>
-          </div>
-          
-          <!-- Remember me -->
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
-              <label class="form-check-label" for="rememberMe">Recordarme</label>
-            </div>
-            <a href="#" id="forgot-password">¿Olvidó su contraseña?</a>
-          </div>
-          
-          <!-- Submit button -->
-          <div class="form-actions">
-            <button type="submit" id="login-button" class="btn btn-oficri-primary login-btn">
-              <span id="login-button-text">Iniciar Sesión</span>
-              <span id="login-spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
-                <span class="visually-hidden">Cargando...</span>
-              </span>
-            </button>
-          </div>
-        </form>
-        
-        <div class="login-footer">
-          <p>Oficina Central de Informática © ${new Date().getFullYear()}</p>
-          <p>Para soporte técnico contactar a <a href="mailto:soporte@oficri.gob.pe">soporte@oficri.gob.pe</a></p>
-        </div>
-      </div>
-    `;
+    // Restaurar cip de localStorage si existe
+    _restoreSavedCip();
+    
+    // Enfocar en el primer campo vacío
+    if (_cipInput.value) {
+      _passwordInput.focus();
+    } else {
+      _cipInput.focus();
+    }
+    
+    // Verificar si hay error en la URL
+    _checkUrlParams();
   };
   
   /**
-   * Sets up event listeners
+   * Configura los eventos de la página
+   * @private
    */
-  const _setupEventListeners = function() {
-    // Login form submission
-    _loginForm.addEventListener('submit', _handleLogin);
+  const _setupEvents = function() {
+    // Evento de envío del formulario
+    _form.addEventListener('submit', _handleSubmit);
     
-    // Password visibility toggle
-    const passwordToggle = document.getElementById('password-toggle');
-    if (passwordToggle) {
-      passwordToggle.addEventListener('click', _togglePasswordVisibility);
-    }
-    
-    // Forgot password link
-    const forgotPassword = document.getElementById('forgot-password');
-    if (forgotPassword) {
-      forgotPassword.addEventListener('click', _handleForgotPassword);
-    }
-    
-    // Form input validation on blur
-    const codigoCIP = document.getElementById('codigoCIP');
-    const password = document.getElementById('password');
-    
-    if (codigoCIP) {
-      codigoCIP.addEventListener('blur', () => _validateField('codigoCIP'));
-    }
-    
-    if (password) {
-      password.addEventListener('blur', () => _validateField('password'));
-    }
-  };
-  
-  /**
-   * Handles login form submission
-   * @param {Event} event - Form submission event
-   */
-  const _handleLogin = async function(event) {
-    event.preventDefault();
-    
-    console.log('[DEBUG-LOGIN] Form submission started');
-    
-    // Clear any existing alerts
-    _showAlert(null);
-    
-    // Validate form
-    if (!_validateForm()) {
-      console.log('[DEBUG-LOGIN] Form validation failed');
-      return;
-    }
-    
-    console.log('[DEBUG-LOGIN] Form validation passed, proceeding with login');
-    
-    // Get form data
-    const formData = new FormData(_loginForm);
-    const credentials = {
-      codigoCIP: formData.get('codigoCIP').trim(),
-      password: formData.get('password'),
-      remember: formData.get('rememberMe') === 'on'
-    };
-    
-    console.log('[DEBUG-LOGIN] Credentials prepared (without password)', { 
-      codigoCIP: credentials.codigoCIP, 
-      remember: credentials.remember 
+    // Validación en tiempo real
+    _cipInput.addEventListener('input', function() {
+      const isValid = validateInput(this.value, 'codigoCIP');
+      _updateFieldValidation(this, isValid);
     });
     
-    // Show loading state
-    _setLoading(true);
-    console.log('[DEBUG-LOGIN] Loading state set to true');
+    _passwordInput.addEventListener('input', function() {
+      const isValid = validateInput(this.value, 'password');
+      _updateFieldValidation(this, isValid);
+    });
     
-    try {
-      console.log('[DEBUG-LOGIN] Calling authService.login');
-      console.log('[DEBUG-LOGIN] Current domain:', window.location.hostname);
-      console.log('[DEBUG-LOGIN] Current origin:', window.location.origin);
-      console.log('[DEBUG-LOGIN] Current protocol:', window.location.protocol);
-      console.log('[DEBUG-LOGIN] API Server Config:', config.api);
-      console.log('[DEBUG-LOGIN] Browser capabilities:', {
-        cookiesEnabled: navigator.cookieEnabled,
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language
+    // Mostrar u ocultar contraseña
+    const togglePasswordBtn = document.getElementById('toggle-password');
+    if (togglePasswordBtn) {
+      togglePasswordBtn.addEventListener('click', function() {
+        if (_passwordInput.type === 'password') {
+          _passwordInput.type = 'text';
+          this.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+          _passwordInput.type = 'password';
+          this.innerHTML = '<i class="fas fa-eye"></i>';
+        }
       });
-      
-      // Attempt login
-      await OFICRI.authService.login(credentials);
-      
-      console.log('[DEBUG-LOGIN] Login successful, redirecting to app');
-      // Success - redirect to app
-      _redirectToApp();
-    } catch (error) {
-      console.error('[DEBUG-LOGIN] Login error in handler:', error);
-      console.error('[DEBUG-LOGIN] Error name:', error.name);
-      console.error('[DEBUG-LOGIN] Error message:', error.message);
-      console.error('[DEBUG-LOGIN] Error stack:', error.stack);
-      
-      // Show error message
-      _showAlert(error.message || 'Credenciales inválidas. Por favor, intente nuevamente.');
-      
-      // Reset loading state
-      _setLoading(false);
     }
   };
   
   /**
-   * Toggles password visibility
+   * Verifica si el usuario ya está autenticado
+   * @private
    */
-  const _togglePasswordVisibility = function() {
-    const passwordInput = document.getElementById('password');
-    const passwordToggle = document.getElementById('password-toggle');
-    
-    if (!passwordInput || !passwordToggle) {
-      return;
+  const _checkAuthentication = function() {
+    // Si ya está autenticado, redirigir al dashboard
+    if (authService.isAuthenticated()) {
+      console.log('[LOGIN] Usuario ya autenticado, redirigiendo al dashboard');
+      window.location.href = '/dashboard';
     }
-    
-    _passwordVisible = !_passwordVisible;
-    
-    // Update input type
-    passwordInput.type = _passwordVisible ? 'text' : 'password';
-    
-    // Update icon
-    passwordToggle.innerHTML = _passwordVisible 
-      ? '<i class="fa-regular fa-eye-slash"></i>' 
-      : '<i class="fa-regular fa-eye"></i>';
   };
   
   /**
-   * Handles forgot password link click
-   * @param {Event} event - Click event
+   * Restaura el CIP guardado en localStorage
+   * @private
    */
-  const _handleForgotPassword = function(event) {
+  const _restoreSavedCip = function() {
+    const savedCip = localStorage.getItem('saved_cip');
+    if (savedCip) {
+      _cipInput.value = savedCip;
+      if (_rememberCheck) {
+        _rememberCheck.checked = true;
+      }
+    }
+  };
+  
+  /**
+   * Verifica parámetros en la URL para mensajes de error
+   * @private
+   */
+  const _checkUrlParams = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const message = urlParams.get('message');
+    
+    if (error) {
+      let errorMessage = 'Error de autenticación';
+      
+      switch (error) {
+        case 'session_expired':
+          errorMessage = 'Su sesión ha expirado. Por favor inicie sesión nuevamente.';
+          break;
+        case 'unauthorized':
+          errorMessage = 'No tiene permisos para acceder a este recurso.';
+          break;
+        case 'invalid_token':
+          errorMessage = 'Token de autenticación inválido. Por favor inicie sesión nuevamente.';
+          break;
+        default:
+          errorMessage = message || errorMessage;
+      }
+      
+      _showError(errorMessage);
+      
+      // Limpiar URL para evitar que el error persista en recargas
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  };
+  
+  /**
+   * Maneja el envío del formulario de login
+   * @param {Event} event - Evento de submit
+   * @private
+   */
+  const _handleSubmit = async function(event) {
     event.preventDefault();
     
-    OFICRI.notifications.info(
-      'Póngase en contacto con el administrador del sistema para restablecer su contraseña.',
-      { title: 'Recuperación de Contraseña' }
-    );
+    // Si ya está enviando o bloqueado, no hacer nada
+    if (_isSubmitting || _isBlocked) {
+      return;
+    }
+    
+    // Obtener valores del formulario
+    const cip = _cipInput.value.trim();
+    const password = _passwordInput.value;
+    const remember = _rememberCheck ? _rememberCheck.checked : false;
+    
+    // Validar campos
+    if (!cip) {
+      _showError('Por favor ingrese su Código CIP');
+      _cipInput.focus();
+      return;
+    }
+    
+    if (!password) {
+      _showError('Por favor ingrese su contraseña');
+      _passwordInput.focus();
+      return;
+    }
+    
+    // Validación de CIP
+    if (!validateInput(cip, 'codigoCIP')) {
+      _showError('El Código CIP debe ser numérico y tener máximo 8 dígitos');
+      _cipInput.focus();
+      return;
+    }
+    
+    // Mostrar loading y deshabilitar botón
+    _isSubmitting = true;
+    _showLoading();
+    
+    try {
+      // Intentar login
+      const loginData = {
+        codigoCIP: cip,
+        password: password,
+        remember: remember
+      };
+      
+      const user = await authService.login(loginData);
+      
+      // Si llegamos aquí, el login fue exitoso
+      console.log('[LOGIN] Login exitoso, redirigiendo...');
+      
+      // Guardar CIP si remember está marcado
+      if (remember) {
+        localStorage.setItem('saved_cip', cip);
+      } else {
+        localStorage.removeItem('saved_cip');
+      }
+      
+      // Resetear contadores de intentos
+      _loginAttempts = 0;
+      
+      // Redirigir según rol si está configurado
+      _redirectBasedOnRole(user);
+    } catch (error) {
+      // Incrementar contador de intentos fallidos
+      _loginAttempts++;
+      
+      // Mostrar error
+      _showError(_formatErrorMessage(error));
+      
+      // Si excedió intentos máximos, bloquear temporalmente
+      if (_loginAttempts >= _maxLoginAttempts) {
+        _blockLogin();
+      }
+      
+      // Log del error (sin contraseña)
+      console.error('[LOGIN] Error de login:', error.message);
+    } finally {
+      // Restaurar estado del botón
+      _hideLoading();
+      _isSubmitting = false;
+    }
   };
   
   /**
-   * Validates a specific form field
-   * @param {string} fieldName - Field name to validate
-   * @returns {boolean} - Validation result
+   * Formatea el mensaje de error para mostrar al usuario
+   * @param {Error} error - Error ocurrido
+   * @returns {string} Mensaje formateado
+   * @private
    */
-  const _validateField = function(fieldName) {
-    const field = document.getElementById(fieldName);
-    const errorElement = document.getElementById(`${fieldName}-error`);
-    
-    if (!field || !errorElement) {
-      return false;
+  const _formatErrorMessage = function(error) {
+    // Si el error tiene un mensaje específico, usarlo
+    if (error.message) {
+      // Mensajes de error comunes
+      if (error.message.includes('Password incorrect') || 
+          error.message.includes('contraseña incorrecta')) {
+        return 'Contraseña incorrecta. Por favor verifique e intente nuevamente.';
+      }
+      
+      if (error.message.includes('User not found') || 
+          error.message.includes('usuario no encontrado')) {
+        return 'El Código CIP ingresado no está registrado en el sistema.';
+      }
+      
+      if (error.message.includes('Account is locked') || 
+          error.message.includes('cuenta está bloqueada')) {
+        return 'Esta cuenta está bloqueada. Por favor contacte al administrador.';
+      }
+      
+      if (error.message.includes('Account is inactive') || 
+          error.message.includes('cuenta está inactiva')) {
+        return 'Esta cuenta está inactiva. Por favor contacte al administrador.';
+      }
+      
+      if (error.message.includes('Too many failed attempts') || 
+          error.message.includes('demasiados intentos fallidos')) {
+        return 'Demasiados intentos fallidos. Por favor intente más tarde.';
+      }
+      
+      if (error.message.includes('Network error') || 
+          error.message.includes('Error de red') ||
+          error.message.includes('Failed to fetch')) {
+        return 'Error de conexión. Por favor verifique su conexión a Internet e intente nuevamente.';
+      }
+      
+      return error.message;
     }
     
-    const value = field.value.trim();
-    let isValid = true;
-    let errorMessage = '';
+    // Mensaje genérico por defecto
+    return 'Error de autenticación. Por favor intente nuevamente.';
+  };
+  
+  /**
+   * Redirige al usuario basado en su rol
+   * @param {Object} user - Datos del usuario autenticado
+   * @private
+   */
+  const _redirectBasedOnRole = function(user) {
+    // URL por defecto
+    let redirectUrl = '/dashboard';
     
-    // Field-specific validation
-    switch (fieldName) {
-      case 'codigoCIP':
-        if (!OFICRI.validators.required(value)) {
-          isValid = false;
-          errorMessage = 'El código CIP es requerido';
-        } else if (!OFICRI.validators.codigoCIP(value)) {
-          isValid = false;
-          errorMessage = 'Ingrese un código CIP válido';
-        }
-        break;
+    // Verificar si hay rutas específicas por rol
+    if (user && user.NombreRol && config.auth && config.auth.roleRedirects) {
+      const roleRedirect = config.auth.roleRedirects[user.NombreRol];
+      if (roleRedirect) {
+        redirectUrl = roleRedirect;
+      }
+    }
+    
+    // Verificar si hay URL de retorno guardada
+    const returnUrl = sessionStorage.getItem('return_url');
+    if (returnUrl) {
+      redirectUrl = returnUrl;
+      sessionStorage.removeItem('return_url');
+    }
+    
+    // Usar timeout para evitar problemas de redirección simultánea
+    setTimeout(() => {
+      console.log('[LOGIN] Redirigiendo a:', redirectUrl);
+      window.location.href = redirectUrl;
+    }, 300);
+  };
+  
+  /**
+   * Bloquea el formulario después de múltiples intentos fallidos
+   * @private
+   */
+  const _blockLogin = function() {
+    // Bloquear formulario
+    _isBlocked = true;
+    
+    // Tiempo de bloqueo en segundos
+    const blockTime = 60;
+    let timeLeft = blockTime;
+    
+    // Mostrar mensaje y deshabilitar botón
+    _submitButton.disabled = true;
+    _showError(`Demasiados intentos fallidos. Por favor espere ${blockTime} segundos antes de intentar nuevamente.`);
+    
+    // Actualizar contador cada segundo
+    _blockTimeout = setInterval(() => {
+      timeLeft--;
+      
+      if (timeLeft <= 0) {
+        // Desbloquear después del tiempo
+        clearInterval(_blockTimeout);
+        _isBlocked = false;
+        _submitButton.disabled = false;
+        _showError('Ya puede intentar nuevamente.');
         
-      case 'password':
-        if (!OFICRI.validators.required(value)) {
-          isValid = false;
-          errorMessage = 'La contraseña es requerida';
-        }
-        break;
+        // Resetear contador de intentos
+        _loginAttempts = 0;
+      } else {
+        // Actualizar mensaje con tiempo restante
+        _showError(`Demasiados intentos fallidos. Por favor espere ${timeLeft} segundos antes de intentar nuevamente.`);
+      }
+    }, 1000);
+  };
+  
+  /**
+   * Muestra un mensaje de error
+   * @param {string} message - Mensaje de error
+   * @private
+   */
+  const _showError = function(message) {
+    if (_errorContainer) {
+      _errorContainer.textContent = message;
+      _errorContainer.style.display = 'block';
+      
+      // Agregar clase para animación
+      _errorContainer.classList.remove('shake');
+      void _errorContainer.offsetWidth; // Forzar reflow para reiniciar animación
+      _errorContainer.classList.add('shake');
+    } else {
+      // Fallback si no existe el contenedor
+      alert(message);
+    }
+  };
+  
+  /**
+   * Oculta el mensaje de error
+   * @private
+   */
+  const _hideError = function() {
+    if (_errorContainer) {
+      _errorContainer.style.display = 'none';
+      _errorContainer.textContent = '';
+    }
+  };
+  
+  /**
+   * Muestra indicador de carga en el botón
+   * @private
+   */
+  const _showLoading = function() {
+    if (_submitButton) {
+      const originalText = _submitButton.textContent;
+      _submitButton.dataset.originalText = originalText;
+      _submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verificando...';
+      _submitButton.disabled = true;
+    }
+  };
+  
+  /**
+   * Oculta indicador de carga en el botón
+   * @private
+   */
+  const _hideLoading = function() {
+    if (_submitButton) {
+      const originalText = _submitButton.dataset.originalText || 'Ingresar';
+      _submitButton.innerHTML = originalText;
+      _submitButton.disabled = false;
+    }
+  };
+  
+  /**
+   * Actualiza la validación visual de un campo
+   * @param {HTMLElement} field - Campo a validar
+   * @param {boolean} isValid - Si el campo es válido
+   * @private
+   */
+  const _updateFieldValidation = function(field, isValid) {
+    // Ocultar error al empezar a escribir
+    _hideError();
+    
+    // Si el campo está vacío, no mostrar validación
+    if (!field.value.trim()) {
+      field.classList.remove('is-valid', 'is-invalid');
+      return;
     }
     
-    // Update UI based on validation
+    // Actualizar clases según validez
     if (isValid) {
+      field.classList.add('is-valid');
       field.classList.remove('is-invalid');
-      errorElement.textContent = '';
     } else {
       field.classList.add('is-invalid');
-      errorElement.textContent = errorMessage;
-    }
-    
-    return isValid;
-  };
-  
-  /**
-   * Validates the entire form
-   * @returns {boolean} - Validation result
-   */
-  const _validateForm = function() {
-    const isCodigoCIPValid = _validateField('codigoCIP');
-    const isPasswordValid = _validateField('password');
-    
-    return isCodigoCIPValid && isPasswordValid;
-  };
-  
-  /**
-   * Shows or hides alert message
-   * @param {string|null} message - Alert message or null to hide
-   */
-  const _showAlert = function(message) {
-    const alertElement = document.getElementById('login-alert');
-    const alertMessage = document.getElementById('login-alert-message');
-    
-    if (!alertElement || !alertMessage) {
-      return;
-    }
-    
-    if (message) {
-      alertMessage.textContent = message;
-      alertElement.style.display = 'block';
-    } else {
-      alertElement.style.display = 'none';
-      alertMessage.textContent = '';
+      field.classList.remove('is-valid');
     }
   };
   
-  /**
-   * Sets loading state for the form
-   * @param {boolean} isLoading - Whether form is in loading state
-   */
-  const _setLoading = function(isLoading) {
-    _isLoading = isLoading;
-    
-    const loginButton = document.getElementById('login-button');
-    const loginButtonText = document.getElementById('login-button-text');
-    const loginSpinner = document.getElementById('login-spinner');
-    
-    if (!loginButton || !loginButtonText || !loginSpinner) {
-      return;
-    }
-    
-    if (isLoading) {
-      loginButton.disabled = true;
-      loginButtonText.textContent = 'Iniciando sesión...';
-      loginSpinner.style.display = 'inline-block';
-    } else {
-      loginButton.disabled = false;
-      loginButtonText.textContent = 'Iniciar Sesión';
-      loginSpinner.style.display = 'none';
-    }
-  };
-  
-  /**
-   * Redirects to the appropriate app page based on user role
-   */
-  const _redirectToApp = function() {
-    const user = OFICRI.authService.getUser();
-    
-    if (!user) {
-      console.error('User data not found');
-      return;
-    }
-    
-    // Redirigir a dashboard que se encargará de redirigir según el rol
-    window.location.href = 'dashboard.html';
-  };
-  
-  // Return public API
+  // API pública
   return {
-    init: _init
+    init
   };
 })();
 
-// Initialize login page on DOM content loaded
+// Inicializar al cargar el DOM
 document.addEventListener('DOMContentLoaded', function() {
-  OFICRI.loginPage.init();
-}); 
+  loginPage.init();
+});
+
+// Para compatibilidad con módulos y scripts globales
+window.OFICRI.loginPage = loginPage;
+export { loginPage }; 

@@ -198,23 +198,13 @@ OFICRI.loginPage = (function() {
       // Success - redirect to app
       _redirectToApp();
     } catch (error) {
-      console.error('[DEBUG-LOGIN] Login error:', error.message);
+      console.error('[DEBUG-LOGIN] Login error:', error);
       
-      // Handle specific error messages
-      let errorMessage = 'Error al iniciar sesión. Por favor, intente de nuevo.';
+      // Show error message
+      _showAlert(error.message || 'Credenciales inválidas. Por favor, intente nuevamente.');
       
-      if (error.message.includes('Invalid credentials')) {
-        errorMessage = 'Credenciales inválidas. Verifique su código CIP y contraseña.';
-      } else if (error.message.includes('Account locked')) {
-        errorMessage = 'Cuenta bloqueada. Contacte al administrador.';
-      }
-      
-      _showAlert(errorMessage);
-      notifications.error(errorMessage);
-    } finally {
-      // Hide loading state
+      // Reset loading state
       _setLoading(false);
-      console.log('[DEBUG-LOGIN] Loading state set to false');
     }
   };
   
@@ -222,23 +212,22 @@ OFICRI.loginPage = (function() {
    * Toggles password visibility
    */
   const _togglePasswordVisibility = function() {
-    const passwordField = document.getElementById('password');
+    const passwordInput = document.getElementById('password');
     const passwordToggle = document.getElementById('password-toggle');
     
-    if (!passwordField || !passwordToggle) {
+    if (!passwordInput || !passwordToggle) {
       return;
     }
     
     _passwordVisible = !_passwordVisible;
     
-    // Toggle password field type
-    passwordField.type = _passwordVisible ? 'text' : 'password';
+    // Update input type
+    passwordInput.type = _passwordVisible ? 'text' : 'password';
     
-    // Toggle icon
-    const icon = passwordToggle.querySelector('i');
-    if (icon) {
-      icon.className = _passwordVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
-    }
+    // Update icon
+    passwordToggle.innerHTML = _passwordVisible 
+      ? '<i class="fa-regular fa-eye-slash"></i>' 
+      : '<i class="fa-regular fa-eye"></i>';
   };
   
   /**
@@ -248,8 +237,10 @@ OFICRI.loginPage = (function() {
   const _handleForgotPassword = function(event) {
     event.preventDefault();
     
-    // Mostrar modal de recuperación de contraseña (implementación pendiente)
-    alert('La función de recuperación de contraseña estará disponible próximamente. Por favor contacte al administrador para restablecer su contraseña.');
+    notifications.info(
+      'Póngase en contacto con el administrador del sistema para restablecer su contraseña.',
+      { title: 'Recuperación de Contraseña' }
+    );
   };
   
   /**
@@ -275,27 +266,30 @@ OFICRI.loginPage = (function() {
     // Field-specific validation
     switch (fieldName) {
       case 'codigoCIP':
-        const cipRequired = validateInput(value, 'string', { required: true });
-        const cipFormat = validateInput(value, 'codigoCIP');
-        
-        console.log(`[DEBUG-LOGIN] Validación CIP - requerido: ${cipRequired}, formato: ${cipFormat}`);
-        
-        if (!cipRequired) {
+        // Verificar si está vacío
+        if (!value) {
           isValid = false;
           errorMessage = 'El código CIP es requerido';
-        } else if (!cipFormat) {
+          console.log('[DEBUG-LOGIN] El CIP está vacío');
+        } 
+        // Verificar formato si no está vacío
+        else if (!validateInput(value, 'codigoCIP')) {
           isValid = false;
-          errorMessage = 'Ingrese un código CIP válido (debe tener 8 dígitos)';
+          errorMessage = 'Ingrese un código CIP válido (debe ser numérico y tener máximo 8 dígitos)';
+          console.log('[DEBUG-LOGIN] Formato de CIP inválido');
+        } else {
+          console.log('[DEBUG-LOGIN] CIP válido');
         }
         break;
         
       case 'password':
-        const pwdRequired = validateInput(value, 'string', { required: true });
-        console.log(`[DEBUG-LOGIN] Validación password - requerido: ${pwdRequired}`);
-        
-        if (!pwdRequired) {
+        // Verificar si está vacío
+        if (!value) {
           isValid = false;
           errorMessage = 'La contraseña es requerida';
+          console.log('[DEBUG-LOGIN] La contraseña está vacía');
+        } else {
+          console.log('[DEBUG-LOGIN] Contraseña proporcionada (validación básica pasada)');
         }
         break;
     }

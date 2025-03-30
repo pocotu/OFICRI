@@ -6,7 +6,7 @@
   },
   "ui": false,
   "notify": false,
-  "open": true,
+  "open": false,
   "reloadDelay": 500,
   "reloadDebounce": 500
 } 

@@ -71,7 +71,7 @@ const validateInput = function(input, type) {
     return false;
   }
   
-  // Convertir a string si no lo es
+    // Convertir a string si no lo es
   const value = typeof input !== 'string' ? input.toString() : input;
   
   // Validar según el tipo
@@ -167,10 +167,10 @@ const validateObject = function(data, schema) {
     // Si existe valor y hay tipo de validación
     if (value !== undefined && value !== null && value !== '' && fieldSchema.type) {
       const isValid = validateInput(value, fieldSchema.type);
-      
-      if (!isValid) {
-        result.isValid = false;
-        result.errors[field] = fieldSchema.errorMessage || `El campo ${field} no es válido`;
+    
+    if (!isValid) {
+      result.isValid = false;
+      result.errors[field] = fieldSchema.errorMessage || `El campo ${field} no es válido`;
       }
     }
     
