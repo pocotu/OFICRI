@@ -117,7 +117,7 @@ const loginPage = (function() {
       window.location.href = '/dashboard';
     }
   };
-  
+    
   /**
    * Restaura el CIP guardado en localStorage
    * @private
@@ -128,7 +128,7 @@ const loginPage = (function() {
       _cipInput.value = savedCip;
       if (_rememberCheck) {
         _rememberCheck.checked = true;
-      }
+    }
     }
   };
   
@@ -156,8 +156,8 @@ const loginPage = (function() {
           break;
         default:
           errorMessage = message || errorMessage;
-      }
-      
+    }
+    
       _showError(errorMessage);
       
       // Limpiar URL para evitar que el error persista en recargas
@@ -365,7 +365,7 @@ const loginPage = (function() {
       } else {
         // Actualizar mensaje con tiempo restante
         _showError(`Demasiados intentos fallidos. Por favor espere ${timeLeft} segundos antes de intentar nuevamente.`);
-      }
+        }
     }, 1000);
   };
   
@@ -460,7 +460,7 @@ const loginPage = (function() {
 // Inicializar al cargar el DOM
 document.addEventListener('DOMContentLoaded', function() {
   loginPage.init();
-});
+}); 
 
 // Para compatibilidad con módulos y scripts globales
 window.OFICRI.loginPage = loginPage;

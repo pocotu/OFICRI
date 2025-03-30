@@ -7,15 +7,8 @@ js/
 **/js/
 public/js/
 client/public/js/
-dist/
-**/dist/
-public/dist/
-client/public/dist/
 
-# Archivos de configuración local
-.env
-.env.local
-.env.*.local
+
 
 # Archivos de log
 logs/

@@ -11,6 +11,9 @@ module.exports = {
     
     // Utilidades
     'utils/validators': './src/utils/validators.js',
+    'utils/errorHandlerUtil': './src/utils/errorHandlerUtil.js',
+    'utils/httpUtil': './src/utils/httpUtil.js',
+    'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
     'ui/notifications': './src/ui/notifications.js',
     
     // Páginas

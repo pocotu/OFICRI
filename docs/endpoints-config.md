@@ -254,7 +254,7 @@ GET /api/documentos?estado=RECIBIDO&search=fiscalia&fechaDesde=2024-01-01&fechaH
 | 4   | 16            | Derivar     | Permiso para derivar documentos            |
 | 5   | 32            | Auditar     | Permiso para ver logs y hacer auditorías   |
 | 6   | 64            | Exportar    | Permiso para exportar datos                |
-| 7   | 128           | Administrar | Acceso completo al sistema                 |
+| 7   | 128           | Administrar | Acceso completo al sistema                 | 
 
 ## Notas
 

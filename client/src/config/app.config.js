@@ -6,6 +6,9 @@
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
 
+// Flag to prevent multiple initializations
+window.OFICRI.initialized = window.OFICRI.initialized || false;
+
 // Config object
 const config = {
   // API Configuration
@@ -54,25 +57,65 @@ const config = {
   environment: {
     isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
     isProduction: !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+  },
+  
+  // Helper methods
+  isDevelopment: function() {
+    return this.environment.isDevelopment;
+  },
+  
+  isProduction: function() {
+    return this.environment.isProduction;
+  },
+  
+  isDebugEnabled: function() {
+    return this.features.debugging;
+  },
+  
+  // Get config value by key path (e.g. "api.baseUrl")
+  get: function(path) {
+    if (!path) return undefined;
+    
+    const keys = path.split('.');
+    let value = this;
+    
+    for (const key of keys) {
+      if (value === undefined || value === null) return undefined;
+      value = value[key];
+    }
+    
+    return value;
   }
 };
 
-// Apply environment-specific overrides
-if (config.environment.isDevelopment) {
+// Apply environment-specific overrides (only once)
+if (!window.OFICRI.configInitialized && config.environment.isDevelopment) {
   // Development settings
   config.api.baseUrl = 'http://localhost:3000/api';
-  console.log('[CONFIG] Using development API URL:', config.api.baseUrl);
+  
+  // Log only once
+  if (!window.OFICRI.configLogged) {
+    console.log('[CONFIG] Using development API URL:', config.api.baseUrl);
+    window.OFICRI.configLogged = true;
+  }
+  
   config.features.debugging = true;
 }
 
-// Add runtime diagnostics when debugging is enabled
-if (config.features.debugging) {
+// Add runtime diagnostics when debugging is enabled (only once)
+if (!window.OFICRI.configInitialized && config.features.debugging && !window.OFICRI.configLogged) {
   console.log('[CONFIG] Runtime configuration initialized:', {
     environment: config.environment.isDevelopment ? 'development' : 'production',
     apiBaseUrl: config.api.baseUrl,
     currentOrigin: window.location.origin
   });
+  
+  // Mark as logged
+  window.OFICRI.configLogged = true;
 }
+
+// Mark config as initialized
+window.OFICRI.configInitialized = true;
 
 // Freeze config to prevent modifications
 Object.freeze(config);

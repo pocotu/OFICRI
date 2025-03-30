@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "Frontend para el Sistema de Gestión Documental OFICRI",
   "scripts": {
-    "dev": "npm run build && lite-server --baseDir=\"public\" --port=3001",
+    "clean": "node -e \"const fs=require('fs');const path=require('path');const distPath=path.join(__dirname,'public','dist');if(fs.existsSync(distPath)){fs.rmSync(distPath,{recursive:true});console.log('Dist directory cleaned');}\"",
+    "dev": "npm run clean && npm run build && lite-server --baseDir=\"public\" --port=3001",
     "start": "lite-server --baseDir=\"public\" --port=3001",
+    "prebuild": "npm run clean",
     "build": "webpack --mode=development",
     "build:prod": "webpack --mode=production",
     "watch": "webpack --watch --mode=development",

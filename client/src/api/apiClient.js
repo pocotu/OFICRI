@@ -7,6 +7,8 @@
 // Importar dependencias
 import { config } from '../config/app.config.js';
 import { authService } from '../services/authService.js';
+import { authStateManager } from '../utils/authStateManager.js';
+import { errorHandler } from '../utils/errorHandlerUtil.js';
 
 // Crear namespace para compatibilidad
 window.OFICRI = window.OFICRI || {};
@@ -44,7 +46,7 @@ const apiClient = (function() {
       method: 'GET',
       ..._buildRequestOptions(options, headers, skipAuth)
     };
-    
+      
     // Realizar petición
     return _request(url, fetchOptions);
   };
@@ -192,8 +194,8 @@ const apiClient = (function() {
     
     // Si hay token y no se indica skipAuth, incluirlo
     if (!skipAuth) {
-      const token = authService.getToken();
-      if (token) {
+    const token = authService.getToken();
+    if (token) {
         defaultHeaders['Authorization'] = `Bearer ${token}`;
       }
     }
@@ -223,7 +225,7 @@ const apiClient = (function() {
     setTimeout(() => controller.abort(), timeout);
     return controller.signal;
   };
-  
+      
   /**
    * Realiza una petición a la API
    * @param {string} url - URL completa
@@ -237,7 +239,7 @@ const apiClient = (function() {
     try {
       // Intentar hacer la petición
       const response = await fetch(url, options);
-      
+          
       // Si la respuesta es 204 No Content, devolver null
       if (response.status === 204) {
         return null;
@@ -247,12 +249,12 @@ const apiClient = (function() {
       const contentType = response.headers.get('content-type');
       let data;
       
-      if (contentType && contentType.includes('application/json')) {
+        if (contentType && contentType.includes('application/json')) {
         data = await response.json();
-      } else {
+        } else {
         // Si no es JSON, devolver el texto
         data = await response.text();
-      }
+        }
       
       // Si es error 401 Unauthorized pero no es /auth/login (para evitar recursión)
       if (response.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/refresh')) {
@@ -265,7 +267,7 @@ const apiClient = (function() {
             if (options.headers) {
               options.headers['Authorization'] = `Bearer ${refreshedToken}`;
             }
-            
+      
             // Reintentar la petición con el nuevo token
             return _request(url, options, retryCount + 1, requestId);
           }
@@ -274,19 +276,34 @@ const apiClient = (function() {
         // Si no podemos refrescar o falló, redirigir al login
         console.error('Error de autenticación. Redirigiendo al login...');
         
-        // Evitar redirecciones múltiples usando un timeout
-        setTimeout(() => {
-          // Solo hacer logout si no estamos ya en proceso
-          if (window.OFICRI.isLoggedIn !== false) {
-            window.OFICRI.isLoggedIn = false;
-            authService.logout({ redirect: true });
-          }
-        }, 100);
+        // Verificar si ya estamos en proceso de logout usando authStateManager
+        if (authStateManager.getState() === authStateManager.STATES.LOGGING_OUT || 
+            authStateManager.getState() === authStateManager.STATES.REDIRECTING) {
+          console.warn('[API] Ya hay un proceso de autenticación en curso, omitiendo redirección adicional.');
+          throw new Error('Sesión expirada. Redirección en proceso...');
+        }
         
+        // Solo hacer logout si es seguro hacerlo
+        if (authStateManager.canRedirect('login')) {
+          // Marcar como redirigiendo
+          authStateManager.setState(authStateManager.STATES.REDIRECTING);
+          
+          // Solo redirigir si estamos logueados
+          setTimeout(() => {
+            if (window.OFICRI.isLoggedIn !== false && !window.location.pathname.includes('/login')) {
+              window.OFICRI.isLoggedIn = false;
+              authService.logout({ redirect: true });
+            } else {
+              // Limpiar estado si ya no es necesario
+              authStateManager.setState(null);
+            }
+          }, 800); // Timeout más largo para evitar sobrecargas
+        }
+          
         // Rechazar la promesa para que el llamador pueda manejar el error
         throw new Error('Sesión expirada o inválida. Por favor inicie sesión nuevamente.');
       }
-      
+        
       // Si no es 2xx, lanzar error
       if (!response.ok) {
         const error = new Error(data.message || `Error ${response.status}: ${response.statusText}`);
@@ -300,7 +317,7 @@ const apiClient = (function() {
     } catch (error) {
       // Si es error de timeout o abort, personalizarlo
       if (error.name === 'AbortError') {
-        throw new Error('La petición excedió el tiempo de espera máximo. Por favor, inténtelo de nuevo.');
+        return Promise.reject(errorHandler.handleNetworkError(error));
       }
       
       // Si es error de red y tenemos reintentos disponibles, reintentar
@@ -314,8 +331,8 @@ const apiClient = (function() {
         });
       }
       
-      // Propagar el error
-      throw error;
+      // Propagar el error usando el manejador central
+      return Promise.reject(errorHandler.handleApiError(error));
     }
   };
   
@@ -325,6 +342,14 @@ const apiClient = (function() {
    * @private
    */
   const _refreshTokenAndRetry = async function() {
+    // Verificar estado con authStateManager
+    if (authStateManager.getState() === authStateManager.STATES.REFRESHING || 
+        authStateManager.getState() === authStateManager.STATES.LOGGING_OUT || 
+        authStateManager.getState() === authStateManager.STATES.REDIRECTING) {
+      console.warn(`[API] Ya hay una operación de autenticación en curso: ${authStateManager.getState()}`);
+      return _pendingRefreshPromise;
+    }
+    
     // Si ya estamos refrescando, devolver la misma promesa
     if (_isRefreshing) {
       return _pendingRefreshPromise;
@@ -332,10 +357,15 @@ const apiClient = (function() {
     
     // Marcar como refrescando e iniciar promesa
     _isRefreshing = true;
+    authStateManager.setState(authStateManager.STATES.REFRESHING);
+    
     _pendingRefreshPromise = new Promise(async (resolve) => {
       try {
         // Intentar refrescar token
         const success = await authService.refreshToken();
+      
+        // Pequeño timeout para permitir que los cambios en el almacenamiento se completen
+        await new Promise(r => setTimeout(r, 100));
         
         if (success) {
           // Si se refrescó correctamente, resolver con el nuevo token
@@ -350,6 +380,11 @@ const apiClient = (function() {
       } finally {
         // Restaurar estado
         _isRefreshing = false;
+        
+        // Limpiar estado solo si seguimos en refreshing
+        if (authStateManager.getState() === authStateManager.STATES.REFRESHING) {
+          authStateManager.setState(null);
+        }
       }
     });
     

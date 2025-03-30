@@ -9,6 +9,8 @@
 import { config } from '../config/app.config.js';
 import { apiClient } from '../api/apiClient.js';
 import { validateInput } from '../utils/validators.js';
+import { userService } from './userService.js';
+import { authStateManager } from '../utils/authStateManager.js';
 
 // Crear namespace global para compatibilidad
 window.OFICRI = window.OFICRI || {};
@@ -22,6 +24,7 @@ const authService = (function() {
   const REFRESH_TOKEN_KEY = 'oficri_refresh_token';
   const USER_KEY = 'oficri_user';
   const SESSION_DURATION = 30 * 60 * 1000; // 30 minutos en ms
+  const AUTH_STATE_KEY = 'oficri_auth_state'; // Para controlar estado de autenticación
   
   // Variables privadas
   let _currentUser = null;
@@ -30,12 +33,38 @@ const authService = (function() {
   let _sessionTimeoutWarning = null;
   let _isAuthenticating = false; // Bandera para evitar múltiples intentos simultáneos
   let _isRedirecting = false; // Bandera para evitar múltiples redirecciones
+  let _isInitialized = false; // Bandera para evitar inicializaciones múltiples
   
   /**
    * Inicializa el servicio de autenticación
    */
   const init = function() {
-    console.log('[AUTH] Inicializando servicio de autenticación');
+    // Evitar inicializaciones múltiples
+    if (_isInitialized) {
+      if (config.isDevelopment()) {
+        console.log('[AUTH] Servicio ya inicializado, omitiendo');
+      }
+      return Promise.resolve();
+    }
+    
+    _isInitialized = true;
+    
+    if (config.isDevelopment()) {
+      console.log('[AUTH] Inicializando servicio de autenticación');
+    }
+    
+    // Verificar si hay estado previo (login en proceso, etc)
+    const authState = sessionStorage.getItem(AUTH_STATE_KEY);
+    if (authState) {
+      console.log('[AUTH] Estado previo detectado:', authState);
+      
+      // NUEVO: Limpiar estado solo si no estamos en medio de una operación crítica
+      if (authState !== 'logging_out' && authState !== 'redirecting' && authState !== 'refreshing') {
+        sessionStorage.removeItem(AUTH_STATE_KEY);
+      } else {
+        console.log('[AUTH] Manteniendo estado actual para operación en curso:', authState);
+      }
+    }
     
     // Cargar usuario desde localStorage si existe
     _loadUserFromStorage();
@@ -45,192 +74,225 @@ const authService = (function() {
     
     // Configurar listener de actividad
     _setupActivityTracking();
+    
+    return Promise.resolve();
   };
   
   /**
-   * Autentica al usuario policial con sus credenciales
-   * @param {Object|string} credentials - Credenciales o nombre de usuario
-   * @param {string} [password] - Contraseña (si el primer parámetro es username)
-   * @param {Object} [options] - Opciones adicionales
-   * @returns {Promise} Promesa que resuelve con los datos del usuario autenticado
+   * Verifica si el usuario está autenticado
+   * @returns {boolean} - True si el usuario está autenticado
    */
-  const login = async function(credentials, password, options = {}) {
-    // Evitar intentos múltiples de login simultáneos
-    if (_isAuthenticating) {
-      console.warn('[AUTH] Ya hay un proceso de autenticación en curso');
-      return Promise.reject(new Error('Ya hay un proceso de autenticación en curso'));
-    }
-    
-    _isAuthenticating = true;
-    
+  const isAuthenticated = function() {
     try {
-      let username, pwd, opts;
-      
-      // Verificar si se pasó un objeto de credenciales o parámetros individuales
-      if (typeof credentials === 'object' && credentials !== null) {
-        // Formato: login({codigoCIP: '12345', password: 'pwd'})
-        username = credentials.codigoCIP || credentials.username;
-        pwd = credentials.password;
-        opts = password || {}; // El segundo parámetro sería options
-      } else {
-        // Formato antiguo: login('username', 'password', {})
-        username = credentials;
-        pwd = password;
-        opts = options;
-      }
-      
-      // Validar entradas
-      if (!username || !pwd) {
-        throw new Error('Credenciales inválidas: falta Código CIP o contraseña');
-      }
-      
-      console.log('[AUTH] Intentando login con usuario policial:', username);
-      
-      // Preparar objeto de request
-      const loginData = {
-        username: username,
-        password: pwd
-      };
-      
-      // Si se recibió como codigoCIP, incluirlo también para compatibilidad
-      if (credentials.codigoCIP) {
-        loginData.codigoCIP = credentials.codigoCIP;
-      }
-      
-      // Incluir opciones adicionales si existen
-      if (credentials.remember || opts.remember) {
-        loginData.remember = true;
-      }
-      
-      if (opts.captcha) {
-        loginData.captcha = opts.captcha;
-      }
-      
-      console.log('[AUTH] Datos de login (sin password):', { 
-        username: loginData.username, 
-        codigoCIP: loginData.codigoCIP,
-        remember: loginData.remember 
-      });
-      
-      // Realizar petición de login
-      const response = await apiClient.post('/auth/login', loginData);
-      
-      // Verificar respuesta
-      if (!response || !response.token) {
-        console.error('[AUTH] Respuesta de login inválida:', response);
-        throw new Error('Respuesta de login inválida');
-      }
-      
-      // Guardar token y datos de usuario
-      _setTokens(response.token, response.refreshToken);
-      _setUser(response.user);
-      
-      // Iniciar verificación de sesión
-      _setupSessionCheck();
-      
-      console.log('[AUTH] Login exitoso para usuario:', response.user.CodigoCIP);
-      
-      // Devolver usuario
-      return response.user;
-    } catch (error) {
-      // Registrar intento fallido (solo el intento, no la contraseña)
-      console.warn(`[AUTH] Intento de login fallido para usuario policial: ${credentials.codigoCIP || credentials.username || credentials}`);
-      console.error('[AUTH] Error durante login:', error.message);
-      
-      // Lanzar error para manejo en UI
-      throw error;
-    } finally {
-      // Siempre marcar como no autenticando al final
-      _isAuthenticating = false;
-    }
-  };
-  
-  /**
-   * Cierra la sesión del usuario policial actual
-   * @param {Object} options - Opciones adicionales
-   * @returns {Promise} Promesa que resuelve cuando se completa el logout
-   */
-  const logout = async function(options = {}) {
-    // Evitar múltiples logouts simultáneos
-    if (_isRedirecting) {
-      console.warn('[AUTH] Ya hay una redirección en proceso');
-      return;
-    }
-    
-    _isRedirecting = true;
-    
-    try {
-      // Si hay token, intentar hacer logout en el servidor
-      const token = getToken();
-      if (token) {
-        try {
-          await apiClient.post('/auth/logout', {}, {}, {
-            'Authorization': `Bearer ${token}`
-          });
-          console.log('[AUTH] Logout exitoso en el servidor');
-        } catch (error) {
-          // Ignorar errores al hacer logout en el servidor
-          console.warn('[AUTH] Error al hacer logout en el servidor:', error.message);
-        }
-      }
-    } finally {
-      // Limpiar datos de sesión
-      _clearSession();
-      
-      // Redirigir a página de login si se especifica
-      if (options.redirect !== false) {
-        const redirectUrl = options.redirectUrl || '/';
-        console.log('[AUTH] Redirigiendo a:', redirectUrl);
-        
-        // Usar setTimeout para evitar problemas de redirección
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-          _isRedirecting = false;
-        }, 100);
-      } else {
-        _isRedirecting = false;
-      }
-    }
-  };
-  
-  /**
-   * Refresca el token de autenticación
-   * @returns {Promise<boolean>} Promesa que resuelve a true si el refresh fue exitoso
-   */
-  const refreshToken = async function() {
-    try {
-      const refreshToken = getRefreshToken();
-      
-      if (!refreshToken) {
-        return false;
-      }
-      
-      // Intentar refrescar token
-      const response = await apiClient.post('/auth/refresh', {
-        refreshToken
-      }, {}, {}, true);
-      
-      // Verificar respuesta
-      if (!response || !response.token) {
-        return false;
-      }
-      
-      // Actualizar tokens
-      _setTokens(response.token, response.refreshToken);
-      
-      return true;
-    } catch (error) {
-      console.error('[AUTH] Error al refrescar token:', error.message);
+      const token = localStorage.getItem('oficri_token');
+      return !!token;
+    } catch (e) {
+      console.error('[AuthService] Error verificando autenticación:', e);
       return false;
     }
   };
   
   /**
-   * Verifica si el usuario policial está autenticado
-   * @returns {boolean} True si está autenticado
+   * Inicia sesión en el sistema
+   * @param {Object} credentials - Credenciales de usuario
+   * @returns {Promise} - Promesa que resuelve con la respuesta del servidor
    */
-  const isAuthenticated = function() {
-    return !!getToken() && !!getUser();
+  const login = function(credentials) {
+    // NUEVO: Intentar limpiar cualquier estado de autenticación pendiente
+    authStateManager.clearAuthenticationState();
+    
+    // Prevenir múltiples intentos de login
+    if (authStateManager.getState() === authStateManager.STATES.AUTHENTICATING) {
+      console.warn('[AuthService] Ya hay un intento de login en curso');
+      return Promise.reject({ error: 'Ya hay un intento de login en curso' });
+    }
+    
+    // Marcar como autenticando
+    authStateManager.setState(authStateManager.STATES.AUTHENTICATING);
+    _isAuthenticating = true;
+    
+    return new Promise((resolve, reject) => {
+      // Validar credenciales
+      if (!credentials || !credentials.codigoCIP || !credentials.password) {
+        // Limpiar estado de autenticación
+        authStateManager.setState(null);
+        _isAuthenticating = false;
+        
+        reject({ error: 'Credenciales incompletas' });
+        return;
+      }
+      
+      // Realizar solicitud de login
+      apiClient.post('/auth/login', credentials)
+        .then(response => {
+          // Verificar que la respuesta no sea null o undefined
+          if (!response) {
+            throw new Error('La respuesta del servidor está vacía');
+          }
+
+          // CORREGIDO: Usar la respuesta directamente si no tiene propiedad data
+          // En algunos casos la API puede devolver directamente el objeto sin wrappearlo en "data"
+          const responseData = response.data || response;
+          
+          // Verificar que tengamos un token
+          if (!responseData.token) {
+            throw new Error('No se recibió un token de acceso válido');
+          }
+          
+          // Guardar token en localStorage
+          localStorage.setItem('oficri_token', responseData.token);
+          
+          // Si hay información de usuario, guardarla
+          if (responseData.user) {
+            localStorage.setItem('oficri_user', JSON.stringify(responseData.user));
+            _currentUser = responseData.user;
+          }
+          
+          // Reset del contador de ciclos y marcar como idle
+          authStateManager.resetCycleCount();
+          authStateManager.setState(null);
+          _isAuthenticating = false;
+          
+          // Devolver responseData al llamador
+          resolve(responseData);
+        })
+        .catch(error => {
+          console.error('[AuthService] Error en login:', error);
+          
+          // Formatear mensaje de error para el usuario
+          let errorMessage = 'Error de autenticación';
+          
+          if (error.response) {
+            if (error.response.status === 401) {
+              errorMessage = 'Credenciales incorrectas';
+            } else if (error.response.data && error.response.data.message) {
+              errorMessage = error.response.data.message;
+            }
+          } else if (error.message) {
+            // Si hay un mensaje de error específico, usarlo
+            errorMessage = error.message;
+          }
+          
+          // Reset estado
+          authStateManager.setState(null);
+          _isAuthenticating = false;
+          
+          reject({ error: errorMessage });
+        });
+    });
+  };
+  
+  /**
+   * Cierra la sesión del usuario
+   */
+  const logout = function() {
+    // Prevenir múltiples intentos de logout
+    if (authStateManager.getState() === authStateManager.STATES.LOGGING_OUT) {
+      console.warn('[AuthService] Ya hay un intento de logout en curso');
+      return;
+    }
+    
+    // Marcar como cerrando sesión
+    authStateManager.setState(authStateManager.STATES.LOGGING_OUT);
+    
+    // Limpiar localStorage
+    localStorage.removeItem('oficri_token');
+    localStorage.removeItem('oficri_user');
+    
+    // Registrar que venimos de logout para evitar ciclos
+    sessionStorage.setItem('oficri_from_logout', 'true');
+    
+    // Restaurar estado
+    setTimeout(() => {
+      authStateManager.setState(null);
+    }, 500);
+    
+    // Redirigir a login si es seguro hacerlo
+    if (authStateManager.canRedirect('login')) {
+      // Registrar redirección
+      authStateManager.setState(authStateManager.STATES.REDIRECTING);
+      
+      // Añadir delay para evitar problemas
+      setTimeout(() => {
+        window.location.href = 'index.html';
+        
+        // Reset estado después de iniciar redirección
+        setTimeout(() => {
+          authStateManager.setState(null);
+        }, 500);
+      }, 100);
+    }
+  };
+  
+  /**
+   * Redirige al usuario según su estado de autenticación
+   */
+  const redirectIfNeeded = function() {
+    // Obtener página actual
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    // Registrar carga de página para detectar ciclos
+    authStateManager.registerPageLoad(currentPage);
+    
+    // Si estamos en modo rescate, no hacer nada
+    if (authStateManager.getState() === authStateManager.STATES.RESCUED) {
+      console.warn('[AuthService] En modo rescate, no se realizarán redirecciones');
+      return;
+    }
+    
+    try {
+      const isAuth = isAuthenticated();
+      const isLoginPage = currentPage === 'index.html' || currentPage === '';
+      
+      // Si está autenticado pero está en login, redirigir a dashboard
+      if (isAuth && isLoginPage) {
+        if (authStateManager.canRedirect('dashboard')) {
+          console.log('[AuthService] Usuario autenticado en login, redirigiendo a dashboard');
+          
+          // Marcar como redirigiendo
+          authStateManager.setState(authStateManager.STATES.REDIRECTING);
+          
+          // Añadir delay para evitar problemas
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+            
+            // Reset estado después de iniciar redirección
+            setTimeout(() => {
+              authStateManager.setState(null);
+            }, 500);
+          }, 100);
+        }
+      }
+      // Si no está autenticado y no está en login, redirigir a login
+      else if (!isAuth && !isLoginPage) {
+        // Verificar si venimos de un logout para no contar como ciclo
+        const fromLogout = sessionStorage.getItem('oficri_from_logout') === 'true';
+        
+        if (fromLogout) {
+          // Limpiar flag
+          sessionStorage.removeItem('oficri_from_logout');
+        }
+        
+        if (authStateManager.canRedirect('login')) {
+          console.log('[AuthService] Usuario no autenticado, redirigiendo a login');
+          
+          // Marcar como redirigiendo
+          authStateManager.setState(authStateManager.STATES.REDIRECTING);
+          
+          // Añadir delay para evitar problemas
+          setTimeout(() => {
+            window.location.href = 'index.html';
+            
+            // Reset estado después de iniciar redirección
+            setTimeout(() => {
+              authStateManager.setState(null);
+            }, 500);
+          }, 100);
+        }
+      }
+    } catch (e) {
+      console.error('[AuthService] Error en redirección:', e);
+    }
   };
   
   /**
@@ -567,10 +629,7 @@ const authService = (function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        logout({
-          redirect: true,
-          redirectUrl: '/'
-        });
+        logout();
       }
     }, 1000);
     
@@ -584,10 +643,7 @@ const authService = (function() {
     document.getElementById('session-logout-btn').addEventListener('click', () => {
       clearInterval(timerInterval);
       _removeSessionTimeoutWarning();
-      logout({
-        redirect: true,
-        redirectUrl: '/'
-      });
+      logout();
     });
   };
   
@@ -652,37 +708,15 @@ const authService = (function() {
     updateActivity();
   };
   
-  /**
-   * Limpia todos los datos de sesión
-   * @private
-   */
-  const _clearSession = function() {
-    // Limpiar tokens de localStorage
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    
-    // Limpiar datos en memoria
-    _currentUser = null;
-    
-    // Limpiar verificación de sesión
-    if (_sessionCheckInterval) {
-      clearInterval(_sessionCheckInterval);
-      _sessionCheckInterval = null;
-    }
-    
-    console.log('[AUTH] Sesión limpiada exitosamente');
-  };
-  
   // Inicializar
   init();
   
   // API pública
   return {
+    isAuthenticated,
     login,
     logout,
-    refreshToken,
-    isAuthenticated,
+    redirectIfNeeded,
     getToken,
     getRefreshToken,
     getUser,
