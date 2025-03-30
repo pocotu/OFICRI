@@ -107,39 +107,59 @@
   color: var(--oficri-dark);
 }
 
+/* Estilización del grupo de entrada con iconos */
 .input-group {
   position: relative;
   display: flex;
   align-items: center;
-}
-
-.input-icon-container {
-  position: absolute;
-  left: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--oficri-primary);
-}
-
-.form-control {
-  width: 100%;
-  padding: 12px 15px 12px 35px;
   border: 1px solid #d1d5db;
   border-radius: var(--border-radius);
-  font-size: var(--oficri-font-size-md);
   transition: all var(--transition-speed) ease;
 }
 
-.form-control:focus {
+.input-group:focus-within {
   border-color: var(--oficri-secondary);
   box-shadow: 0 0 0 3px rgba(var(--oficri-primary-rgb), 0.15);
+}
+
+/* Contenedor del icono al lado izquierdo */
+.input-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 38px; /* Igual a --button-height */
+  background-color: #f8f9fa;
+  border-right: 1px solid #d1d5db;
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+/* Estilo de los iconos */
+.input-icon {
+  color: var(--oficri-primary);
+  font-size: 16px;
+}
+
+/* Estilo del campo de entrada */
+.form-control {
+  width: 100%;
+  height: var(--button-height);
+  padding: 0 15px;
+  border: none;
+  background-color: transparent;
+  font-size: var(--oficri-font-size-md);
   outline: none;
 }
 
-.form-control.is-invalid {
+.form-control::placeholder {
+  color: var(--oficri-gray);
+  opacity: 0.7;
+}
+
+/* Cuando el grupo de entrada contiene un campo inválido */
+.input-group:has(.is-invalid) {
   border-color: var(--oficri-danger);
-  background-color: rgba(var(--oficri-danger), 0.05);
+  background-color: rgba(231, 76, 60, 0.05);
 }
 
 .invalid-feedback {
@@ -152,11 +172,11 @@
 
 /* Estilo para el toggle de contraseña */
 .password-toggle-container {
-  position: absolute;
-  right: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-right: 15px;
+  height: var(--button-height);
 }
 
 .password-toggle {

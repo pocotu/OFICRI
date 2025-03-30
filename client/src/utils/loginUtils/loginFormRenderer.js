@@ -30,7 +30,7 @@ export function renderLoginForm(container) {
           <label for="codigoCIP">CIP</label>
           <div class="input-group">
             <span class="input-icon-container">
-              <i class="fas fa-user input-icon"></i>
+              <i class="fas fa-id-card input-icon"></i>
             </span>
             <input 
               type="text" 
