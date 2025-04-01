@@ -4,14 +4,19 @@
  */
 
 // Importar módulos necesarios
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 import { apiClient } from '../api/apiClient.js';
 import { authService } from '../services/authService.js';
-import { notifications } from '../ui/notifications.js';
+import { notificationManager } from '../ui/notificationManager.js';
+import { logoutService } from '../services/logoutService.js';
+import { sessionEvents } from '../utils/sessionEvents.js';
 import './dashboard.js';
 
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
+
+// Asegurar que el gestor de notificaciones esté disponible en el namespace global
+window.OFICRI.notifications = notificationManager;
 
 // Admin Module
 OFICRI.adminApp = (function() {
@@ -204,15 +209,111 @@ OFICRI.adminApp = (function() {
   const _handleLogout = function(event) {
     event.preventDefault();
     
-    // Llamar al servicio de autenticación para cerrar sesión
-    OFICRI.authService.logout()
-      .then(() => {
-        // La redirección la maneja el servicio de auth
-        console.log('Sesión cerrada exitosamente');
-      })
-      .catch(error => {
-        console.error('Error al cerrar sesión:', error);
-      });
+    // Obtener referencias a los elementos del botón
+    const logoutButton = document.getElementById('cerrar-sesion');
+    const btnTextSpan = logoutButton ? logoutButton.querySelector('.btn-text') : null;
+    const icon = logoutButton ? logoutButton.querySelector('i') : null;
+    
+    // Desactivar el botón para evitar múltiples clicks
+    if (logoutButton) {
+      // Cambiar estado visual del botón
+      logoutButton.disabled = true;
+      logoutButton.classList.add('disabled');
+      
+      // Cambiar texto
+      if (btnTextSpan) {
+        btnTextSpan.innerHTML = 'Cerrando sesión...';
+      }
+      
+      // Mostrar spinner
+      if (icon) {
+        icon.className = 'fas fa-spinner fa-spin';
+      }
+    }
+    
+    try {
+      // Usar el nuevo servicio de logout si está disponible 
+      if (logoutService && typeof logoutService.logout === 'function') {
+        // Usar el servicio dedicado
+        logoutService.logout()
+          .catch(error => {
+            console.error('Error en proceso de logout:', error);
+            // La redirección ya la maneja el servicio
+          });
+      } 
+      // Fallback al servicio de autenticación
+      else if (OFICRI.authService && typeof OFICRI.authService.logout === 'function') {
+        OFICRI.authService.logout()
+          .catch(error => {
+            console.error('Error al cerrar sesión:', error);
+            // Restaurar botón solo si hay error
+            _resetLogoutButton(logoutButton, btnTextSpan, icon);
+          });
+      } 
+      // Último recurso: logout manual
+      else {
+        console.warn('Servicios de logout no disponibles, realizando cierre de sesión básico');
+        _performBasicLogout();
+      }
+    } catch (error) {
+      console.error('Error crítico al intentar cerrar sesión:', error);
+      // Realizar logout manual como último recurso
+      _performBasicLogout();
+    }
+  };
+  
+  /**
+   * Realiza un cierre de sesión básico como último recurso
+   * @private
+   */
+  const _performBasicLogout = function() {
+    try {
+      // Limpiar datos de sesión
+      localStorage.removeItem('oficri_token');
+      localStorage.removeItem('oficri_user');
+      localStorage.removeItem('oficri_refresh_token');
+      sessionStorage.setItem('oficri_from_logout', 'true');
+      
+      // Intentar registrar evento si está disponible
+      if (sessionEvents && typeof sessionEvents.logLogout === 'function') {
+        sessionEvents.logLogout({
+          success: true,
+          manual: true,
+          reason: 'MANUAL_FALLBACK'
+        }).catch(e => console.warn('No se pudo registrar evento de logout:', e));
+      }
+      
+      // Redirigir a login
+      window.location.href = 'index.html';
+    } catch (e) {
+      console.error('Error en logout básico:', e);
+      // Como último recurso, simplemente redirigir
+      window.location.href = 'index.html';
+    }
+  };
+  
+  /**
+   * Restaura el botón de logout a su estado normal
+   * @param {HTMLElement} button - El botón de logout
+   * @param {HTMLElement} textSpan - El span de texto en el botón
+   * @param {HTMLElement} icon - El ícono del botón
+   * @private
+   */
+  const _resetLogoutButton = function(button, textSpan, icon) {
+    if (button) {
+      button.disabled = false;
+      button.classList.remove('disabled');
+      
+      // Restaurar texto original
+      if (textSpan) {
+        textSpan.innerHTML = 'Cerrar Sesión';
+      }
+      
+      // Restaurar ícono original
+      if (icon) {
+        icon.className = 'fas fa-sign-out-alt';
+      }
+    }
   };
   
   // Exponer API pública

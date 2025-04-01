@@ -1,21 +1,18 @@
 /**
- * OFICRI System Configuration
- * Central configuration for the application
+ * OFICRI System Configuration (Compatibility Bridge)
+ * 
+ * Este archivo es un puente para mantener compatibilidad con código existente
+ * y redireccionar al nuevo sistema de configuración.
  */
 
-// Create namespace if it doesn't exist
-window.OFICRI = window.OFICRI || {};
+import { appConfig } from './appConfig.js';
 
-// Flag to prevent multiple initializations
-window.OFICRI.initialized = window.OFICRI.initialized || false;
-
-// Config object
-const config = {
-  // API Configuration
+// Mantener compatibilidad con el objeto config anterior
+export const config = {
   api: {
-    baseUrl: 'http://localhost:3000/api', // Default API URL
-    timeout: 15000, // Request timeout in milliseconds
-    retries: 1, // Number of retries for failed requests
+    baseUrl: appConfig.apiUrl,
+    timeout: appConfig.apiTimeout,
+    retries: 1,
     corsOptions: {
       credentials: 'include',
       mode: 'cors',
@@ -27,45 +24,44 @@ const config = {
     }
   },
   
-  // Authentication Configuration
   auth: {
     tokenKey: 'oficri_token',
     refreshTokenKey: 'oficri_refresh_token',
     userKey: 'oficri_user',
     expiryKey: 'oficri_token_expiry',
-    inactivityTimeout: 30 * 60 * 1000 // 30 minutes in milliseconds
+    inactivityTimeout: appConfig.security ? appConfig.security.sessionTimeout : 30 * 60 * 1000
   },
   
-  // UI Configuration
   ui: {
     theme: 'light',
     animationsEnabled: true,
-    notificationDuration: 5000, // milliseconds
+    notificationDuration: appConfig.notifications ? appConfig.notifications.duration : 5000,
     dateFormat: 'DD/MM/YYYY',
     timeFormat: 'HH:mm',
     defaultPageSize: 10
   },
   
-  // Feature Flags
   features: {
     offline: false,
-    debugging: true,
+    debugging: appConfig.isDevelopment(),
     securityAudit: true
   },
-  
-  // Environment detection
+
   environment: {
-    isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
-    isProduction: !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+    isDevelopment: appConfig.isDevelopment(),
+    isProduction: appConfig.isProduction()
   },
   
-  // Helper methods
+  // Función requerida por el módulo sessionEvents
+  shouldLogEventsInDev: appConfig.shouldLogEventsInDev,
+  
+  // Métodos auxiliares
   isDevelopment: function() {
-    return this.environment.isDevelopment;
+    return appConfig.isDevelopment();
   },
   
   isProduction: function() {
-    return this.environment.isProduction;
+    return appConfig.isProduction();
   },
   
   isDebugEnabled: function() {
@@ -88,41 +84,11 @@ const config = {
   }
 };
 
-// Apply environment-specific overrides (only once)
-if (!window.OFICRI.configInitialized && config.environment.isDevelopment) {
-  // Development settings
-  config.api.baseUrl = 'http://localhost:3000/api';
-  
-  // Log only once
-  if (!window.OFICRI.configLogged) {
-    console.log('[CONFIG] Using development API URL:', config.api.baseUrl);
-    window.OFICRI.configLogged = true;
-  }
-  
-  config.features.debugging = true;
+// Exponer appConfig también en el espacio global para compatibilidad con scripts que no usen módulos
+if (typeof window !== 'undefined') {
+  window.OFICRI = window.OFICRI || {};
+  window.OFICRI.config = config;
+  window.OFICRI.appConfig = appConfig;
 }
 
-// Add runtime diagnostics when debugging is enabled (only once)
-if (!window.OFICRI.configInitialized && config.features.debugging && !window.OFICRI.configLogged) {
-  console.log('[CONFIG] Runtime configuration initialized:', {
-    environment: config.environment.isDevelopment ? 'development' : 'production',
-    apiBaseUrl: config.api.baseUrl,
-    currentOrigin: window.location.origin
-  });
-  
-  // Mark as logged
-  window.OFICRI.configLogged = true;
-}
-
-// Mark config as initialized
-window.OFICRI.configInitialized = true;
-
-// Freeze config to prevent modifications
-Object.freeze(config);
-
-// Para compatibilidad con ES modules y UMD
-// El build process convertirá esto a formato compatible con navegadores
-export { config };
-
-// Para compatibilidad con código que usa window.OFICRI.config
-window.OFICRI.config = config; 
+export default config; 

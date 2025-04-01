@@ -184,44 +184,15 @@ const authService = (function() {
   
   /**
    * Cierra la sesión del usuario
+   * @returns {Promise} Promesa que resuelve cuando se completa el proceso de cierre de sesión
    */
   const logout = function() {
-    // Prevenir múltiples intentos de logout
-    if (authStateManager.getState() === authStateManager.STATES.LOGGING_OUT) {
-      console.warn('[AuthService] Ya hay un intento de logout en curso');
-      return;
-    }
-    
-    // Marcar como cerrando sesión
-    authStateManager.setState(authStateManager.STATES.LOGGING_OUT);
-    
-    // Limpiar localStorage
-    localStorage.removeItem('oficri_token');
-    localStorage.removeItem('oficri_user');
-    
-    // Registrar que venimos de logout para evitar ciclos
-    sessionStorage.setItem('oficri_from_logout', 'true');
-    
-    // Restaurar estado
-    setTimeout(() => {
-      authStateManager.setState(null);
-    }, 500);
-    
-    // Redirigir a login si es seguro hacerlo
-    if (authStateManager.canRedirect('login')) {
-      // Registrar redirección
-      authStateManager.setState(authStateManager.STATES.REDIRECTING);
-      
-      // Añadir delay para evitar problemas
-      setTimeout(() => {
-        window.location.href = 'index.html';
-        
-        // Reset estado después de iniciar redirección
-        setTimeout(() => {
-          authStateManager.setState(null);
-        }, 500);
-      }, 100);
-    }
+    // Importar el servicio de logout aquí para evitar dependencias circulares
+    // ya que authService y logoutService se podrían importar mutuamente
+    return import('../services/logoutService.js').then(module => {
+      const logoutService = module.default;
+      return logoutService.logout();
+    });
   };
   
   /**
