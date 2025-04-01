@@ -13,12 +13,14 @@ module.exports = {
     'services/logoutService': './src/services/logoutService.js',
     
     // Utilidades
+    'utils/trace_log': './src/utils/trace_log.js',
     'utils/validators': './src/utils/validators.js',
     'utils/errorHandlerUtil': './src/utils/errorHandlerUtil.js',
     'utils/httpUtil': './src/utils/httpUtil.js',
     'utils/authStateManager': './src/utils/authStateManager.js',
     'utils/sessionEvents': './src/utils/sessionEvents.js',
     'utils/debugLogger': './src/utils/debugLogger.js',
+    'utils/debugTools': './src/utils/debugTools.js',
     'utils/errorHandler': './src/utils/errorHandler.js',
     'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
     'utils/loginUtils/loginLayoutRenderer': './src/utils/loginUtils/loginLayoutRenderer.js',
@@ -26,6 +28,7 @@ module.exports = {
     // UI Components
     'ui/notifications': './src/ui/notifications.js',
     'ui/notificationManager': './src/ui/notificationManager.js',
+    'ui/sidebarManager': './src/ui/sidebarManager.js',
     
     // Páginas
     'pages/login/index': './src/pages/login/index.js',

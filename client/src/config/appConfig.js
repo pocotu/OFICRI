@@ -47,14 +47,26 @@ const defaultConfig = {
   
   // Opciones de logging
   logging: {
-    // Nivel de log (debug, info, warn, error)
+    // Nivel de log (trace, debug, info, warn, error, critical)
     level: 'info',
     
     // Registrar eventos en el servidor en entorno de desarrollo
     logEventsInDev: false,
     
     // Registrar performance metrics
-    logPerformance: false
+    logPerformance: false,
+    
+    // Nuevas opciones para el depurador global
+    persistLogs: true,                // Guardar logs en localStorage
+    maxPersistedLogs: 1000,           // Número máximo de logs almacenados
+    captureGlobalErrors: true,        // Capturar errores no controlados
+    enablePerformanceMonitoring: true, // Monitoreo de rendimiento
+    allowLogExport: true,             // Permitir exportar logs
+    
+    // Configuración por módulo
+    moduleLevels: {
+      // 'NOMBRE_MODULO': 'debug'
+    }
   }
 };
 
@@ -63,21 +75,30 @@ const envConfig = {
   [ENV.DEVELOPMENT]: {
     logging: {
       level: 'debug',
-      logEventsInDev: false
+      logEventsInDev: false,
+      persistLogs: true,
+      captureGlobalErrors: true,
+      enablePerformanceMonitoring: true
     }
   },
   [ENV.PRODUCTION]: {
     apiUrl: window.location.origin + '/api',
     logging: {
-      level: 'error',
-      logEventsInDev: true
+      level: 'warn',          // En producción solo warn, error y critical
+      logEventsInDev: true,
+      persistLogs: false,     // Deshabilitar persistencia en producción por defecto
+      captureGlobalErrors: true,
+      enablePerformanceMonitoring: false
     }
   },
   [ENV.TESTING]: {
     apiUrl: 'http://localhost:3000/api',
     logging: {
       level: 'debug',
-      logEventsInDev: true
+      logEventsInDev: true,
+      persistLogs: true,
+      captureGlobalErrors: true,
+      enablePerformanceMonitoring: true
     }
   }
 };
@@ -118,7 +139,11 @@ function createConfig() {
     },
     logging: {
       ...defaultConfig.logging,
-      ...(envSpecificConfig.logging || {})
+      ...(envSpecificConfig.logging || {}),
+      moduleLevels: {
+        ...defaultConfig.logging.moduleLevels,
+        ...((envSpecificConfig.logging && envSpecificConfig.logging.moduleLevels) || {})
+      }
     }
   };
   
@@ -133,8 +158,18 @@ appConfig.isDevelopment = () => appConfig.environment === ENV.DEVELOPMENT;
 appConfig.isProduction = () => appConfig.environment === ENV.PRODUCTION;
 appConfig.isTesting = () => appConfig.environment === ENV.TESTING;
 
-// Función que estaba faltando
+// Función para manejo de eventos
 appConfig.shouldLogEventsInDev = () => appConfig.logging.logEventsInDev || false;
+
+// Habilitar debug con parámetro URL
+if (window.location.search.includes('debug=true')) {
+  appConfig.logging.level = 'debug';
+  appConfig.logging.persistLogs = true;
+  appConfig.logging.enablePerformanceMonitoring = true;
+  
+  // Marcar en la consola que se activó el modo debug
+  console.info('%c[OFICRI]%c Modo debug activado vía URL', 'color:#0dcaf0;font-weight:bold', 'color:inherit');
+}
 
 // Exponer configuración
 export { appConfig };

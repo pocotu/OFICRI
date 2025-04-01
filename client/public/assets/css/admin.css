@@ -44,6 +44,11 @@
   font-size: 1.5rem;
   cursor: pointer;
   margin-right: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.menu-toggle:hover {
+  transform: scale(1.1);
 }
 
 .logo-container {
@@ -81,6 +86,7 @@
   transition: all 0.3s ease;
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
   z-index: 99;
+  position: relative;
 }
 
 .sidebar-header {
@@ -235,13 +241,23 @@
 @media (max-width: 992px) {
   .oficri-sidebar {
     position: fixed;
-    left: -260px;
+    left: 0;
     height: calc(100vh - var(--header-height));
     top: var(--header-height);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
   }
   
   .oficri-sidebar.show {
-    left: 0;
+    transform: translateX(0);
+  }
+  
+  .sidebar-collapsed .oficri-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .oficri-main {
+    margin-left: 0 !important;
   }
   
   .dashboard-stats .col-md-4 {
@@ -329,4 +345,51 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Estilos para el estado colapsado */
+.sidebar-collapsed .oficri-sidebar {
+  transform: translateX(-100%);
+}
+
+.sidebar-collapsed .oficri-main {
+  margin-left: 0;
+}
+
+/* Estilos para el botón de menú */
+.menu-toggle i {
+  transition: transform 0.3s ease;
+}
+
+.sidebar-collapsed .menu-toggle i {
+  transform: rotate(180deg);
+}
+
+/* Adaptación para móviles */
+@media (max-width: 767px) {
+    .oficri-sidebar {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        height: calc(100vh - 60px);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        background-color: #1c2631;
+    }
+    
+    .oficri-main {
+        width: 100%;
+    }
+    
+    .sidebar-collapsed {
+        transform: translateX(-100%);
+    }
+}
+
+/* Añadir animación al botón hamburguesa */
+.menu-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.sidebar-collapsed .menu-toggle i {
+    transform: rotate(90deg);
 } 

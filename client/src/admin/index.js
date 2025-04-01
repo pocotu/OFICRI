@@ -11,6 +11,8 @@ import { notificationManager } from '../ui/notificationManager.js';
 import { logoutService } from '../services/logoutService.js';
 import { sessionEvents } from '../utils/sessionEvents.js';
 import './dashboard.js';
+import { debugLogger } from '../utils/debugLogger.js';
+import { sidebarManager } from '../ui/sidebarManager.js';
 
 // Create namespace if it doesn't exist
 window.OFICRI = window.OFICRI || {};
@@ -18,12 +20,16 @@ window.OFICRI = window.OFICRI || {};
 // Asegurar que el gestor de notificaciones esté disponible en el namespace global
 window.OFICRI.notifications = notificationManager;
 
+// Inicializar logger para este módulo
+const logger = debugLogger.createLogger('ADMIN_PANEL');
+
 // Admin Module
 OFICRI.adminApp = (function() {
   'use strict';
   
   // Private variables
   let _sidebarVisible = true;
+  let currentUser = null;
   
   /**
    * Inicialización de la aplicación
@@ -36,17 +42,17 @@ OFICRI.adminApp = (function() {
     }
     
     // Obtener datos del usuario
-    const user = OFICRI.authService.getUser();
+    currentUser = OFICRI.authService.getUser();
     
     // Verificar que sea admin
-    if (user.role !== 'Administrador') {
+    if (currentUser.role !== 'Administrador') {
       console.error('Acceso no autorizado: rol incorrecto');
       OFICRI.authService.logout();
       return;
     }
     
     // Mostrar información del usuario
-    _renderUserInfo(user);
+    _renderUserInfo(currentUser);
     
     // Inicializar componentes
     _setupEventListeners();
@@ -117,6 +123,33 @@ OFICRI.adminApp = (function() {
     if (OFICRI.documentos) OFICRI.documentos.init();
     if (OFICRI.auditoria) OFICRI.auditoria.init();
     if (OFICRI.exportar) OFICRI.exportar.init();
+    
+    // Inicializar el gestor del sidebar
+    const sidebarAPI = sidebarManager.init({
+      sidebarSelector: '#sidebar',
+      toggleButtonSelector: '#menu-toggle',
+      mainContentSelector: '.oficri-main',
+      appContainerSelector: '.oficri-app',
+      restoreState: true
+    });
+    
+    // Guardar la API en una variable global para acceso desde otras partes de la aplicación
+    window.sidebarAPI = sidebarAPI;
+    
+    // En móviles, ocultar el sidebar inicialmente
+    if (window.innerWidth < 768 && sidebarAPI) {
+      sidebarAPI.hide();
+    }
+    
+    // Añadir la API del sidebar al objeto global OFICRI
+    if (window.OFICRI) {
+      window.OFICRI.sidebarManager = sidebarManager;
+    } else {
+      window.OFICRI = { sidebarManager };
+    }
+    
+    // Disparar evento personalizado para notificar que el gestor del sidebar está listo
+    window.dispatchEvent(new CustomEvent('OFICRISidebarManagerLoaded'));
   };
   
   /**
