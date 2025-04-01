@@ -19,7 +19,6 @@ module.exports = {
     'utils/authStateManager': './src/utils/authStateManager.js',
     'utils/sessionEvents': './src/utils/sessionEvents.js',
     'utils/debugLogger': './src/utils/debugLogger.js',
-    'utils/logoutDebugger': './src/utils/logoutDebugger.js',
     'utils/errorHandler': './src/utils/errorHandler.js',
     'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
     'utils/loginUtils/loginLayoutRenderer': './src/utils/loginUtils/loginLayoutRenderer.js',

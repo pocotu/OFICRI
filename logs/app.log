@@ -1542,3 +1542,14 @@
 {"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T15:47:49.866Z"}
 {"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T15:47:49.876Z"}
 {"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T15:47:49.880Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-04-01T16:09:48.224Z"}
+{"level":"debug","message":"Configuración DB: host=localhost, user=root, database=oficri_sistema","timestamp":"2025-04-01T16:09:48.228Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.231Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.279Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.285Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.298Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.305Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.310Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.388Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.399Z"}
+{"level":"debug","message":"Conexión a: localhost@oficri_sistema como root","timestamp":"2025-04-01T16:09:48.404Z"}
