@@ -15,6 +15,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/sidebar.css">
 </head>
 <body class="bg-light">
     <div class="oficri-app">
@@ -494,7 +495,7 @@
     <!-- UI Components -->
     <script src="js/ui/notifications.js"></script>
     <script src="js/ui/notificationManager.js"></script>
-    <script src="js/ui/sidebarManager.js"></script>
+    <script src="js/ui/simpleSidebar.js"></script>
     
     <!-- Services -->
     <script src="js/services/authService.js"></script>
@@ -509,103 +510,96 @@
     <script src="js/admin/auditoria.js"></script>
     <script src="js/admin/exportar.js"></script>
     
-    <!-- Main Application Script (cargado al final para garantizar que todas las dependencias estén disponibles) -->
+    <!-- Main Application Script -->
     <script src="js/admin/index.js"></script>
     
-    <!-- Solución directa para el botón hamburguesa -->
+    <!-- Herramientas de depuración del sidebar -->
+    <script src="js/ui/sidebarDebug.js"></script>
+    
+    <!-- Correcciones de layout -->
+    <script src="js/ui/layoutFix.js"></script>
+    
+    <!-- Inicialización simplificada del sidebar -->
     <script>
-        // Esta función se ejecuta inmediatamente para detectar y solucionar
-        // el problema del botón hamburguesa de manera robusta
-        (function() {
-            // Inicializar el trace log para tener registros independientes
+        // Inicializar el sidebar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar trace logging
             if (window.traceLog) {
                 window.traceLog.configure({
                     enabled: true,
                     consoleOutput: true
                 });
-                window.traceLog.info('ADMIN_HTML', 'Trace Logger configurado correctamente');
-                window.traceLog.installGlobalErrorCapture();
+                window.traceLog.info('ADMIN_INIT', 'Inicializando interfaz');
             }
-
-            function setupMenuToggleButton() {
-                const menuToggle = document.getElementById('menu-toggle');
-                const sidebar = document.getElementById('sidebar');
-                const mainContent = document.querySelector('.oficri-main');
-                const appContainer = document.querySelector('.oficri-app');
+            
+            console.log('Admin HTML: DOMContentLoaded', {
+                simpleSidebarAvailable: !!window.simpleSidebar,
+                sidebarDebugAvailable: !!window.sidebarDebug
+            });
+            
+            // Inicializar el depurador
+            if (window.sidebarDebug && typeof window.sidebarDebug.init === 'function') {
+                window.sidebarDebug.init();
+                console.log('Depurador de sidebar inicializado');
+            } else {
+                console.error('No se pudo inicializar el depurador de sidebar');
+            }
+            
+            // Inicializar el sidebar simple (aunque debería auto-inicializarse)
+            if (window.simpleSidebar && typeof window.simpleSidebar.init === 'function') {
+                window.simpleSidebar.init();
+                console.log('Sidebar inicializado manualmente');
                 
-                if (!menuToggle || !sidebar || !mainContent || !appContainer) {
-                    console.error('No se pudieron encontrar todos los elementos DOM necesarios para el menú hamburguesa');
-                    if (window.traceLog) {
-                        window.traceLog.error('ADMIN_HTML', 'Elementos DOM para sidebar no encontrados', {
-                            menuToggle: !!menuToggle,
-                            sidebar: !!sidebar,
-                            mainContent: !!mainContent,
-                            appContainer: !!appContainer
-                        });
-                    }
-                    return;
-                }
+                // Guardar referencia global
+                window.OFICRI = window.OFICRI || {};
+                window.OFICRI.sidebar = window.simpleSidebar;
+            } else {
+                console.error('No se pudo inicializar el sidebar: simpleSidebar no está disponible');
+            }
+            
+            // Agregar un controlador de clics directo para el botón hamburguesa
+            const menuToggle = document.getElementById('menu-toggle');
+            if (menuToggle) {
+                // Clonar el botón para eliminar cualquier handler previo
+                const newMenuToggle = menuToggle.cloneNode(true);
+                menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
                 
-                if (window.traceLog) {
-                    window.traceLog.info('ADMIN_HTML', 'Configurando evento click directo para botón hamburguesa');
-                }
-                
-                // Asignar evento click de forma directa
-                menuToggle.addEventListener('click', function(e) {
+                // Agregar un evento click directo
+                newMenuToggle.addEventListener('click', function(e) {
                     e.preventDefault();
+                    console.log('Click directo en botón hamburguesa');
                     
-                    if (window.traceLog) {
-                        window.traceLog.info('ADMIN_HTML', 'Botón hamburguesa clickeado');
+                    // Intentar usar sidebarDebug (el más fiable)
+                    if (window.sidebarDebug && typeof window.sidebarDebug.forceToggleSidebar === 'function') {
+                        window.sidebarDebug.forceToggleSidebar();
                     }
-                    
-                    // Intentar usar la API del sidebar si está disponible
-                    if (window.OFICRI && window.OFICRI.sidebarManagerApi) {
-                        try {
-                            window.OFICRI.sidebarManagerApi.toggle();
-                        } catch (error) {
-                            if (window.traceLog) {
-                                window.traceLog.error('ADMIN_HTML', 'Error al llamar a sidebarManagerApi.toggle()', error);
-                            }
-                            // Fallback a la función global
-                            if (window.toggleOFICRISidebar) {
-                                window.toggleOFICRISidebar();
+                    // O alternativamente usar simpleSidebar
+                    else if (window.simpleSidebar && typeof window.simpleSidebar.toggleSidebar === 'function') {
+                        window.simpleSidebar.toggleSidebar();
+                    }
+                    // O aplicar directamente los cambios si todo lo demás falla
+                    else {
+                        const sidebar = document.querySelector('.oficri-sidebar');
+                        const mainContent = document.querySelector('.oficri-main');
+                        const appContainer = document.querySelector('.oficri-app');
+                        
+                        if (sidebar && mainContent && appContainer) {
+                            if (appContainer.classList.contains('sidebar-collapsed')) {
+                                appContainer.classList.remove('sidebar-collapsed');
+                                sidebar.style.width = '260px';
+                                sidebar.style.minWidth = '260px';
+                                mainContent.style.width = 'calc(100% - 260px)';
+                            } else {
+                                appContainer.classList.add('sidebar-collapsed');
+                                sidebar.style.width = '0';
+                                sidebar.style.minWidth = '0';
+                                mainContent.style.width = '100%';
                             }
                         }
-                    } else if (window.toggleOFICRISidebar) {
-                        window.toggleOFICRISidebar();
-                    } else {
-                        // Fallback manual si no hay API disponible
-                        const isCollapsed = !sidebar.classList.contains('show');
-                        if (isCollapsed) {
-                            sidebar.classList.add('show');
-                        } else {
-                            sidebar.classList.remove('show');
-                        }
-                    }
-                    
-                    if (window.traceLog) {
-                        window.traceLog.info('ADMIN_HTML', 'Toggle de sidebar completado');
                     }
                 });
-                
-                if (window.traceLog) {
-                    window.traceLog.info('ADMIN_HTML', 'Evento click configurado con éxito para botón hamburguesa');
-                }
             }
-            
-            // Configurar el botón inmediatamente si el DOM ya está listo
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                setupMenuToggleButton();
-            } else {
-                // Si no, esperar a que el DOM esté listo
-                document.addEventListener('DOMContentLoaded', setupMenuToggleButton);
-            }
-            
-            // Asegurarnos que se configure incluso si DOMContentLoaded ya pasó
-            window.addEventListener('load', function() {
-                setTimeout(setupMenuToggleButton, 100);
-            });
-        })();
+        });
     </script>
 </body>
 </html>

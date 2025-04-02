@@ -1,0 +1,104 @@
+/**
+ * OFICRI Sidebar Styles
+ * Estilos específicos y simplificados para el sidebar
+ */
+
+/* Variables */
+:root {
+  --sidebar-width: 260px;
+  --header-height: 60px;
+  --transition-speed: 0.3s;
+}
+
+/* Estructura básica del contenedor */
+.oficri-container {
+  display: flex;
+  width: 100%;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Estilos básicos del sidebar */
+.oficri-sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background-color: #212529;
+  color: white;
+  height: calc(100vh - var(--header-height));
+  transition: all var(--transition-speed) ease;
+  overflow-y: auto;
+  z-index: 1030;
+  flex-shrink: 0;
+}
+
+/* Contenido principal */
+.oficri-main {
+  flex: 1;
+  width: calc(100% - var(--sidebar-width));
+  transition: width var(--transition-speed) ease, margin-left var(--transition-speed) ease;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Estado colapsado - Ocultar completamente el sidebar */
+.sidebar-collapsed .oficri-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  flex: 0 0 0 !important;
+  margin-left: -260px !important;
+  padding: 0 !important;
+  transform: translateX(-100%) !important;
+}
+
+/* Estado colapsado - Expandir completamente el contenido principal */
+.sidebar-collapsed .oficri-main {
+  width: 100% !important;
+  margin-left: 0 !important;
+  max-width: 100% !important;
+  flex: 1 !important;
+  padding-left: 1.5rem !important;
+}
+
+/* Botón de toggle */
+.menu-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+}
+
+.menu-toggle i {
+  transition: transform var(--transition-speed) ease;
+}
+
+.sidebar-collapsed .menu-toggle i {
+  transform: rotate(180deg);
+}
+
+/* Estilos responsivos */
+@media (max-width: 992px) {
+  .oficri-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-height);
+    transform: translateX(-100%);
+    z-index: 1040;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .oficri-sidebar:not(.sidebar-collapsed) {
+    transform: translateX(0);
+  }
+  
+  .oficri-main {
+    width: 100% !important;
+    padding-left: 1.5rem !important;
+    margin-left: 0 !important;
+    max-width: 100% !important;
+  }
+} 

@@ -1,137 +1,302 @@
 /**
  * OFICRI Sidebar Manager
- * Módulo para gestionar el sidebar de navegación en la interfaz administrativa
+ * Módulo para gestionar la visibilidad y comportamiento de la barra lateral
  */
 
+import { debugLogger } from '../utils/debugLogger.js';
 import { traceLog } from '../utils/trace_log.js';
 
-// Constantes
-const STORAGE_KEY = 'OFICRI_SIDEBAR_STATE';
-const SIDEBAR_COLLAPSED_CLASS = 'sidebar-collapsed';
-const SIDEBAR_SHOW_CLASS = 'show';
+// Configuración de logger para seguimiento
+const logger = debugLogger.createLogger('SidebarManager');
 
-/**
- * Estado del sidebar
- * @private
- */
-let _sidebarState = {
+// Constantes
+const STORAGE_KEY = 'oficri_sidebar_state';
+const SIDEBAR_COLLAPSED_CLASS = 'sidebar-collapsed';
+const MENU_TOGGLE_SELECTOR = '.menu-toggle';
+const SIDEBAR_SELECTOR = '.oficri-sidebar';
+const MAIN_CONTENT_SELECTOR = '.oficri-main';
+const APP_CONTAINER_SELECTOR = '.oficri-app';
+const MOBILE_BREAKPOINT = 992; // Debe coincidir con el breakpoint en CSS
+
+// Evento personalizado para notificar cambios en el estado del sidebar
+const SIDEBAR_STATE_CHANGED_EVENT = 'OFICRI_SIDEBAR_STATE_CHANGED';
+
+// Estado interno
+const _sidebarState = {
   collapsed: false,
-  initialized: false,
+  initialStateApplied: false,
   isMobile: false
 };
 
 /**
- * Comprueba si la pantalla es móvil
- * @returns {boolean} True si es una pantalla móvil
- * @private
- */
-function _isMobile() {
-  return window.innerWidth < 992;
-}
-
-/**
- * Inicializa el gestor del sidebar
+ * Inicializa el gestor de la barra lateral
  * @param {Object} options - Opciones de configuración
- * @param {string} options.sidebarSelector - Selector CSS del sidebar
- * @param {string} options.toggleButtonSelector - Selector CSS del botón de alternar
- * @param {string} options.mainContentSelector - Selector CSS del contenido principal
- * @param {string} options.appContainerSelector - Selector CSS del contenedor de la aplicación
- * @param {boolean} options.restoreState - Si debe restaurar el estado previo desde localStorage
- * @returns {Object} API pública del gestor de sidebar
  */
 function init(options = {}) {
-  // Registrar inicio de inicialización
-  traceLog.info('SIDEBAR', 'Iniciando inicialización del Sidebar Manager', options);
+  logger.info('Inicializando gestor de barra lateral');
+  traceLog.info('SIDEBAR', 'Inicializando gestor de barra lateral');
+  
+  // Actualizar estado de móvil
+  _sidebarState.isMobile = window.innerWidth < MOBILE_BREAKPOINT;
   
   const config = {
-    sidebarSelector: '#sidebar',
-    toggleButtonSelector: '#menu-toggle',
-    mainContentSelector: '.oficri-main',
-    appContainerSelector: '.oficri-app',
-    restoreState: true,
+    sidebarSelector: SIDEBAR_SELECTOR,
+    mainContentSelector: MAIN_CONTENT_SELECTOR,
+    menuToggleSelector: MENU_TOGGLE_SELECTOR,
+    appContainerSelector: APP_CONTAINER_SELECTOR,
+    persistState: true,
     ...options
   };
-
-  // Elementos DOM
+  
+  // Obtener elementos DOM
   const sidebar = document.querySelector(config.sidebarSelector);
-  const toggleButton = document.querySelector(config.toggleButtonSelector);
   const mainContent = document.querySelector(config.mainContentSelector);
+  const menuToggleBtn = document.querySelector(config.menuToggleSelector);
   const appContainer = document.querySelector(config.appContainerSelector);
-
-  // Verificar que se encontraron todos los elementos
-  if (!sidebar) {
-    traceLog.error('SIDEBAR', 'No se encontró el elemento sidebar', { selector: config.sidebarSelector });
-    return null;
+  
+  // Verificar que todos los elementos necesarios existen
+  if (!sidebar || !mainContent || !menuToggleBtn || !appContainer) {
+    logger.error('No se encontraron todos los elementos necesarios para el sidebar', {
+      sidebar: !!sidebar,
+      mainContent: !!mainContent,
+      menuToggleBtn: !!menuToggleBtn,
+      appContainer: !!appContainer
+    });
+    traceLog.error('SIDEBAR', 'Elementos no encontrados', {
+      sidebar: !!sidebar,
+      mainContent: !!mainContent,
+      menuToggleBtn: !!menuToggleBtn,
+      appContainer: !!appContainer
+    });
+    return {
+      toggleSidebar: () => {},
+      setSidebarState: () => {},
+      getSidebarState: () => false
+    };
   }
   
-  if (!toggleButton) {
-    traceLog.error('SIDEBAR', 'No se encontró el botón de toggle', { selector: config.toggleButtonSelector });
-    return null;
-  }
-  
-  if (!mainContent) {
-    traceLog.error('SIDEBAR', 'No se encontró el contenido principal', { selector: config.mainContentSelector });
-    return null;
-  }
-  
-  if (!appContainer) {
-    traceLog.error('SIDEBAR', 'No se encontró el contenedor de la aplicación', { selector: config.appContainerSelector });
-    return null;
-  }
-
-  traceLog.info('SIDEBAR', 'Elementos DOM encontrados correctamente');
-
-  // Actualizar estado de móvil
-  _sidebarState.isMobile = _isMobile();
-
-  // Restaurar estado anterior si está habilitado
-  if (config.restoreState) {
+  // Restaurar estado almacenado si existe
+  if (config.persistState) {
     _restoreState();
   }
-
+  
+  // Manejar caso especial: si estamos en móvil y sidebar no está colapsado, colapsarlo inicialmente
+  if (_sidebarState.isMobile && !_sidebarState.collapsed) {
+    _sidebarState.collapsed = true;
+    if (config.persistState) {
+      _saveState();
+    }
+  }
+  
   // Aplicar estado inicial
   _applyState(sidebar, mainContent, appContainer);
-
-  // Configurar evento del botón de alternar
-  traceLog.info('SIDEBAR', 'Configurando evento click para el botón toggle', { buttonId: toggleButton.id });
+  _sidebarState.initialStateApplied = true;
   
-  toggleButton.addEventListener('click', function(e) {
+  // Configurar evento de clic para el botón de alternar menú
+  // Primero eliminar todos los listeners existentes para evitar duplicados
+  const newMenuToggleBtn = menuToggleBtn.cloneNode(true);
+  menuToggleBtn.parentNode.replaceChild(newMenuToggleBtn, menuToggleBtn);
+  
+  newMenuToggleBtn.addEventListener('click', function(e) {
     e.preventDefault();
-    traceLog.info('SIDEBAR', 'Botón toggle clickeado');
-    toggle(sidebar, mainContent, appContainer);
+    e.stopPropagation();
+    logger.info('Botón toggle clickeado');
+    toggleSidebar();
   });
-
+  
   // Configurar evento de redimensión de ventana
   window.addEventListener('resize', function() {
     const wasMobile = _sidebarState.isMobile;
-    _sidebarState.isMobile = _isMobile();
+    _sidebarState.isMobile = window.innerWidth < MOBILE_BREAKPOINT;
     
+    // Si cambió de desktop a móvil o viceversa, actualizar el estado
     if (wasMobile !== _sidebarState.isMobile) {
-      traceLog.info('SIDEBAR', 'Cambio de modo detectado', { 
+      logger.info('Cambio de modo detectado', {
         from: wasMobile ? 'mobile' : 'desktop',
         to: _sidebarState.isMobile ? 'mobile' : 'desktop'
       });
-      _applyState(sidebar, mainContent, appContainer);
+      
+      // Actualizar estado (colapsar en móvil por defecto al cambiar de desktop a móvil)
+      if (_sidebarState.isMobile && !_sidebarState.collapsed) {
+        _sidebarState.collapsed = true;
+        _applyState(sidebar, mainContent, appContainer);
+        if (config.persistState) {
+          _saveState();
+        }
+      }
+      
+      // Notificar cambio
+      _notifySidebarStateChanged();
     }
   });
-
-  // Marcar como inicializado
-  _sidebarState.initialized = true;
-  traceLog.info('SIDEBAR', 'Sidebar Manager inicializado', { state: _sidebarState });
-
-  // Devolver API pública
-  const api = {
-    isCollapsed: function() { return _sidebarState.collapsed; },
-    toggle: function() { toggle(sidebar, mainContent, appContainer); },
-    show: function() { show(sidebar, mainContent, appContainer); },
-    hide: function() { hide(sidebar, mainContent, appContainer); }
+  
+  logger.info('Gestor de barra lateral inicializado', { 
+    collapsed: _sidebarState.collapsed,
+    isMobile: _sidebarState.isMobile
+  });
+  traceLog.info('SIDEBAR', 'Gestor de barra lateral inicializado', { 
+    collapsed: _sidebarState.collapsed,
+    isMobile: _sidebarState.isMobile
+  });
+  
+  /**
+   * Alterna el estado de la barra lateral
+   */
+  function toggleSidebar() {
+    _sidebarState.collapsed = !_sidebarState.collapsed;
+    _applyState(sidebar, mainContent, appContainer);
+    
+    if (config.persistState) {
+      _saveState();
+    }
+    
+    logger.info('Estado de barra lateral actualizado', { 
+      collapsed: _sidebarState.collapsed,
+      isMobile: _sidebarState.isMobile
+    });
+    traceLog.info('SIDEBAR', 'Estado de barra lateral actualizado', { 
+      collapsed: _sidebarState.collapsed 
+    });
+    
+    // Asegurarse de notificar el cambio
+    _notifySidebarStateChanged();
+    
+    return _sidebarState.collapsed;
+  }
+  
+  /**
+   * Establece un estado específico para la barra lateral
+   * @param {boolean} collapsed - Si debe estar colapsada o no
+   */
+  function setSidebarState(collapsed) {
+    if (_sidebarState.collapsed === collapsed) return;
+    
+    _sidebarState.collapsed = collapsed;
+    _applyState(sidebar, mainContent, appContainer);
+    
+    if (config.persistState) {
+      _saveState();
+    }
+    
+    logger.info('Estado de barra lateral establecido', { 
+      collapsed: _sidebarState.collapsed,
+      isMobile: _sidebarState.isMobile
+    });
+    traceLog.info('SIDEBAR', 'Estado de barra lateral establecido', { 
+      collapsed: _sidebarState.collapsed 
+    });
+    
+    // Notificar cambio de estado al resto de la aplicación
+    _notifySidebarStateChanged();
+    
+    return _sidebarState.collapsed;
+  }
+  
+  /**
+   * Retorna el estado actual de la barra lateral
+   * @returns {boolean} - true si está colapsada, false si está expandida
+   */
+  function getSidebarState() {
+    return {
+      collapsed: _sidebarState.collapsed,
+      isMobile: _sidebarState.isMobile
+    };
+  }
+  
+  // Aplicar una actualización inmediata para garantizar estado correcto
+  setTimeout(() => {
+    _applyState(sidebar, mainContent, appContainer);
+    _notifySidebarStateChanged();
+  }, 50);
+  
+  // Exponer API pública
+  return {
+    toggleSidebar,
+    setSidebarState,
+    getSidebarState
   };
+}
+
+/**
+ * Aplica el estado actual a los elementos DOM
+ * @private
+ */
+function _applyState(sidebar, mainContent, appContainer) {
+  traceLog.debug('SIDEBAR', 'Aplicando estado', { 
+    collapsed: _sidebarState.collapsed,
+    isMobile: _sidebarState.isMobile
+  });
   
-  // Guardar la API en una variable global para facilitar el acceso
-  window.OFICRI = window.OFICRI || {};
-  window.OFICRI.sidebarManagerApi = api;
+  // Estrategia diferente según si es mobile o desktop
+  if (_sidebarState.isMobile) {
+    // En móvil, combinamos clases y transformaciones
+    if (_sidebarState.collapsed) {
+      appContainer.classList.add(SIDEBAR_COLLAPSED_CLASS);
+      sidebar.style.transform = 'translateX(-100%)';
+      mainContent.style.width = '100%';
+      mainContent.style.marginLeft = '0';
+    } else {
+      appContainer.classList.remove(SIDEBAR_COLLAPSED_CLASS);
+      sidebar.style.transform = 'translateX(0)';
+      mainContent.style.width = '100%';
+      mainContent.style.marginLeft = '0';
+    }
+  } else {
+    // En desktop, aplicamos clase en container y gestionamos ancho
+    if (_sidebarState.collapsed) {
+      appContainer.classList.add(SIDEBAR_COLLAPSED_CLASS);
+      sidebar.style.transform = '';
+      
+      // Forzar estilos específicos para la visualización correcta
+      setTimeout(() => {
+        mainContent.style.width = '100%';
+        mainContent.style.marginLeft = '0';
+        mainContent.style.maxWidth = '100%';
+        mainContent.style.flex = '1';
+        
+        sidebar.style.width = '0';
+        sidebar.style.minWidth = '0';
+        sidebar.style.overflow = 'hidden';
+      }, 10);
+    } else {
+      appContainer.classList.remove(SIDEBAR_COLLAPSED_CLASS);
+      sidebar.style.transform = '';
+      
+      // Restaurar estilos para sidebar expandido
+      setTimeout(() => {
+        sidebar.style.width = '';
+        sidebar.style.minWidth = '';
+        sidebar.style.overflow = '';
+        
+        mainContent.style.width = '';
+        mainContent.style.marginLeft = '';
+        mainContent.style.maxWidth = '';
+        mainContent.style.flex = '';
+      }, 10);
+    }
+  }
   
-  return api;
+  // Disparar evento después de que las transiciones CSS hayan terminado (300ms)
+  setTimeout(() => {
+    _notifySidebarStateChanged();
+  }, 300);
+}
+
+/**
+ * Guarda el estado actual en localStorage
+ * @private
+ */
+function _saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      collapsed: _sidebarState.collapsed,
+      timestamp: Date.now()
+    }));
+    traceLog.debug('SIDEBAR', 'Estado guardado en localStorage');
+  } catch (error) {
+    logger.warn('No se pudo guardar el estado del sidebar en localStorage', error);
+    traceLog.warn('SIDEBAR', 'Error al guardar estado', error);
+  }
 }
 
 /**
@@ -142,167 +307,39 @@ function _restoreState() {
   try {
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (savedState) {
-      const parsed = JSON.parse(savedState);
-      _sidebarState.collapsed = parsed.collapsed;
-      traceLog.info('SIDEBAR', 'Estado de sidebar restaurado', { state: _sidebarState });
+      const { collapsed } = JSON.parse(savedState);
+      _sidebarState.collapsed = collapsed;
+      traceLog.debug('SIDEBAR', 'Estado restaurado desde localStorage', { collapsed });
     }
   } catch (error) {
-    traceLog.error('SIDEBAR', 'Error al restaurar el estado del sidebar', error);
+    logger.warn('No se pudo restaurar el estado del sidebar desde localStorage', error);
+    traceLog.warn('SIDEBAR', 'Error al restaurar estado', error);
   }
 }
 
 /**
- * Guarda el estado en localStorage
+ * Notifica a la aplicación que el estado del sidebar ha cambiado
  * @private
  */
-function _saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(_sidebarState));
-    traceLog.info('SIDEBAR', 'Estado guardado en localStorage', { state: _sidebarState });
-  } catch (error) {
-    traceLog.error('SIDEBAR', 'Error al guardar el estado del sidebar', error);
-  }
-}
-
-/**
- * Aplica el estado actual a los elementos DOM
- * @param {HTMLElement} sidebar - Elemento del sidebar
- * @param {HTMLElement} mainContent - Elemento del contenido principal
- * @param {HTMLElement} appContainer - Elemento del contenedor de la aplicación
- * @private
- */
-function _applyState(sidebar, mainContent, appContainer) {
-  traceLog.info('SIDEBAR', 'Aplicando estado', { 
-    collapsed: _sidebarState.collapsed,
-    isMobile: _sidebarState.isMobile 
+function _notifySidebarStateChanged() {
+  const event = new CustomEvent(SIDEBAR_STATE_CHANGED_EVENT, {
+    detail: {
+      collapsed: _sidebarState.collapsed,
+      isMobile: _sidebarState.isMobile,
+      timestamp: Date.now()
+    }
   });
-  
-  if (_sidebarState.isMobile) {
-    // En móvil, usamos la clase show
-    if (_sidebarState.collapsed) {
-      sidebar.classList.remove(SIDEBAR_SHOW_CLASS);
-    } else {
-      sidebar.classList.add(SIDEBAR_SHOW_CLASS);
-    }
-  } else {
-    // En desktop, usamos la clase sidebar-collapsed
-    if (_sidebarState.collapsed) {
-      appContainer.classList.add(SIDEBAR_COLLAPSED_CLASS);
-    } else {
-      appContainer.classList.remove(SIDEBAR_COLLAPSED_CLASS);
-    }
-  }
+  window.dispatchEvent(event);
+  traceLog.debug('SIDEBAR', 'Evento de cambio de estado disparado', { 
+    collapsed: _sidebarState.collapsed,
+    isMobile: _sidebarState.isMobile
+  });
 }
-
-/**
- * Muestra el sidebar
- * @param {HTMLElement} sidebar - Elemento del sidebar
- * @param {HTMLElement} mainContent - Elemento del contenido principal
- * @param {HTMLElement} appContainer - Elemento del contenedor de la aplicación
- */
-function show(sidebar, mainContent, appContainer) {
-  // Si no se proporcionan los elementos, intentar encontrarlos
-  if (!sidebar || !mainContent || !appContainer) {
-    traceLog.info('SIDEBAR', 'Buscando elementos DOM en show()');
-    sidebar = document.querySelector('#sidebar');
-    mainContent = document.querySelector('.oficri-main');
-    appContainer = document.querySelector('.oficri-app');
-    
-    if (!sidebar || !mainContent || !appContainer) {
-      traceLog.error('SIDEBAR', 'No se pudieron encontrar los elementos DOM necesarios en show()');
-      return;
-    }
-  }
-  
-  _sidebarState.collapsed = false;
-  _applyState(sidebar, mainContent, appContainer);
-  _saveState();
-  traceLog.info('SIDEBAR', 'Sidebar mostrado');
-}
-
-/**
- * Oculta el sidebar
- * @param {HTMLElement} sidebar - Elemento del sidebar
- * @param {HTMLElement} mainContent - Elemento del contenido principal
- * @param {HTMLElement} appContainer - Elemento del contenedor de la aplicación
- */
-function hide(sidebar, mainContent, appContainer) {
-  // Si no se proporcionan los elementos, intentar encontrarlos
-  if (!sidebar || !mainContent || !appContainer) {
-    traceLog.info('SIDEBAR', 'Buscando elementos DOM en hide()');
-    sidebar = document.querySelector('#sidebar');
-    mainContent = document.querySelector('.oficri-main');
-    appContainer = document.querySelector('.oficri-app');
-    
-    if (!sidebar || !mainContent || !appContainer) {
-      traceLog.error('SIDEBAR', 'No se pudieron encontrar los elementos DOM necesarios en hide()');
-      return;
-    }
-  }
-  
-  _sidebarState.collapsed = true;
-  _applyState(sidebar, mainContent, appContainer);
-  _saveState();
-  traceLog.info('SIDEBAR', 'Sidebar ocultado');
-}
-
-/**
- * Alterna la visibilidad del sidebar
- * @param {HTMLElement} sidebar - Elemento del sidebar
- * @param {HTMLElement} mainContent - Elemento del contenido principal
- * @param {HTMLElement} appContainer - Elemento del contenedor de la aplicación
- */
-function toggle(sidebar, mainContent, appContainer) {
-  traceLog.info('SIDEBAR', 'Función toggle llamada');
-  
-  // Si no se proporcionan los elementos, intentar encontrarlos
-  if (!sidebar || !mainContent || !appContainer) {
-    traceLog.info('SIDEBAR', 'Buscando elementos DOM en toggle()');
-    sidebar = document.querySelector('#sidebar');
-    mainContent = document.querySelector('.oficri-main');
-    appContainer = document.querySelector('.oficri-app');
-    
-    if (!sidebar || !mainContent || !appContainer) {
-      traceLog.error('SIDEBAR', 'No se pudieron encontrar los elementos DOM necesarios en toggle()');
-      return;
-    }
-  }
-
-  _sidebarState.collapsed = !_sidebarState.collapsed;
-  _applyState(sidebar, mainContent, appContainer);
-  _saveState();
-  traceLog.info('SIDEBAR', `Sidebar alternado: ${_sidebarState.collapsed ? 'ocultado' : 'mostrado'}`);
-}
-
-// Instalar evento global para debugging
-window.toggleOFICRISidebar = function() {
-  traceLog.info('SIDEBAR', 'Función global toggleOFICRISidebar llamada');
-  if (window.OFICRI && window.OFICRI.sidebarManagerApi) {
-    window.OFICRI.sidebarManagerApi.toggle();
-    return true;
-  } else {
-    const elements = [
-      document.querySelector('#sidebar'),
-      document.querySelector('.oficri-main'),
-      document.querySelector('.oficri-app')
-    ];
-    
-    if (elements[0] && elements[1] && elements[2]) {
-      toggle(elements[0], elements[1], elements[2]);
-      return true;
-    }
-    
-    traceLog.error('SIDEBAR', 'No se pudo alternar el sidebar desde la función global');
-    return false;
-  }
-};
 
 // Exponer API pública
 export const sidebarManager = {
   init,
-  show,
-  hide,
-  toggle
+  SIDEBAR_STATE_CHANGED_EVENT
 };
 
 export default sidebarManager; 
