@@ -1,28 +1,31 @@
 /**
  * OFICRI API Client
- * Módulo para realizar peticiones seguras a la API del sistema OFICRI
- * Garantiza el cumplimiento de normas ISO/IEC 27001 para la integridad y seguridad en las comunicaciones
+ * Cliente para comunicación con la API del sistema
  */
 
 // Importar dependencias
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 import { authService } from '../services/authService.js';
 import { authStateManager } from '../utils/authStateManager.js';
 import { errorHandler } from '../utils/errorHandlerUtil.js';
 
-// Crear namespace para compatibilidad
+// Crear namespace global para compatibilidad
 window.OFICRI = window.OFICRI || {};
 
-// API Client Module
+/**
+ * Cliente API del sistema OFICRI
+ * Maneja todas las peticiones al backend
+ */
 const apiClient = (function() {
   'use strict';
   
   // Constantes privadas
-  const API_BASE_URL = config.api.baseUrl;
-  const DEFAULT_TIMEOUT = 30000; // 30 segundos
+  const API_BASE_URL = appConfig.apiUrl;
+  const DEFAULT_TIMEOUT = appConfig.apiTimeout || 30000; // 30 segundos
   const MAX_RETRIES = 1;
   
   // Variables privadas
+  let _accessToken = null;
   let _pendingRefreshPromise = null;
   let _isRefreshing = false;
   let _pendingRequests = [];

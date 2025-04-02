@@ -477,15 +477,14 @@
         </div>
     </div>
 
-    <!-- Bootstrap Bundle with Popper -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Application Core JavaScript -->
+    <!-- Core Utils/Config -->
     <script src="js/utils/trace_log.js"></script>
     <script src="js/config/appConfig.js"></script>
     <script src="js/utils/debugLogger.js"></script>
     <script src="js/utils/debugTools.js"></script>
-    <script src="js/config/app.config.js"></script>
     <script src="js/api/apiClient.js"></script>
     <script src="js/utils/validators.js"></script>
     <script src="js/utils/authStateManager.js"></script>
@@ -495,13 +494,12 @@
     <!-- UI Components -->
     <script src="js/ui/notifications.js"></script>
     <script src="js/ui/notificationManager.js"></script>
-    <script src="js/ui/simpleSidebar.js"></script>
     
-    <!-- Services -->
+    <!-- Service APIs -->
     <script src="js/services/authService.js"></script>
     <script src="js/services/logoutService.js"></script>
     
-    <!-- Admin Modules -->
+    <!-- Admin Panel Modules -->
     <script src="js/admin/dashboard.js"></script>
     <script src="js/admin/usuarios.js"></script>
     <script src="js/admin/roles.js"></script>
@@ -510,95 +508,87 @@
     <script src="js/admin/auditoria.js"></script>
     <script src="js/admin/exportar.js"></script>
     
-    <!-- Main Application Script -->
+    <!-- Admin Main Script -->
     <script src="js/admin/index.js"></script>
     
-    <!-- Herramientas de depuración del sidebar -->
-    <script src="js/ui/sidebarDebug.js"></script>
-    
-    <!-- Correcciones de layout -->
-    <script src="js/ui/layoutFix.js"></script>
-    
-    <!-- Inicialización simplificada del sidebar -->
+    <!-- Inicialización del Sidebar -->
     <script>
-        // Inicializar el sidebar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            // Configurar trace logging
-            if (window.traceLog) {
-                window.traceLog.configure({
-                    enabled: true,
-                    consoleOutput: true
-                });
-                window.traceLog.info('ADMIN_INIT', 'Inicializando interfaz');
-            }
+            console.log('Inicializando funcionalidades de la interfaz de administración...');
             
-            console.log('Admin HTML: DOMContentLoaded', {
-                simpleSidebarAvailable: !!window.simpleSidebar,
-                sidebarDebugAvailable: !!window.sidebarDebug
-            });
-            
-            // Inicializar el depurador
-            if (window.sidebarDebug && typeof window.sidebarDebug.init === 'function') {
-                window.sidebarDebug.init();
-                console.log('Depurador de sidebar inicializado');
-            } else {
-                console.error('No se pudo inicializar el depurador de sidebar');
-            }
-            
-            // Inicializar el sidebar simple (aunque debería auto-inicializarse)
-            if (window.simpleSidebar && typeof window.simpleSidebar.init === 'function') {
-                window.simpleSidebar.init();
-                console.log('Sidebar inicializado manualmente');
-                
-                // Guardar referencia global
-                window.OFICRI = window.OFICRI || {};
-                window.OFICRI.sidebar = window.simpleSidebar;
-            } else {
-                console.error('No se pudo inicializar el sidebar: simpleSidebar no está disponible');
-            }
-            
-            // Agregar un controlador de clics directo para el botón hamburguesa
+            // Agregar un manejador directo para el toggle del sidebar
             const menuToggle = document.getElementById('menu-toggle');
             if (menuToggle) {
-                // Clonar el botón para eliminar cualquier handler previo
-                const newMenuToggle = menuToggle.cloneNode(true);
-                menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
-                
-                // Agregar un evento click directo
-                newMenuToggle.addEventListener('click', function(e) {
+                menuToggle.addEventListener('click', function(e) {
                     e.preventDefault();
-                    console.log('Click directo en botón hamburguesa');
+                    console.log('Click en botón de toggle del sidebar');
                     
-                    // Intentar usar sidebarDebug (el más fiable)
-                    if (window.sidebarDebug && typeof window.sidebarDebug.forceToggleSidebar === 'function') {
-                        window.sidebarDebug.forceToggleSidebar();
-                    }
-                    // O alternativamente usar simpleSidebar
-                    else if (window.simpleSidebar && typeof window.simpleSidebar.toggleSidebar === 'function') {
-                        window.simpleSidebar.toggleSidebar();
-                    }
-                    // O aplicar directamente los cambios si todo lo demás falla
-                    else {
-                        const sidebar = document.querySelector('.oficri-sidebar');
-                        const mainContent = document.querySelector('.oficri-main');
-                        const appContainer = document.querySelector('.oficri-app');
+                    // Alternar clase en el contenedor principal
+                    const appContainer = document.querySelector('.oficri-app');
+                    const sidebar = document.querySelector('.oficri-sidebar');
+                    const mainContent = document.querySelector('.oficri-main');
+                    
+                    if (appContainer) {
+                        const isCollapsed = appContainer.classList.contains('sidebar-collapsed');
                         
-                        if (sidebar && mainContent && appContainer) {
-                            if (appContainer.classList.contains('sidebar-collapsed')) {
-                                appContainer.classList.remove('sidebar-collapsed');
-                                sidebar.style.width = '260px';
-                                sidebar.style.minWidth = '260px';
+                        if (isCollapsed) {
+                            // Expandir
+                            appContainer.classList.remove('sidebar-collapsed');
+                            if (sidebar) sidebar.style.transform = '';
+                            if (mainContent) {
                                 mainContent.style.width = 'calc(100% - 260px)';
-                            } else {
-                                appContainer.classList.add('sidebar-collapsed');
-                                sidebar.style.width = '0';
-                                sidebar.style.minWidth = '0';
-                                mainContent.style.width = '100%';
+                                mainContent.style.marginLeft = '0';
                             }
+                        } else {
+                            // Colapsar
+                            appContainer.classList.add('sidebar-collapsed');
+                            if (sidebar) sidebar.style.transform = 'translateX(-100%)';
+                            if (mainContent) {
+                                mainContent.style.width = '100%';
+                                mainContent.style.marginLeft = '0';
+                            }
+                        }
+                        
+                        // Guardar estado en localStorage
+                        try {
+                            localStorage.setItem('oficri_sidebar_state', JSON.stringify({
+                                collapsed: !isCollapsed,
+                                timestamp: Date.now()
+                            }));
+                        } catch (error) {
+                            console.warn('No se pudo guardar el estado del sidebar', error);
                         }
                     }
                 });
+                
+                console.log('Handler del botón toggle configurado correctamente');
             }
+            
+            // Restaurar estado del sidebar desde localStorage
+            try {
+                const savedState = localStorage.getItem('oficri_sidebar_state');
+                if (savedState) {
+                    const { collapsed } = JSON.parse(savedState);
+                    const appContainer = document.querySelector('.oficri-app');
+                    const sidebar = document.querySelector('.oficri-sidebar');
+                    const mainContent = document.querySelector('.oficri-main');
+                    
+                    if (collapsed && appContainer) {
+                        appContainer.classList.add('sidebar-collapsed');
+                        if (sidebar) sidebar.style.transform = 'translateX(-100%)';
+                        if (mainContent) {
+                            mainContent.style.width = '100%';
+                            mainContent.style.marginLeft = '0';
+                        }
+                    }
+                    
+                    console.log('Estado del sidebar restaurado:', { collapsed });
+                }
+            } catch (error) {
+                console.warn('Error al restaurar estado del sidebar', error);
+            }
+            
+            console.log('Inicialización del sidebar completada');
         });
     </script>
 </body>

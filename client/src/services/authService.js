@@ -6,7 +6,7 @@
  */
 
 // Importar módulos
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 import { apiClient } from '../api/apiClient.js';
 import { validateInput } from '../utils/validators.js';
 import { userService } from './userService.js';
@@ -41,7 +41,7 @@ const authService = (function() {
   const init = function() {
     // Evitar inicializaciones múltiples
     if (_isInitialized) {
-      if (config.isDevelopment()) {
+      if (appConfig.isDevelopment()) {
         console.log('[AUTH] Servicio ya inicializado, omitiendo');
       }
       return Promise.resolve();
@@ -49,7 +49,7 @@ const authService = (function() {
     
     _isInitialized = true;
     
-    if (config.isDevelopment()) {
+    if (appConfig.isDevelopment()) {
     console.log('[AUTH] Inicializando servicio de autenticación');
     }
     

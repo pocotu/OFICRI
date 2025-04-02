@@ -5,7 +5,7 @@
  */
 
 // Importar configuración
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 
 // Constantes de permisos (bits)
 export const PERMISOS = {
@@ -291,7 +291,7 @@ const permisosService = (function() {
     console.warn(`[SEGURIDAD] Acceso no autorizado a ${recurso}. Razón: ${razon}`);
     
     // Enviar al servidor solo si está en producción
-    if (config.environment.isProduction) {
+    if (appConfig.environment.isProduction) {
       window.OFICRI.apiClient.post('/auditoria/acceso', {
         recurso,
         razon,

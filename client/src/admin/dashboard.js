@@ -4,7 +4,7 @@
  */
 
 // Importar módulos necesarios
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 import { apiClient } from '../api/apiClient.js';
 import { notifications } from '../ui/notifications.js';
 

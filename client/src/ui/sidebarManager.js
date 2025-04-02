@@ -342,4 +342,9 @@ export const sidebarManager = {
   SIDEBAR_STATE_CHANGED_EVENT
 };
 
+// Exponer globalmente para acceso desde el HTML
+if (typeof window !== 'undefined') {
+  window.sidebarManager = sidebarManager;
+}
+
 export default sidebarManager; 

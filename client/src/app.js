@@ -3,15 +3,15 @@
  * Entry point for the OFICRI application
  */
 
-import { config } from './config/app.config.js';
+import './utils/prototypes.js';
+import { authStateManager } from './utils/authStateManager.js';
+import { appConfig } from './config/appConfig.js';
 import { authService } from './services/authService.js';
 import { userService } from './services/userService.js';
 // import { router } from './router/router.js';
 import { notifications } from './ui/notifications.js';
 // import { uiService } from './ui/uiService.js';
 // import { langService } from './i18n/langService.js';
-import './utils/prototypes.js';
-import { authStateManager } from './utils/authStateManager.js';
 
 // Create namespace
 window.OFICRI = window.OFICRI || {};

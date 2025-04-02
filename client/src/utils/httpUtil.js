@@ -4,7 +4,7 @@
  */
 
 // Importaciones
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 import { errorHandler } from './errorHandlerUtil.js';
 
 // Crear namespace para compatibilidad
@@ -46,7 +46,7 @@ const httpUtil = (function() {
    * @returns {string} - URL completa
    */
   const buildApiUrl = function(endpoint) {
-    const baseUrl = config.api.baseUrl || 'http://localhost:3000/api';
+    const baseUrl = appConfig.apiUrl || 'http://localhost:3000/api';
     return `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   };
 
@@ -75,7 +75,7 @@ const httpUtil = (function() {
    * @param {number} timeoutMs - Tiempo de espera en milisegundos
    * @returns {AbortSignal} - Señal para controlar el timeout
    */
-  const createTimeoutSignal = function(timeoutMs = config.api.timeout || 15000) {
+  const createTimeoutSignal = function(timeoutMs = appConfig.apiTimeout || 15000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     

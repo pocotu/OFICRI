@@ -3,7 +3,6 @@ const path = require('path');
 module.exports = {
   entry: {
     // Configuración
-    'config/app.config': './src/config/app.config.js',
     'config/appConfig': './src/config/appConfig.js',
     
     // API y servicios
@@ -24,15 +23,10 @@ module.exports = {
     'utils/errorHandler': './src/utils/errorHandler.js',
     'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
     'utils/loginUtils/loginLayoutRenderer': './src/utils/loginUtils/loginLayoutRenderer.js',
-    'utils/layoutController': './src/utils/layoutController.js',
     
     // UI Components
     'ui/notifications': './src/ui/notifications.js',
     'ui/notificationManager': './src/ui/notificationManager.js',
-    'ui/sidebarManager': './src/ui/sidebarManager.js',
-    'ui/simpleSidebar': './src/ui/simpleSidebar.js',
-    'ui/sidebarDebug': './src/ui/sidebarDebug.js',
-    'ui/layoutFix': './src/ui/layoutFix.js',
     
     // Páginas
     'pages/login/index': './src/pages/login/index.js',

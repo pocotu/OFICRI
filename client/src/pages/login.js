@@ -8,7 +8,7 @@
 import { authService } from '../services/authService.js';
 import { validateInput } from '../utils/validators.js';
 import { uiManager } from '../utils/uiManager.js';
-import { config } from '../config/app.config.js';
+import { appConfig } from '../config/appConfig.js';
 
 // Inicializar namespace
 window.OFICRI = window.OFICRI || {};
@@ -312,8 +312,8 @@ const loginPage = (function() {
     let redirectUrl = '/dashboard';
     
     // Verificar si hay rutas específicas por rol
-    if (user && user.NombreRol && config.auth && config.auth.roleRedirects) {
-      const roleRedirect = config.auth.roleRedirects[user.NombreRol];
+    if (user && user.NombreRol && appConfig.auth && appConfig.auth.roleRedirects) {
+      const roleRedirect = appConfig.auth.roleRedirects[user.NombreRol];
       if (roleRedirect) {
         redirectUrl = roleRedirect;
       }
