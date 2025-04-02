@@ -428,4 +428,19 @@
 
 .sidebar-collapsed .menu-toggle i {
     transform: rotate(90deg);
+}
+
+/* Ajuste de tamaños de letra del header principal */
+.oficri-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.oficri-header .user-info {
+  font-size: 0.9rem;
+}
+
+/* Ajuste de tamaños para títulos de secciones */
+.content-header h2 {
+  font-size: 1.5rem;
 } 

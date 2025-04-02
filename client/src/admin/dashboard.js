@@ -31,6 +31,36 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     
     // Configurar temporizador para actualización automática
     _setupAutoRefresh();
+    
+    // Configurar eventos
+    _setupEvents();
+  };
+  
+  /**
+   * Configura los eventos para los botones del dashboard
+   */
+  const _setupEvents = function() {
+    // Botón de actualizar principal
+    const updateBtn = document.getElementById('actualizar');
+    if (updateBtn) {
+      updateBtn.addEventListener('click', _refreshData);
+    }
+    
+    // Botones de recarga en los paneles
+    const reloadButtons = document.querySelectorAll('.panel-actions a[title="Recargar"]');
+    reloadButtons.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const panel = this.closest('.dashboard-panel');
+        if (panel) {
+          if (panel.querySelector('#actividad-reciente')) {
+            _loadActividad();
+          } else if (panel.querySelector('#documentos-pendientes')) {
+            _loadDocumentosPendientes();
+          }
+        }
+      });
+    });
   };
   
   /**
@@ -59,7 +89,7 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     }
     
     // Mostrar estado de carga
-    actividadContainer.innerHTML = '<p class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Cargando actividad reciente...</p>';
+    actividadContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando actividad reciente...</p></div>';
     
     // Cargar datos de la API
     apiClient.get('/actividad', { limit: 5 })
@@ -67,12 +97,12 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
         if (response.success && response.data) {
           _renderActividad(response.data, actividadContainer);
         } else {
-          actividadContainer.innerHTML = '<p class="text-center text-muted">No se encontraron datos de actividad reciente.</p>';
+          actividadContainer.innerHTML = '<div class="alert alert-info">No se encontraron datos de actividad reciente.</div>';
         }
       })
       .catch(error => {
         console.error('Error al cargar actividad reciente:', error);
-        actividadContainer.innerHTML = '<p class="text-center text-danger">Error al cargar datos de actividad reciente.</p>';
+        actividadContainer.innerHTML = '<div class="alert alert-danger">Error al cargar datos de actividad reciente.</div>';
       });
   };
   
@@ -83,7 +113,7 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
    */
   const _renderActividad = function(data, container) {
     if (!data || data.length === 0) {
-      container.innerHTML = '<p class="text-center text-muted">No hay actividad reciente para mostrar.</p>';
+      container.innerHTML = '<div class="alert alert-info">No hay actividad reciente para mostrar.</div>';
       return;
     }
     
@@ -144,7 +174,7 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     }
     
     // Mostrar estado de carga
-    container.innerHTML = '<p class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Cargando documentos pendientes...</p>';
+    container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando documentos pendientes...</p></div>';
     
     // Cargar datos de documentos pendientes
     apiClient.get('/documentos', { 
@@ -157,12 +187,12 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
         if (response.success && response.data && response.data.documents) {
           _renderDocumentosPendientes(response.data.documents, container);
         } else {
-          container.innerHTML = '<p class="text-center text-muted">No se encontraron documentos pendientes.</p>';
+          container.innerHTML = '<div class="alert alert-info">No se encontraron documentos pendientes.</div>';
         }
       })
       .catch(error => {
         console.error('Error al cargar documentos pendientes:', error);
-        container.innerHTML = '<p class="text-center text-danger">Error al cargar documentos pendientes.</p>';
+        container.innerHTML = '<div class="alert alert-danger">Error al cargar documentos pendientes.</div>';
       });
   };
   
@@ -173,19 +203,20 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
    */
   const _renderDocumentosPendientes = function(data, container) {
     if (!data || data.length === 0) {
-      container.innerHTML = '<p class="text-center text-muted">No hay documentos pendientes para mostrar.</p>';
+      container.innerHTML = '<div class="alert alert-info">No hay documentos pendientes para mostrar.</div>';
       return;
     }
     
     let html = '<div class="table-responsive">';
-    html += '<table class="table table-sm table-hover">';
+    html += '<table class="document-table">';
     html += `
       <thead>
         <tr>
-          <th scope="col">Nro. Registro</th>
-          <th scope="col">Fecha</th>
-          <th scope="col">Área</th>
-          <th scope="col">Acciones</th>
+          <th>Nro. Registro</th>
+          <th>Fecha</th>
+          <th>Área</th>
+          <th>Estado</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -193,16 +224,32 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     
     data.forEach(doc => {
       const fecha = new Date(doc.fechaDocumento).toLocaleDateString('es-ES');
+      let estadoClass = '';
+      
+      switch (doc.estado) {
+        case 'RECIBIDO':
+          estadoClass = 'pending';
+          break;
+        case 'EN_PROCESO':
+          estadoClass = 'inprocess';
+          break;
+        case 'COMPLETADO':
+          estadoClass = 'completed';
+          break;
+        default:
+          estadoClass = 'pending';
+      }
       
       html += `
         <tr>
           <td>${doc.nroRegistro}</td>
           <td>${fecha}</td>
           <td>${doc.AreaActual?.NombreArea || 'No asignada'}</td>
+          <td><span class="document-badge ${estadoClass}">${doc.estado}</span></td>
           <td>
-            <a href="#documentos" data-bs-toggle="tab" data-doc-id="${doc.id}" class="btn btn-sm btn-outline-primary ver-doc">
+            <button class="btn-view" data-doc-id="${doc.id}">
               <i class="fas fa-eye"></i> Ver
-            </a>
+            </button>
           </td>
         </tr>
       `;
@@ -212,7 +259,7 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     container.innerHTML = html;
     
     // Agregar event listeners a los botones "Ver"
-    const verButtons = container.querySelectorAll('.ver-doc');
+    const verButtons = container.querySelectorAll('.btn-view');
     verButtons.forEach(button => {
       button.addEventListener('click', function(e) {
         e.preventDefault();
@@ -225,8 +272,8 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
           tab.show();
           
           // Comunicar con el módulo de documentos para mostrar el detalle
-          if (OFICRI.documentos && typeof OFICRI.documentos.mostrarDetalle === 'function') {
-            OFICRI.documentos.mostrarDetalle(docId);
+          if (window.OFICRI.documentos && typeof window.OFICRI.documentos.mostrarDetalle === 'function') {
+            window.OFICRI.documentos.mostrarDetalle(docId);
           }
         }
       });
@@ -240,13 +287,44 @@ window.OFICRI.dashboard = window.OFICRI.dashboard || {};
     _loadActividad();
     _loadDocumentosPendientes();
     
+    // Actualizar estadísticas
+    _loadEstadisticas();
+    
     // Notificar al usuario
-    if (notifications) {
-      notifications.info('Datos del dashboard actualizados');
-    }
+    notifications.info('Datos del dashboard actualizados');
+  };
+  
+  /**
+   * Carga las estadísticas globales
+   */
+  const _loadEstadisticas = function() {
+    apiClient.get('/estadisticas/dashboard')
+      .then(response => {
+        if (response.success && response.data) {
+          // Actualizar valores
+          const usuariosActivos = document.querySelector('.stat-card:nth-child(1) .stat-value');
+          const docsPendientes = document.querySelector('.stat-card:nth-child(2) .stat-value');
+          const areasActivas = document.querySelector('.stat-card:nth-child(3) .stat-value');
+          
+          if (usuariosActivos) {
+            usuariosActivos.textContent = response.data.usuariosActivos || '0';
+          }
+          
+          if (docsPendientes) {
+            docsPendientes.textContent = response.data.documentosPendientes || '0';
+          }
+          
+          if (areasActivas) {
+            areasActivas.textContent = response.data.areasActivas || '0';
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar estadísticas:', error);
+      });
   };
   
   // API pública
-  OFICRI.dashboard.init = _init;
-  OFICRI.dashboard.refreshData = _refreshData;
+  window.OFICRI.dashboard.init = _init;
+  window.OFICRI.dashboard.refreshData = _refreshData;
 })(); 

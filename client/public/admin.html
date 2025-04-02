@@ -16,6 +16,14 @@
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/admin.css">
     <link rel="stylesheet" href="assets/css/sidebar.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.ico" type="image/x-icon">
+    
+    <!-- Meta tags -->
+    <meta name="description" content="Panel administrativo del Sistema OFICRI">
+    <meta name="author" content="OFICRI">
 </head>
 <body class="bg-light">
     <div class="oficri-app">
@@ -90,51 +98,91 @@
 
             <!-- Main Content -->
             <main class="oficri-main">
-                <div class="tab-content">
-                    <!-- Dashboard Tab -->
-                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
-                        <div class="content-header">
-                            <h2>Panel de Control</h2>
-                            <button class="btn btn-oficri-primary" id="actualizar">
-                                <i class="fas fa-sync-alt"></i> Actualizar
-                            </button>
-                        </div>
+                <div class="tab-content" id="mainTabContent">
+                    <!-- DASHBOARD -->
+                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                        <div class="container-fluid px-4">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h1 class="mt-4 mb-3">Dashboard</h1>
+                                </div>
+                            </div>
 
-                        <div class="row dashboard-stats">
-                            <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-value">0</div>
-                                    <div class="stat-title">USUARIOS ACTIVOS</div>
+                            <!-- Estadísticas -->
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <h3 class="stat-title">Usuarios Activos</h3>
+                                            <div class="stat-value">0</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-value">0</div>
-                                    <div class="stat-title">DOCUMENTOS PENDIENTES</div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <h3 class="stat-title">Documentos Pendientes</h3>
+                                            <div class="stat-value">0</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-value">0</div>
-                                    <div class="stat-title">ÁREAS ACTIVAS</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row dashboard-panels">
-                            <div class="col-md-6">
-                                <div class="panel">
-                                    <h3>Actividad Reciente</h3>
-                                    <div id="actividad-reciente" class="panel-content">
-                                        <p>Cargando actividad reciente...</p>
+                                <div class="col-md-4 mb-3">
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <h3 class="stat-title">Áreas Activas</h3>
+                                            <div class="stat-value">0</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="panel">
-                                    <h3>Documentos Pendientes</h3>
-                                    <div id="documentos-pendientes" class="panel-content">
-                                        <p>Cargando documentos pendientes...</p>
+
+                            <div class="row">
+                                <!-- Actividad Reciente -->
+                                <div class="col-lg-6 mb-4">
+                                    <div class="dashboard-panel">
+                                        <div class="panel-header">
+                                            <h3>Actividad Reciente</h3>
+                                            <div class="panel-actions">
+                                                <a href="#" title="Recargar"><i class="fas fa-sync"></i></a>
+                                            </div>
+                                        </div>
+                                        <div class="panel-body">
+                                            <div id="actividad-reciente">
+                                                <div class="text-center">
+                                                    <div class="spinner-border text-primary" role="status"></div>
+                                                    <p class="mt-2">Cargando actividad reciente...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Documentos Pendientes -->
+                                <div class="col-lg-6 mb-4">
+                                    <div class="dashboard-panel">
+                                        <div class="panel-header">
+                                            <h3>Documentos Pendientes</h3>
+                                            <div class="panel-actions">
+                                                <a href="#" title="Recargar"><i class="fas fa-sync"></i></a>
+                                            </div>
+                                        </div>
+                                        <div class="panel-body">
+                                            <div id="documentos-pendientes">
+                                                <div class="text-center">
+                                                    <div class="spinner-border text-primary" role="status"></div>
+                                                    <p class="mt-2">Cargando documentos pendientes...</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
