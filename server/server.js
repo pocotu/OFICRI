@@ -122,17 +122,31 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Servidor OFICRI funcionando correctamente',
     version: '1.0',
-      endpoints: {
+    endpoints: {
       login: '/api/auth/login',
       status: '/status',
-        api: '/api',
+      api: '/api',
       health: '/health'
-      }
-    });
+    }
   });
+});
   
 // Verificación de estado (como health check del original)
-app.get(['/status', '/health'], async (req, res) => {
+app.get('/status', async (req, res) => {
+  const dbConnected = await testDatabaseConnection();
+  
+  res.json({
+    status: 'ok',
+    server: 'running',
+    database: dbConnected ? 'connected' : 'error',
+    environment: process.env.NODE_ENV || 'development',
+    time: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
   const dbConnected = await testDatabaseConnection();
   
   res.json({
@@ -400,7 +414,7 @@ app.get('/api/roles', (req, res) => {
 
 // Endpoint para documentación simple
 app.get('/api-docs', (req, res) => {
-  res.send(`
+  const docHtml = `
     <html>
       <head>
         <title>OFICRI API - Documentación</title>
@@ -469,12 +483,19 @@ app.get('/api-docs', (req, res) => {
         
         <div class="endpoint">
           <span class="method get">GET</span>
-          <strong>/status</strong> o <strong>/health</strong>
+          <strong>/status</strong>
+          <p>Verificar estado del sistema</p>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <strong>/health</strong>
           <p>Verificar estado del sistema</p>
         </div>
       </body>
     </html>
-  `);
+  `;
+  res.send(docHtml);
 });
 
 // Middleware para manejar errores
