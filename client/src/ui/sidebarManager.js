@@ -3,12 +3,6 @@
  * Módulo para gestionar la visibilidad y comportamiento de la barra lateral
  */
 
-import { debugLogger } from '../utils/debugLogger.js';
-import { traceLog } from '../utils/trace_log.js';
-
-// Configuración de logger para seguimiento
-const logger = debugLogger.createLogger('SidebarManager');
-
 // Constantes
 const STORAGE_KEY = 'oficri_sidebar_state';
 const SIDEBAR_COLLAPSED_CLASS = 'sidebar-collapsed';
@@ -33,8 +27,6 @@ const _sidebarState = {
  * @param {Object} options - Opciones de configuración
  */
 function init(options = {}) {
-  logger.info('Inicializando gestor de barra lateral');
-  
   // Actualizar estado de móvil
   _sidebarState.isMobile = window.innerWidth < MOBILE_BREAKPOINT;
   
@@ -55,7 +47,6 @@ function init(options = {}) {
   
   // Verificar que todos los elementos necesarios existen
   if (!sidebar || !mainContent || !menuToggleBtn || !appContainer) {
-    logger.error('No se encontraron todos los elementos necesarios para el sidebar');
     return {
       toggleSidebar: () => {},
       setSidebarState: () => {},
@@ -254,7 +245,7 @@ function _saveState() {
       timestamp: Date.now()
     }));
   } catch (error) {
-    logger.warn('No se pudo guardar el estado del sidebar en localStorage', error);
+    // Silencioso
   }
 }
 
@@ -266,38 +257,37 @@ function _restoreState() {
   try {
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (savedState) {
-      const { collapsed } = JSON.parse(savedState);
-      _sidebarState.collapsed = collapsed;
+      const data = JSON.parse(savedState);
+      _sidebarState.collapsed = !!data.collapsed;
     }
   } catch (error) {
-    logger.warn('No se pudo restaurar el estado del sidebar desde localStorage', error);
+    // Silencioso
   }
 }
 
 /**
- * Notifica a la aplicación que el estado del sidebar ha cambiado
+ * Notifica cambio de estado del sidebar mediante evento personalizado
  * @private
  */
 function _notifySidebarStateChanged() {
-  const event = new CustomEvent(SIDEBAR_STATE_CHANGED_EVENT, {
-    detail: {
-      collapsed: _sidebarState.collapsed,
-      isMobile: _sidebarState.isMobile,
-      timestamp: Date.now()
-    }
-  });
-  window.dispatchEvent(event);
+  try {
+    window.dispatchEvent(new CustomEvent(SIDEBAR_STATE_CHANGED_EVENT, {
+      detail: {
+        collapsed: _sidebarState.collapsed,
+        isMobile: _sidebarState.isMobile,
+        timestamp: Date.now()
+      }
+    }));
+  } catch (error) {
+    // Silencioso
+  }
 }
 
-// Exponer API pública
-export const sidebarManager = {
+// Exponer API
+export {
   init,
   SIDEBAR_STATE_CHANGED_EVENT
 };
 
-// Exponer globalmente para acceso desde el HTML
-if (typeof window !== 'undefined') {
-  window.sidebarManager = sidebarManager;
-}
-
-export default sidebarManager; 
+// Agregar a la variable global para acceso fuera de módulos
+window.sidebarManager = { init, SIDEBAR_STATE_CHANGED_EVENT }; 
