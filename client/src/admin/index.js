@@ -80,7 +80,7 @@ OFICRI.adminApp = (function() {
     if (cerrarSesionBtn) {
       cerrarSesionBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        _cerrarSesion();
+        _handleLogout(e);
       });
     }
     
@@ -89,6 +89,14 @@ OFICRI.adminApp = (function() {
     
     // Configurar eventos de las pestañas
     _setupTabEvents();
+  };
+  
+  /**
+   * Función auxiliar para cerrar sesión, redirige a _handleLogout
+   * @private
+   */
+  const _cerrarSesion = function(event) {
+    _handleLogout(event || new Event('click'));
   };
   
   /**
