@@ -48,7 +48,7 @@ window.OFICRI.usuarios = window.OFICRI.usuarios || {};
     console.log('[USUARIOS] Cargando usuarios del sistema');
     
     // Esta función se implementaría para cargar datos del servidor
-    apiClient.get('/usuarios')
+    apiClient.get('/api/users')
       .then(response => {
         if (response.success && response.data) {
           console.log('[USUARIOS] Usuarios cargados:', response.data.length);

@@ -33,7 +33,7 @@ http://localhost:3000/api
 | POST   | `/auth/login`            | Iniciar sesión con CIP y obtener token JWT   | No                      | -                          |
 | POST   | `/auth/logout`           | Cerrar sesión                                | Sí                      | -                          |
 | GET    | `/auth/verificar-token`  | Verificar validez del token                  | Sí                      | -                          |
-| POST   | `/auth/refresh-token`    | Renovar token utilizando refresh token       | No                      | -                          |
+| POST   | `/auth/refresh`          | Renovar token utilizando refresh token       | No                      | -                          |
 | POST   | `/auth/registro`         | Registrar nuevo usuario                      | Sí                      | **SOLO ADMINISTRADORES**   |
 | POST   | `/auth/reset-password`   | Solicitar restablecimiento de contraseña     | Sí                      | **SOLO ADMINISTRADORES**   |
 | PUT    | `/auth/cambio-password`  | Cambiar contraseña (con token o actual)      | Sí                      | -                          |
@@ -61,16 +61,16 @@ Ejemplo de login con CIP (único método de identificación):
 
 | Método | Endpoint                    | Descripción                                | Autenticación Requerida | Permisos Requeridos | Restricción Especial |
 |--------|-----------------------------|--------------------------------------------|-------------------------|--------------------|---------------------|
-| GET    | `/usuarios`                 | Listar usuarios (paginado)                 | Sí                      | 8 (Ver)            | -                   |
-| GET    | `/usuarios/:id`             | Obtener usuario por ID                     | Sí                      | 8 (Ver)            | -                   |
-| GET    | `/usuarios/cip/:codigoCIP`  | Obtener usuario por código CIP             | Sí                      | 8 (Ver)            | -                   |
-| POST   | `/usuarios`                 | Crear nuevo usuario                        | Sí                      | 1 (Crear)          | **SOLO ADMINISTRADORES** |
-| PUT    | `/usuarios/:id`             | Actualizar datos de usuario                | Sí                      | 2 (Editar)         | -                   |
-| DELETE | `/usuarios/:id`             | Eliminar usuario (soft delete)             | Sí                      | 4 (Eliminar)       | **SOLO ADMINISTRADORES** |
-| PUT    | `/usuarios/:id/area`        | Cambiar área de usuario                    | Sí                      | 2 (Editar)         | -                   |
-| PUT    | `/usuarios/:id/rol`         | Cambiar rol de usuario                     | Sí                      | 2 (Editar)         | **SOLO ADMINISTRADORES** |
-| PUT    | `/usuarios/:id/estado`      | Activar/desactivar usuario                 | Sí                      | 128 (Administrar)  | **SOLO ADMINISTRADORES** |
-| GET    | `/usuarios/buscar`          | Buscar usuarios por filtros                | Sí                      | 8 (Ver)            | -                   |
+| GET    | `/users`                    | Listar usuarios (paginado)                 | Sí                      | 8 (Ver)            | -                   |
+| GET    | `/users/:id`                | Obtener usuario por ID                     | Sí                      | 8 (Ver)            | -                   |
+| GET    | `/users/cip/:codigoCIP`     | Obtener usuario por código CIP             | Sí                      | 8 (Ver)            | -                   |
+| POST   | `/users`                    | Crear nuevo usuario                        | Sí                      | 1 (Crear)          | **SOLO ADMINISTRADORES** |
+| PUT    | `/users/:id`                | Actualizar datos de usuario                | Sí                      | 2 (Editar)         | -                   |
+| DELETE | `/users/:id`                | Eliminar usuario (soft delete)             | Sí                      | 4 (Eliminar)       | **SOLO ADMINISTRADORES** |
+| PUT    | `/users/:id/area`           | Cambiar área de usuario                    | Sí                      | 2 (Editar)         | -                   |
+| PUT    | `/users/:id/rol`            | Cambiar rol de usuario                     | Sí                      | 2 (Editar)         | **SOLO ADMINISTRADORES** |
+| PUT    | `/users/:id/estado`         | Activar/desactivar usuario                 | Sí                      | 128 (Administrar)  | **SOLO ADMINISTRADORES** |
+| GET    | `/users/buscar`             | Buscar usuarios por filtros                | Sí                      | 8 (Ver)            | -                   |
 
 ## Áreas
 
@@ -89,19 +89,19 @@ Ejemplo de login con CIP (único método de identificación):
 
 | Método | Endpoint                          | Descripción                                | Autenticación Requerida | Permisos Requeridos |
 |--------|-----------------------------------|--------------------------------------------|-------------------------|--------------------|
-| GET    | `/documentos`                     | Listar documentos (paginado)               | Sí                      | 8 (Ver)            |
-| GET    | `/documentos/:id`                 | Obtener documento por ID                   | Sí                      | 8 (Ver)            |
-| POST   | `/documentos`                     | Crear nuevo documento                      | Sí                      | 1 (Crear)          |
-| PUT    | `/documentos/:id`                 | Actualizar documento existente             | Sí                      | 2 (Editar)         |
-| DELETE | `/documentos/:id`                 | Eliminar documento (soft delete)           | Sí                      | 4 (Eliminar)       |
-| POST   | `/documentos/:id/derivar`         | Derivar documento a otra área              | Sí                      | 16 (Derivar)       |
-| GET    | `/documentos/:id/historico`       | Ver histórico de derivaciones              | Sí                      | 8 (Ver)            |
-| GET    | `/documentos/buscar`              | Buscar documentos por filtros              | Sí                      | 8 (Ver)            |
-| GET    | `/documentos/pendientes`          | Listar documentos pendientes del usuario   | Sí                      | 8 (Ver)            |
-| POST   | `/documentos/:id/archivo`         | Adjuntar archivo a documento               | Sí                      | 2 (Editar)         |
-| GET    | `/documentos/:id/archivo/:fileId` | Descargar archivo de documento             | Sí                      | 8 (Ver)            |
-| DELETE | `/documentos/:id/archivo/:fileId` | Eliminar archivo de documento              | Sí                      | 4 (Eliminar)       |
-| POST   | `/documentos/exportar`            | Exportar documentos a Excel/PDF            | Sí                      | 64 (Exportar)      |
+| GET    | `/documents`                      | Listar documentos (paginado)               | Sí                      | 8 (Ver)            |
+| GET    | `/documents/:id`                  | Obtener documento por ID                   | Sí                      | 8 (Ver)            |
+| POST   | `/documents`                      | Crear nuevo documento                      | Sí                      | 1 (Crear)          |
+| PUT    | `/documents/:id`                  | Actualizar documento existente             | Sí                      | 2 (Editar)         |
+| DELETE | `/documents/:id`                  | Eliminar documento (soft delete)           | Sí                      | 4 (Eliminar)       |
+| POST   | `/documents/:id/derivar`          | Derivar documento a otra área              | Sí                      | 16 (Derivar)       |
+| GET    | `/documents/:id/historico`        | Ver histórico de derivaciones              | Sí                      | 8 (Ver)            |
+| GET    | `/documents/buscar`               | Buscar documentos por filtros              | Sí                      | 8 (Ver)            |
+| GET    | `/documents/pendientes`           | Listar documentos pendientes del usuario   | Sí                      | 8 (Ver)            |
+| POST   | `/documents/:id/archivo`          | Adjuntar archivo a documento               | Sí                      | 2 (Editar)         |
+| GET    | `/documents/:id/archivo/:fileId`  | Descargar archivo de documento             | Sí                      | 8 (Ver)            |
+| DELETE | `/documents/:id/archivo/:fileId`  | Eliminar archivo de documento              | Sí                      | 4 (Eliminar)       |
+| POST   | `/documents/exportar`             | Exportar documentos a Excel/PDF            | Sí                      | 64 (Exportar)      |
 
 ## Roles
 
@@ -119,14 +119,14 @@ Ejemplo de login con CIP (único método de identificación):
 
 | Método | Endpoint                       | Descripción                                | Autenticación Requerida | Permisos Requeridos |
 |--------|--------------------------------|--------------------------------------------|-------------------------|--------------------|
-| GET    | `/mesapartes`                  | Listar todas las mesas de partes           | Sí                      | 8 (Ver)            |
-| GET    | `/mesapartes/:id`              | Obtener mesa de partes por ID              | Sí                      | 8 (Ver)            |
-| POST   | `/mesapartes`                  | Crear nueva mesa de partes                 | Sí                      | 1 (Crear)          |
-| PUT    | `/mesapartes/:id`              | Actualizar mesa de partes                  | Sí                      | 2 (Editar)         |
-| GET    | `/mesapartes/recepciones`      | Listar documentos recibidos                | Sí                      | 8 (Ver)            |
-| POST   | `/mesapartes/recepcion`        | Registrar recepción de documento           | Sí                      | 1 (Crear)          |
-| GET    | `/mesapartes/pendientes`       | Listar documentos pendientes de derivar    | Sí                      | 8 (Ver)            |
-| GET    | `/mesapartes/estadisticas`     | Obtener estadísticas de mesa de partes     | Sí                      | 8 (Ver)            |
+| GET    | `/mesa-partes`                 | Listar todas las mesas de partes           | Sí                      | 8 (Ver)            |
+| GET    | `/mesa-partes/:id`             | Obtener mesa de partes por ID              | Sí                      | 8 (Ver)            |
+| POST   | `/mesa-partes`                 | Crear nueva mesa de partes                 | Sí                      | 1 (Crear)          |
+| PUT    | `/mesa-partes/:id`             | Actualizar mesa de partes                  | Sí                      | 2 (Editar)         |
+| GET    | `/mesa-partes/recepciones`     | Listar documentos recibidos                | Sí                      | 8 (Ver)            |
+| POST   | `/mesa-partes/recepcion`       | Registrar recepción de documento           | Sí                      | 1 (Crear)          |
+| GET    | `/mesa-partes/pendientes`      | Listar documentos pendientes de derivar    | Sí                      | 8 (Ver)            |
+| GET    | `/mesa-partes/estadisticas`    | Obtener estadísticas de mesa de partes     | Sí                      | 8 (Ver)            |
 
 ## Permisos Contextuales
 
@@ -157,10 +157,18 @@ Ejemplo de login con CIP (único método de identificación):
 
 | Método | Endpoint                       | Descripción                                | Autenticación Requerida | Permisos Requeridos |
 |--------|--------------------------------|--------------------------------------------|-------------------------|--------------------|
-| GET    | `/notificaciones`              | Listar notificaciones del usuario          | Sí                      | 8 (Ver)            |
-| PUT    | `/notificaciones/:id`          | Marcar notificación como leída             | Sí                      | 2 (Editar)         |
-| PUT    | `/notificaciones/leer-todas`   | Marcar todas las notificaciones como leídas| Sí                      | 2 (Editar)         |
-| DELETE | `/notificaciones/:id`          | Eliminar notificación                      | Sí                      | 4 (Eliminar)       |
+| GET    | `/notifications`               | Listar notificaciones del usuario          | Sí                      | 8 (Ver)            |
+| PUT    | `/notifications/:id`           | Marcar notificación como leída             | Sí                      | 2 (Editar)         |
+| PUT    | `/notifications/leer-todas`    | Marcar todas las notificaciones como leídas| Sí                      | 2 (Editar)         |
+| DELETE | `/notifications/:id`           | Eliminar notificación                      | Sí                      | 4 (Eliminar)       |
+
+## Alias en Español para compatibilidad
+
+Para facilitar la transición, el sistema también acepta los siguientes alias en español para los mismos endpoints:
+
+- `/usuarios` → `/users`
+- `/documentos` → `/documents` 
+- `/notificaciones` → `/notifications`
 
 ## Parámetros comunes
 
@@ -169,7 +177,7 @@ Ejemplo de login con CIP (único método de identificación):
 Para endpoints que soportan paginación:
 
 ```
-GET /api/documentos?page=1&limit=10
+GET /api/users?page=1&limit=10
 ```
 
 | Parámetro | Descripción               | Valor por defecto |
@@ -182,7 +190,7 @@ GET /api/documentos?page=1&limit=10
 ### Filtros para Documentos
 
 ```
-GET /api/documentos?estado=RECIBIDO&search=fiscalia&fechaDesde=2024-01-01&fechaHasta=2024-06-01
+GET /api/documents?estado=RECIBIDO&search=fiscalia&fechaDesde=2024-01-01&fechaHasta=2024-06-01
 ```
 
 | Parámetro    | Descripción                                  |
@@ -248,24 +256,10 @@ GET /api/documentos?estado=RECIBIDO&search=fiscalia&fechaDesde=2024-01-01&fechaH
 | Bit | Valor Decimal | Permiso     | Descripción                                |
 |-----|---------------|-------------|--------------------------------------------|
 | 0   | 1             | Crear       | Permiso para crear nuevos recursos         |
-| 1   | 2             | Editar      | Permiso para modificar recursos existentes |
+| 1   | 2             | Editar      | Permiso para editar recursos existentes    |
 | 2   | 4             | Eliminar    | Permiso para eliminar recursos             |
-| 3   | 8             | Ver         | Permiso para visualizar recursos           |
+| 3   | 8             | Ver         | Permiso para ver o listar recursos         |
 | 4   | 16            | Derivar     | Permiso para derivar documentos            |
-| 5   | 32            | Auditar     | Permiso para ver logs y hacer auditorías   |
+| 5   | 32            | Auditar     | Permiso para acceder a logs y auditoría    |
 | 6   | 64            | Exportar    | Permiso para exportar datos                |
-| 7   | 128           | Administrar | Acceso completo al sistema                 | 
-
-## Notas
-
-* **RESTRICCIÓN CRÍTICA**: La creación de usuarios (`/api/usuarios` POST) y el reseteo de contraseñas (`/api/auth/reset-password`) son operaciones EXCLUSIVAMENTE permitidas a usuarios con permiso ADMIN_SISTEMA (bit 7, valor 128), siguiendo el protocolo de seguridad de la Policía Nacional.
-
-* El endpoint para cambiar contraseña (`/api/usuarios/:id/password`) permite a un usuario cambiar su propia contraseña, o a administradores cambiar la contraseña de cualquier usuario.
-
-* El acceso a recursos específicos puede estar limitado por pertenencia a un área o por otros factores contextuales, además de los permisos generales indicados en la tabla.
-
-* Todos los endpoints que requieren autenticación esperan un header `Authorization` con un token JWT en formato `Bearer {token}`.
-
-* Para garantizar la seguridad institucional, los errores de autenticación devuelven código 401, los de autorización 403, y los errores de validación 400. 
-
-* El sistema NO utiliza username, solo se usa el Código de Identificación Policial (CIP) como identificador único de usuarios. 
+| 7   | 128           | Administrar | Permiso de administración completa         | 

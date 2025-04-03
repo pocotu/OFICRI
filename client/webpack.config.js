@@ -9,6 +9,7 @@ module.exports = {
     'styles/admin': './src/css/admin.css',
     'styles/dashboard': './src/css/dashboard.css',
     'styles/sidebar': './src/css/sidebar.css',
+    'styles/profile': './src/css/profile.css',
     
     // Configuración
     'config/appConfig': './src/config/appConfig.js',
@@ -18,6 +19,7 @@ module.exports = {
     'services/authService': './src/services/authService.js',
     'services/userService': './src/services/userService.js',
     'services/logoutService': './src/services/logoutService.js',
+    'services/profileService': './src/services/profileService.js',
     
     // Utilidades
     'utils/trace_log': './src/utils/trace_log.js',
@@ -29,12 +31,17 @@ module.exports = {
     'utils/debugLogger': './src/utils/debugLogger.js',
     'utils/debugTools': './src/utils/debugTools.js',
     'utils/errorHandler': './src/utils/errorHandler.js',
+    'utils/mockApiResponses': './src/utils/mockApiResponses.js',
+    'utils/devTools': './src/utils/devTools.js',
     'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
     'utils/loginUtils/loginLayoutRenderer': './src/utils/loginUtils/loginLayoutRenderer.js',
     
     // UI Components
     'ui/notifications': './src/ui/notifications.js',
     'ui/notificationManager': './src/ui/notificationManager.js',
+    
+    // Componentes
+    'components/user/profileComponent': './src/components/user/profileComponent.js',
     
     // Páginas
     'pages/login/index': './src/pages/login/index.js',
