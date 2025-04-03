@@ -34,7 +34,6 @@ const _sidebarState = {
  */
 function init(options = {}) {
   logger.info('Inicializando gestor de barra lateral');
-  traceLog.info('SIDEBAR', 'Inicializando gestor de barra lateral');
   
   // Actualizar estado de móvil
   _sidebarState.isMobile = window.innerWidth < MOBILE_BREAKPOINT;
@@ -56,18 +55,7 @@ function init(options = {}) {
   
   // Verificar que todos los elementos necesarios existen
   if (!sidebar || !mainContent || !menuToggleBtn || !appContainer) {
-    logger.error('No se encontraron todos los elementos necesarios para el sidebar', {
-      sidebar: !!sidebar,
-      mainContent: !!mainContent,
-      menuToggleBtn: !!menuToggleBtn,
-      appContainer: !!appContainer
-    });
-    traceLog.error('SIDEBAR', 'Elementos no encontrados', {
-      sidebar: !!sidebar,
-      mainContent: !!mainContent,
-      menuToggleBtn: !!menuToggleBtn,
-      appContainer: !!appContainer
-    });
+    logger.error('No se encontraron todos los elementos necesarios para el sidebar');
     return {
       toggleSidebar: () => {},
       setSidebarState: () => {},
@@ -100,7 +88,6 @@ function init(options = {}) {
   newMenuToggleBtn.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    logger.info('Botón toggle clickeado');
     toggleSidebar();
   });
   
@@ -111,11 +98,6 @@ function init(options = {}) {
     
     // Si cambió de desktop a móvil o viceversa, actualizar el estado
     if (wasMobile !== _sidebarState.isMobile) {
-      logger.info('Cambio de modo detectado', {
-        from: wasMobile ? 'mobile' : 'desktop',
-        to: _sidebarState.isMobile ? 'mobile' : 'desktop'
-      });
-      
       // Actualizar estado (colapsar en móvil por defecto al cambiar de desktop a móvil)
       if (_sidebarState.isMobile && !_sidebarState.collapsed) {
         _sidebarState.collapsed = true;
@@ -130,15 +112,6 @@ function init(options = {}) {
     }
   });
   
-  logger.info('Gestor de barra lateral inicializado', { 
-    collapsed: _sidebarState.collapsed,
-    isMobile: _sidebarState.isMobile
-  });
-  traceLog.info('SIDEBAR', 'Gestor de barra lateral inicializado', { 
-    collapsed: _sidebarState.collapsed,
-    isMobile: _sidebarState.isMobile
-  });
-  
   /**
    * Alterna el estado de la barra lateral
    */
@@ -150,15 +123,7 @@ function init(options = {}) {
       _saveState();
     }
     
-    logger.info('Estado de barra lateral actualizado', { 
-      collapsed: _sidebarState.collapsed,
-      isMobile: _sidebarState.isMobile
-    });
-    traceLog.info('SIDEBAR', 'Estado de barra lateral actualizado', { 
-      collapsed: _sidebarState.collapsed 
-    });
-    
-    // Asegurarse de notificar el cambio
+    // Notificar cambio
     _notifySidebarStateChanged();
     
     return _sidebarState.collapsed;
@@ -178,15 +143,7 @@ function init(options = {}) {
       _saveState();
     }
     
-    logger.info('Estado de barra lateral establecido', { 
-      collapsed: _sidebarState.collapsed,
-      isMobile: _sidebarState.isMobile
-    });
-    traceLog.info('SIDEBAR', 'Estado de barra lateral establecido', { 
-      collapsed: _sidebarState.collapsed 
-    });
-    
-    // Notificar cambio de estado al resto de la aplicación
+    // Notificar cambio de estado
     _notifySidebarStateChanged();
     
     return _sidebarState.collapsed;
@@ -194,7 +151,7 @@ function init(options = {}) {
   
   /**
    * Retorna el estado actual de la barra lateral
-   * @returns {boolean} - true si está colapsada, false si está expandida
+   * @returns {Object} - Estado actual con propiedades collapsed e isMobile
    */
   function getSidebarState() {
     return {
@@ -222,27 +179,31 @@ function init(options = {}) {
  * @private
  */
 function _applyState(sidebar, mainContent, appContainer) {
-  traceLog.debug('SIDEBAR', 'Aplicando estado', { 
-    collapsed: _sidebarState.collapsed,
-    isMobile: _sidebarState.isMobile
-  });
+  // Si alguno de los elementos no existe, no seguir
+  if (!sidebar || !mainContent || !appContainer) {
+    return;
+  }
   
   // Estrategia diferente según si es mobile o desktop
   if (_sidebarState.isMobile) {
     // En móvil, combinamos clases y transformaciones
     if (_sidebarState.collapsed) {
       appContainer.classList.add(SIDEBAR_COLLAPSED_CLASS);
+      sidebar.classList.remove('show'); // Asegurar que se quita la clase show
       sidebar.style.transform = 'translateX(-100%)';
       mainContent.style.width = '100%';
       mainContent.style.marginLeft = '0';
     } else {
       appContainer.classList.remove(SIDEBAR_COLLAPSED_CLASS);
+      sidebar.classList.add('show'); // Agregar clase show para móvil
       sidebar.style.transform = 'translateX(0)';
       mainContent.style.width = '100%';
       mainContent.style.marginLeft = '0';
     }
   } else {
     // En desktop, aplicamos clase en container y gestionamos ancho
+    sidebar.classList.remove('show'); // En desktop no usamos show
+    
     if (_sidebarState.collapsed) {
       appContainer.classList.add(SIDEBAR_COLLAPSED_CLASS);
       sidebar.style.transform = '';
@@ -292,10 +253,8 @@ function _saveState() {
       collapsed: _sidebarState.collapsed,
       timestamp: Date.now()
     }));
-    traceLog.debug('SIDEBAR', 'Estado guardado en localStorage');
   } catch (error) {
     logger.warn('No se pudo guardar el estado del sidebar en localStorage', error);
-    traceLog.warn('SIDEBAR', 'Error al guardar estado', error);
   }
 }
 
@@ -309,11 +268,9 @@ function _restoreState() {
     if (savedState) {
       const { collapsed } = JSON.parse(savedState);
       _sidebarState.collapsed = collapsed;
-      traceLog.debug('SIDEBAR', 'Estado restaurado desde localStorage', { collapsed });
     }
   } catch (error) {
     logger.warn('No se pudo restaurar el estado del sidebar desde localStorage', error);
-    traceLog.warn('SIDEBAR', 'Error al restaurar estado', error);
   }
 }
 
@@ -330,10 +287,6 @@ function _notifySidebarStateChanged() {
     }
   });
   window.dispatchEvent(event);
-  traceLog.debug('SIDEBAR', 'Evento de cambio de estado disparado', { 
-    collapsed: _sidebarState.collapsed,
-    isMobile: _sidebarState.isMobile
-  });
 }
 
 // Exponer API pública

@@ -1,6 +1,6 @@
 /**
  * OFICRI Sidebar Styles
- * Estilos específicos y simplificados para el sidebar
+ * Estilos específicos para el sidebar
  */
 
 /* Variables */
@@ -40,16 +40,51 @@
   overflow-y: auto;
 }
 
+/* ===== ESTADO COLAPSADO - ESTILOS ===== */
+
 /* Estado colapsado - Ocultar completamente el sidebar */
 .sidebar-collapsed .oficri-sidebar {
   width: 0 !important;
   min-width: 0 !important;
+  max-width: 0 !important;
   overflow: hidden !important;
   visibility: hidden !important;
   flex: 0 0 0 !important;
   margin-left: -260px !important;
   padding: 0 !important;
   transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* Estilos para el sidebar en modo móvil con clase show */
+.oficri-sidebar.show {
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  overflow-y: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  flex: 0 0 var(--sidebar-width) !important;
+  margin-left: 0 !important;
+  padding: initial !important;
+  transform: translateX(0) !important;
+}
+
+/* Estado colapsado o móvil - El sidebar debe permanecer oculto */
+.sidebar-collapsed .oficri-sidebar,
+.sidebar-collapsed .oficri-sidebar.show {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  flex: 0 0 0 !important;
+  margin-left: -260px !important;
+  padding: 0 !important;
+  transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  display: none !important;
 }
 
 /* Estado colapsado - Expandir completamente el contenido principal */
@@ -61,7 +96,7 @@
   padding-left: 1.5rem !important;
 }
 
-/* Botón de toggle */
+/* Botón de toggle con feedback visual */
 .menu-toggle {
   cursor: pointer;
   display: flex;
@@ -70,6 +105,20 @@
   width: 40px;
   height: 40px;
   font-size: 1.5rem;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  position: relative;
+  z-index: 1050; /* Asegurar que esté por encima del sidebar */
+}
+
+.menu-toggle:hover {
+  background-color: rgba(255,255,255,0.15);
+  transform: scale(1.05);
+}
+
+.menu-toggle:active {
+  transform: scale(0.95);
+  background-color: rgba(255,255,255,0.2);
 }
 
 .menu-toggle i {
@@ -80,25 +129,57 @@
   transform: rotate(180deg);
 }
 
-/* Estilos responsivos */
+/* ===== ESTILOS RESPONSIVOS ===== */
 @media (max-width: 992px) {
   .oficri-sidebar {
     position: fixed;
     left: 0;
     top: var(--header-height);
+    height: calc(100vh - var(--header-height));
     transform: translateX(-100%);
-    z-index: 1040;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    transition: transform var(--transition-speed) ease, visibility var(--transition-speed) ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 1031;
+    width: var(--sidebar-width) !important;
   }
   
-  .oficri-sidebar:not(.sidebar-collapsed) {
-    transform: translateX(0);
+  /* Forzar visibilidad en móvil cuando está expandido */
+  .oficri-sidebar.show {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    display: block !important;
+    opacity: 1 !important;
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
   }
   
+  /* Asegurar que el sidebar permanezca oculto cuando está colapsado */
+  .sidebar-collapsed .oficri-sidebar,
+  .sidebar-collapsed .oficri-sidebar.show {
+    transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    opacity: 0 !important;
+  }
+  
+  /* Contenido principal siempre ancho completo en móvil */
   .oficri-main {
     width: 100% !important;
-    padding-left: 1.5rem !important;
     margin-left: 0 !important;
-    max-width: 100% !important;
+    padding: 1rem !important;
+  }
+  
+  /* Evitar overflow cuando el sidebar está abierto en móvil */
+  body.sidebar-open {
+    overflow: hidden !important;
+  }
+  
+  /* Mejorar el botón de toggle en móvil */
+  .menu-toggle {
+    width: 44px;
+    height: 44px;
+    font-size: 1.6rem;
   }
 } 
