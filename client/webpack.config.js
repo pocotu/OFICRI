@@ -1,7 +1,15 @@
 const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   entry: {
+    // CSS files
+    'styles/main': './src/css/main.css',
+    'styles/login': './src/css/login.css',
+    'styles/admin': './src/css/admin.css',
+    'styles/dashboard': './src/css/dashboard.css',
+    'styles/sidebar': './src/css/sidebar.css',
+    
     // Configuración
     'config/appConfig': './src/config/appConfig.js',
     
@@ -44,13 +52,29 @@ module.exports = {
     'admin/auditoria': './src/admin/auditoria.js',
     'admin/exportar': './src/admin/exportar.js'
   },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader'
+        ]
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'css/[name].css'
+    })
+  ],
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'public/js'),
     publicPath: 'js/'
   },
   resolve: {
-    extensions: ['.js']
+    extensions: ['.js', '.css']
   },
   // Para desarrollo
   devtool: 'source-map'
