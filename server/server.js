@@ -57,17 +57,24 @@ app.use((req, res, next) => {
 
 app.options('*', cors()); // Enable pre-flight para todas las rutas
 
-// Configuración de base de datos
+// Configuración de base de datos usando exclusivamente variables de entorno
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'oficri_sistema',
+  database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10'),
+  queueLimit: parseInt(process.env.DB_QUEUE_LIMIT || '0')
 };
+
+// Verificar configuración al iniciar
+console.log('Configuración de base de datos:');
+console.log('- Host:', process.env.DB_HOST);
+console.log('- Usuario:', process.env.DB_USER);
+console.log('- Base de datos:', process.env.DB_NAME);
+console.log('- Puerto:', process.env.DB_PORT || '3306');
 
 // Logging básico
 app.use((req, res, next) => {
@@ -322,6 +329,54 @@ app.get('/api/auth/verify', (req, res) => {
   }
 });
 
+// NUEVO: Endpoint verificar-token (mismo comportamiento que /verify pero con el nombre correcto)
+app.get('/api/auth/verificar-token', (req, res) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No se proporcionó token de autenticación'
+    });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'oficri-jwt-secret-2024-secure');
+    
+    console.log('Token verificado correctamente para:', decoded.codigoCIP);
+    
+    res.json({
+      success: true,
+      message: 'Token válido',
+      user: {
+        id: decoded.id,
+        codigoCIP: decoded.codigoCIP,
+        nombres: decoded.nombre,
+        apellidos: decoded.apellidos,
+        grado: decoded.grado,
+        rol: decoded.role,
+        permisos: decoded.permissions
+      }
+    });
+  } catch (error) {
+    console.error('Error al verificar token:', error.message);
+    res.status(401).json({
+      success: false,
+      message: 'Token inválido o expirado',
+      error: error.message
+    });
+  }
+});
+
+// Endpoint sin prefijo /api para flexibilidad con clientes
+app.get('/auth/verificar-token', (req, res) => {
+  // Redirigir internamente a la versión con prefijo /api
+  req.url = '/api/auth/verificar-token';
+  app.handle(req, res);
+});
+
 // RUTAS API BÁSICAS
 
 // API para usuarios
@@ -334,6 +389,187 @@ app.get('/api/users', (req, res) => {
       { id: 3, nombre: 'Mesa', apellidos: 'Partes', codigoCIP: '11223344', role: 'Mesa de Partes' }
     ]
   });
+});
+
+// API para obtener usuario por ID
+app.get('/api/users/:id', async (req, res) => {
+  const userId = req.params.id;
+  
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Se requiere ID de usuario'
+    });
+  }
+  
+  // Variable para la conexión a la base de datos
+  let connection;
+  
+  try {
+    // Verificar que tenemos la configuración necesaria
+    if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error en la configuración de la base de datos. Verifique las variables de entorno.',
+        missingVars: {
+          DB_HOST: !process.env.DB_HOST,
+          DB_USER: !process.env.DB_USER,
+          DB_PASSWORD: !process.env.DB_PASSWORD,
+          DB_NAME: !process.env.DB_NAME
+        }
+      });
+    }
+    
+    // Conexión a la base de datos usando solo variables de entorno
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      port: parseInt(process.env.DB_PORT || '3306')
+    });
+    
+    console.log('Conexión establecida para obtener usuario', userId);
+    
+    // Verificar que podemos ejecutar una consulta simple
+    try {
+      const [testResult] = await connection.query('SELECT 1 as test');
+      console.log('Prueba de consulta exitosa:', testResult);
+    } catch (testError) {
+      console.error('Error en consulta de prueba:', testError);
+      await connection.end();
+      return res.status(500).json({
+        success: false,
+        message: 'Error al probar la conexión',
+        error: testError.message
+      });
+    }
+    
+    // Buscar el usuario
+    try {
+      console.log(`Consultando usuario con ID: ${userId} en base de datos ${process.env.DB_NAME}`);
+      
+      // Consulta simplificada primero para verificar que funciona
+      const [users] = await connection.query(
+        `SELECT * FROM usuario WHERE IDUsuario = ?`,
+        [userId]
+      );
+      
+      console.log('Resultado consulta:', users.length > 0 ? 'Usuario encontrado' : 'Usuario no encontrado');
+      
+      if (users.length === 0) {
+        // Cerrar la conexión antes de devolver la respuesta
+        await connection.end();
+        
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+      
+      const user = users[0];
+      
+      // Obtener información del rol
+      let rol = null;
+      try {
+        const [roles] = await connection.query(
+          `SELECT * FROM rol WHERE IDRol = ?`,
+          [user.IDRol]
+        );
+        if (roles.length > 0) {
+          rol = roles[0];
+        }
+      } catch (rolError) {
+        console.error('Error al obtener rol:', rolError);
+        // Continuar sin rol si hay error
+      }
+      
+      // Obtener información del área
+      let area = null;
+      try {
+        const [areas] = await connection.query(
+          `SELECT * FROM area WHERE IDArea = ?`,
+          [user.IDArea]
+        );
+        if (areas.length > 0) {
+          area = areas[0];
+        }
+      } catch (areaError) {
+        console.error('Error al obtener área:', areaError);
+        // Continuar sin área si hay error
+      }
+      
+      // Cerrar la conexión antes de devolver la respuesta
+      await connection.end();
+      
+      // Formatear respuesta (resistente a campos nulos)
+      return res.json({
+        success: true,
+        data: {
+          IDUsuario: user.IDUsuario,
+          CodigoCIP: user.CodigoCIP || '',
+          Nombres: user.Nombres || '',
+          Apellidos: user.Apellidos || '',
+          Grado: user.Grado || '',
+          Estado: user.Estado,
+          UltimoAcceso: user.UltimoAcceso,
+          IDRol: user.IDRol,
+          rol: rol ? {
+            IDRol: rol.IDRol,
+            NombreRol: rol.NombreRol,
+            Permisos: rol.Permisos
+          } : null,
+          area: area ? {
+            IDArea: area.IDArea,
+            NombreArea: area.NombreArea,
+            CodigoArea: area.CodigoArea
+          } : null
+        }
+      });
+    } catch (queryError) {
+      console.error('Error al ejecutar consulta:', queryError);
+      
+      // Cerrar la conexión si está abierta
+      if (connection) await connection.end();
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Error al consultar datos del usuario',
+        error: queryError.message
+      });
+    }
+  } catch (error) {
+    console.error('Error al obtener usuario:', error);
+    
+    // Cerrar la conexión si está abierta
+    if (connection) await connection.end();
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener información del usuario',
+      error: error.message
+    });
+  }
+});
+
+// Permitir usar también la ruta /usuarios/:id (alias en español)
+app.get('/api/usuarios/:id', (req, res) => {
+  const userId = req.params.id;
+  req.url = `/api/users/${userId}`;
+  app.handle(req, res);
+});
+
+// Permitir usar también la ruta /usuarios/:id (sin prefijo /api)
+app.get('/usuarios/:id', (req, res) => {
+  const userId = req.params.id;
+  req.url = `/api/users/${userId}`;
+  app.handle(req, res);
+});
+
+// Permitir usar también la ruta /users/:id (sin prefijo /api)
+app.get('/users/:id', (req, res) => {
+  req.url = `/api/users/${req.params.id}`;
+  app.handle(req, res);
 });
 
 // API para áreas

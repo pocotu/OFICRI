@@ -227,9 +227,13 @@ const profileComponent = (function() {
       Apellidos = 'Desconocido', 
       Grado = 'No disponible', 
       CodigoCIP = 'No disponible',
-      rol = { NombreRol: 'No disponible' },
-      area = { NombreArea: 'No disponible' } 
+      rol = null,
+      area = null
     } = profileData;
+    
+    // Valores seguros para rol y área
+    const rolNombre = rol && rol.NombreRol ? rol.NombreRol : 'No disponible';
+    const areaNombre = area && area.NombreArea ? area.NombreArea : 'No asignada';
     
     // Iniciales para avatar (con manejo para evitar errores)
     const inicialNombre = Nombres && Nombres.length > 0 ? Nombres.charAt(0) : 'U';
@@ -252,7 +256,7 @@ const profileComponent = (function() {
             </div>
             <div class="profile-title">
               <h2>${Nombres} ${Apellidos}</h2>
-              <p>${Grado} - ${rol.NombreRol}</p>
+              <p>${Grado} - ${rolNombre}</p>
             </div>
           </div>
           
@@ -271,12 +275,12 @@ const profileComponent = (function() {
             
             <div class="profile-info-item">
               <div class="profile-info-label">Área:</div>
-              <div class="profile-info-value">${area.NombreArea}</div>
+              <div class="profile-info-value">${areaNombre}</div>
             </div>
             
             <div class="profile-info-item">
               <div class="profile-info-label">Rol:</div>
-              <div class="profile-info-value">${rol.NombreRol}</div>
+              <div class="profile-info-value">${rolNombre}</div>
             </div>
           </div>
           

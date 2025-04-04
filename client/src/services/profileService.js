@@ -53,12 +53,6 @@ const profileService = (function() {
       
       // Si no hay usuario autenticado
       if (!currentUser || !currentUser.IDUsuario) {
-        // En modo desarrollo, podemos usar un perfil mock para facilitar pruebas
-        if (appConfig.isDevelopment() && useMockInDev) {
-          logger.warn('No hay usuario autenticado, usando perfil MOCK para desarrollo');
-          return _getMockProfile();
-        }
-        
         // Intentar verificar token para recuperar usuario
         try {
           logger.info('Intentando recuperar usuario desde token...');
@@ -67,6 +61,13 @@ const profileService = (function() {
           return getCurrentUserProfile({ forceRefresh: true, useMockInDev });
         } catch (recoveryError) {
           logger.error('Error al recuperar usuario desde token', { error: recoveryError.message });
+          
+          // Solo usar MOCK en último caso, priorizando siempre datos reales
+          if (appConfig.isDevelopment() && useMockInDev) {
+            logger.warn('No hay usuario autenticado, usando perfil MOCK para desarrollo');
+            return _getMockProfile();
+          }
+          
           throw new Error('No hay usuario autenticado');
         }
       }
@@ -74,9 +75,15 @@ const profileService = (function() {
       // Crear promesa para evitar múltiples peticiones simultáneas
       _profilePromise = (async () => {
         try {
-          // Realizar petición al endpoint de usuarios
+          // Usar el endpoint correcto según la documentación de API
+          // La documentación indica que debe ser /api/users/:id o /usuarios/:id
           logger.debug(`Obteniendo perfil para usuario ID: ${currentUser.IDUsuario}`);
-          const response = await apiClient.get(`/api/users/${currentUser.IDUsuario}`);
+          
+          // Intentar usar el endpoint principal
+          const endpoint = `/users/${currentUser.IDUsuario}`;
+          logger.debug(`Llamando al endpoint: ${endpoint}`);
+          
+          const response = await apiClient.get(endpoint);
           
           // Verificar respuesta
           if (!response || !response.data) {
@@ -87,22 +94,49 @@ const profileService = (function() {
           _cachedProfile = response.data;
           _lastFetchTime = Date.now();
           
+          logger.info('Perfil obtenido correctamente de la base de datos', {
+            userId: currentUser.IDUsuario,
+            profile: _cachedProfile
+          });
+          
           return _cachedProfile;
         } catch (error) {
-          // Si hay error 404 en desarrollo, podemos usar un perfil mock
-          if (appConfig.isDevelopment() && useMockInDev && 
-             (error.status === 404 || error.message.includes('404'))) {
-            logger.warn('Error 404 en endpoint de perfil, usando perfil MOCK para desarrollo', {
-              error: error.message
-            });
-            return _getMockProfile();
-          }
-          
           logger.error('Error al obtener perfil de usuario', { 
             error: error.message,
             userId: currentUser.IDUsuario
           });
-          throw error;
+          
+          // Intentar endpoint alternativo si el primero falla
+          try {
+            const alternativeEndpoint = `/usuarios/${currentUser.IDUsuario}`;
+            logger.debug(`Intentando endpoint alternativo: ${alternativeEndpoint}`);
+            
+            const altResponse = await apiClient.get(alternativeEndpoint);
+            
+            if (!altResponse || !altResponse.data) {
+              throw new Error('Respuesta inválida en endpoint alternativo');
+            }
+            
+            // Guardar en caché
+            _cachedProfile = altResponse.data;
+            _lastFetchTime = Date.now();
+            
+            logger.info('Perfil obtenido correctamente usando endpoint alternativo', {
+              userId: currentUser.IDUsuario
+            });
+            
+            return _cachedProfile;
+          } catch (altError) {
+            logger.error('Error en endpoint alternativo', { error: altError.message });
+            
+            // Solo usar MOCK en último caso y solo en desarrollo
+            if (appConfig.isDevelopment() && useMockInDev) {
+              logger.warn('Error al obtener perfil de API, usando perfil MOCK para desarrollo');
+              return _getMockProfile();
+            }
+            
+            throw error;
+          }
         } finally {
           // Limpiar promesa para permitir futuros intentos
           _profilePromise = null;
@@ -130,22 +164,71 @@ const profileService = (function() {
       
       logger.info('Intentando verificar token para recuperar usuario');
       
-      const response = await apiClient.get('/auth/verificar-token', null, null, null, false);
+      // Array de posibles endpoints para probar (en orden de preferencia)
+      const endpoints = [
+        '/api/auth/verificar-token',  // Endpoint correcto según documentación
+        '/auth/verificar-token',      // Endpoint alternativo sin prefijo /api
+        '/api/auth/verificarToken',   // Variante sin guion
+        '/api/auth/verify-token'      // Variante en inglés
+      ];
       
-      if (!response || !response.user) {
-        throw new Error('No se pudo obtener usuario desde token');
+      let lastError = null;
+      
+      // Probar cada endpoint hasta encontrar uno que funcione
+      for (const endpoint of endpoints) {
+        try {
+          logger.debug(`Intentando verificar token con endpoint: ${endpoint}`);
+          
+          const response = await apiClient.get(endpoint);
+          
+          // Verificar la estructura de la respuesta
+          if (!response) {
+            logger.warn(`El endpoint ${endpoint} devolvió una respuesta vacía`);
+            continue;
+          }
+          
+          // Verificar si la respuesta contiene datos de usuario
+          // Diferentes endpoints pueden devolver estructuras diferentes
+          const user = response.user || 
+                      (response.data && response.data.user) || 
+                      (response.success && response.user) ||
+                      response;
+          
+          if (!user || (!user.id && !user.IDUsuario)) {
+            logger.warn(`El endpoint ${endpoint} no devolvió datos de usuario válidos`);
+            continue;
+          }
+          
+          // Endpoint funcionó, guardar usuario recuperado en localStorage y memoria
+          logger.info(`✅ Usuario recuperado desde token usando endpoint: ${endpoint}`);
+          logger.debug('Estructura de respuesta:', response);
+          
+          // Normalizar el formato del usuario antes de guardarlo
+          const normalizedUser = {
+            IDUsuario: user.id || user.IDUsuario,
+            codigoCIP: user.codigoCIP || user.CodigoCIP,
+            nombres: user.nombres || user.Nombres,
+            apellidos: user.apellidos || user.Apellidos,
+            rol: user.rol || user.IDRol
+          };
+          
+          localStorage.setItem('oficri_user', JSON.stringify(normalizedUser));
+          
+          // Actualizar usuario en memoria
+          if (authService.getUser) {
+            authService.getUser(true);
+          }
+          
+          return normalizedUser;
+        } catch (endpointError) {
+          logger.warn(`Error con endpoint ${endpoint}:`, endpointError.message);
+          lastError = endpointError;
+          // Continuar con el siguiente endpoint
+        }
       }
       
-      // Guardar usuario recuperado en localStorage y memoria
-      logger.info('Usuario recuperado desde token', { userId: response.user.id });
-      localStorage.setItem('oficri_user', JSON.stringify(response.user));
-      
-      // Actualizar usuario en memoria
-      if (authService.getUser) {
-        authService.getUser(true);
-      }
-      
-      return response.user;
+      // Si llegamos aquí, ningún endpoint funcionó
+      throw lastError || new Error('Ningún endpoint de verificación de token funcionó');
     } catch (error) {
       logger.error('Error al recuperar usuario desde token', { error: error.message });
       throw error;
@@ -229,15 +312,26 @@ const profileService = (function() {
         queryParams = '?' + queryParams;
       }
       
-      // Realizar petición
-      const response = await apiClient.get(`/api/logs/usuario/${currentUser.IDUsuario}${queryParams}`);
-      
-      // Verificar respuesta
-      if (!response || !response.data) {
-        throw new Error('Respuesta inválida al obtener actividad del usuario');
+      // Intentar primero el endpoint de la documentación
+      try {
+        const response = await apiClient.get(`/logs/usuario/${currentUser.IDUsuario}${queryParams}`);
+        
+        if (!response || !response.data) {
+          throw new Error('Respuesta inválida al obtener actividad del usuario');
+        }
+        
+        return response.data;
+      } catch (primaryError) {
+        // Intentar endpoint alternativo
+        logger.warn('Intentando endpoint alternativo para actividad de usuario');
+        const altResponse = await apiClient.get(`/api/logs/usuario/${currentUser.IDUsuario}${queryParams}`);
+        
+        if (!altResponse || !altResponse.data) {
+          throw new Error('Respuesta inválida al obtener actividad del usuario');
+        }
+        
+        return altResponse.data;
       }
-      
-      return response.data;
     } catch (error) {
       logger.error('[PROFILE] Error al obtener actividad del usuario:', error.message);
       
@@ -252,66 +346,62 @@ const profileService = (function() {
   };
   
   /**
-   * Genera actividad mock para desarrollo
-   * @returns {Array} Actividad mock
+   * Genera datos mock para la actividad en desarrollo
    * @private
    */
   function _getMockActivity() {
-    return [
-      {
-        id: 1,
-        tipo: 'LOGIN',
-        fecha: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        detalles: 'Inicio de sesión exitoso'
-      },
-      {
-        id: 2,
-        tipo: 'DOCUMENTO_VISTO',
-        fecha: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        detalles: 'Visualización del documento #12345'
-      },
-      {
-        id: 3,
-        tipo: 'PERFIL_ACTUALIZADO',
-        fecha: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        detalles: 'Actualización de datos de perfil'
-      }
-    ];
+    return [{
+      IDLog: 1,
+      FechaHora: new Date().toISOString(),
+      Accion: 'LOGIN',
+      Descripcion: 'Inicio de sesión exitoso',
+      IP: '127.0.0.1',
+      Navegador: 'Chrome'
+    }, {
+      IDLog: 2,
+      FechaHora: new Date(Date.now() - 3600000).toISOString(),
+      Accion: 'VER_DOCUMENTO',
+      Descripcion: 'Visualización de documento #12345',
+      IP: '127.0.0.1',
+      Navegador: 'Chrome'
+    }];
   }
   
   /**
    * Cambia la contraseña del usuario actual
    * @param {string} currentPassword - Contraseña actual
    * @param {string} newPassword - Nueva contraseña
-   * @returns {Promise<Object>} Promesa que resuelve con el resultado de la operación
+   * @returns {Promise<Object>} Promesa que resuelve con la respuesta
    */
   const changePassword = async function(currentPassword, newPassword) {
     try {
-      // Validar contraseñas
-      if (!currentPassword || !newPassword) {
-        throw new Error('Contraseñas incompletas');
+      // Obtener usuario actual
+      const currentUser = authService.getUser();
+      
+      if (!currentUser || !currentUser.IDUsuario) {
+        throw new Error('No hay usuario autenticado');
       }
       
-      // Realizar petición
-      const response = await apiClient.put('/api/auth/cambio-password', {
-        currentPassword,
-        newPassword
+      // Validar que las contraseñas no sean vacías
+      if (!currentPassword || !newPassword) {
+        throw new Error('Las contraseñas no pueden estar vacías');
+      }
+      
+      // Enviar petición
+      const response = await apiClient.put('/auth/cambio-password', {
+        currentPassword: currentPassword,
+        newPassword: newPassword
       });
       
-      // Verificar respuesta
-      if (!response || !response.data) {
-        throw new Error('Respuesta inválida al cambiar contraseña');
-      }
-      
-      return response.data;
+      return response;
     } catch (error) {
-      console.error('[PROFILE] Error al cambiar contraseña:', error.message);
+      logger.error('Error al cambiar contraseña:', error.message);
       throw error;
     }
   };
   
   /**
-   * Limpia la caché del perfil
+   * Limpia la caché del perfil para forzar recarga
    */
   const clearProfileCache = function() {
     _cachedProfile = null;
@@ -320,27 +410,27 @@ const profileService = (function() {
   };
   
   /**
-   * Verifica si hay un usuario autenticado y recupera su perfil
-   * Si no hay usuario o hay error, usa un perfil mock en desarrollo
+   * Asegura que exista un perfil de usuario cargado
    * @returns {Promise<Object>} Promesa que resuelve con el perfil
    */
   const ensureUserProfile = async function() {
     try {
-      // Intentar obtener perfil
-      return await getCurrentUserProfile();
-    } catch (error) {
-      // Si estamos en desarrollo, usar mock
-      if (appConfig.isDevelopment()) {
-        logger.warn('Error al obtener perfil, usando mock para desarrollo', { error: error.message });
-        return _getMockProfile();
+      const profile = await getCurrentUserProfile();
+      
+      if (profile.__isMockProfile) {
+        logger.warn('[PERFIL] Usando datos de perfil simulados para desarrollo');
+      } else {
+        logger.info('[PERFIL] Perfil cargado correctamente');
       }
       
-      // En producción, propagar el error
+      return profile;
+    } catch (error) {
+      logger.error('[PERFIL] Error al cargar perfil:', error.message);
       throw error;
     }
   };
   
-  // Public API
+  // Exportar API pública
   return {
     getCurrentUserProfile,
     getUserActivity,
@@ -350,8 +440,8 @@ const profileService = (function() {
   };
 })();
 
-// Asignar al namespace global
-window.OFICRI.profileService = profileService;
+// Exportar el módulo
+export { profileService };
 
-// Exportar para ES modules
-export { profileService }; 
+// Agregar al namespace global
+window.OFICRI.profileService = profileService; 

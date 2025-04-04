@@ -48,7 +48,8 @@
     "db:crear-admin": "node server/scripts/crear-admin.js",
     "db:limpiar": "node server/scripts/limpiar-db.js",
     "fix:utf32": "node server/scripts/fix-utf32.js",
-    "setup": "node server/scripts/setup-env.js"
+    "setup": "node server/scripts/setup-env.js",
+    "check:auth": "node server/scripts/db-auth-test.js"
   },
   "nodemonConfig": {
     "verbose": true,

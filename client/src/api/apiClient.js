@@ -64,6 +64,9 @@ const apiClient = (function() {
    * @returns {Promise} Promesa que resuelve con los datos de la respuesta
    */
   const post = function(endpoint, data, options, headers, skipAuth) {
+    // Construir URL con el mismo método que GET para evitar problemas de /api duplicado
+    const url = _buildUrl(endpoint, null);
+    
     // Opciones por defecto para POST
     const fetchOptions = {
       method: 'POST',
@@ -72,7 +75,7 @@ const apiClient = (function() {
     };
     
     // Realizar petición
-    return _request(API_BASE_URL + endpoint, fetchOptions);
+    return _request(url, fetchOptions);
   };
   
   /**
@@ -85,6 +88,9 @@ const apiClient = (function() {
    * @returns {Promise} Promesa que resuelve con los datos de la respuesta
    */
   const put = function(endpoint, data, options, headers, skipAuth) {
+    // Construir URL con el mismo método que GET para evitar problemas de /api duplicado
+    const url = _buildUrl(endpoint, null);
+    
     // Opciones por defecto para PUT
     const fetchOptions = {
       method: 'PUT',
@@ -93,7 +99,7 @@ const apiClient = (function() {
     };
     
     // Realizar petición
-    return _request(API_BASE_URL + endpoint, fetchOptions);
+    return _request(url, fetchOptions);
   };
   
   /**
@@ -106,6 +112,9 @@ const apiClient = (function() {
    * @returns {Promise} Promesa que resuelve con los datos de la respuesta
    */
   const del = function(endpoint, data, options, headers, skipAuth) {
+    // Construir URL con el mismo método que GET para evitar problemas de /api duplicado
+    const url = _buildUrl(endpoint, null);
+    
     // Opciones por defecto para DELETE
     const fetchOptions = {
       method: 'DELETE',
@@ -118,7 +127,7 @@ const apiClient = (function() {
     }
     
     // Realizar petición
-    return _request(API_BASE_URL + endpoint, fetchOptions);
+    return _request(url, fetchOptions);
   };
   
   /**
@@ -137,6 +146,9 @@ const apiClient = (function() {
       return Promise.reject(new Error('Se requiere un objeto FormData para la subida de archivos'));
     }
     
+    // Construir URL con el mismo método que GET para evitar problemas de /api duplicado
+    const url = _buildUrl(endpoint, null);
+    
     // Si hay función de progreso y el navegador lo soporta, usarla
     if (onProgress && typeof onProgress === 'function' && window.XMLHttpRequest) {
       return _uploadWithProgress(endpoint, formData, options, headers, skipAuth, onProgress);
@@ -151,7 +163,7 @@ const apiClient = (function() {
     };
     
     // Realizar petición
-    return _request(API_BASE_URL + endpoint, fetchOptions);
+    return _request(url, fetchOptions);
   };
   
   /**
@@ -162,7 +174,13 @@ const apiClient = (function() {
    * @private
    */
   const _buildUrl = function(endpoint, params) {
-    let url = API_BASE_URL + endpoint;
+    // Asegurarse de que el endpoint no tenga /api duplicado
+    let url;
+    if (endpoint.startsWith('/api')) {
+      url = API_BASE_URL.replace('/api', '') + endpoint;
+    } else {
+      url = API_BASE_URL + endpoint;
+    }
     
     // Si hay params, agregarlos a la URL
     if (params && Object.keys(params).length > 0) {
@@ -406,6 +424,9 @@ const apiClient = (function() {
    * @private
    */
   const _uploadWithProgress = function(endpoint, formData, options, headers, skipAuth, onProgress) {
+    // Construir URL con el mismo método que GET para evitar problemas de /api duplicado
+    const url = _buildUrl(endpoint, null);
+    
     return new Promise((resolve, reject) => {
       // Crear petición XHR para seguimiento de progreso
       const xhr = new XMLHttpRequest();
@@ -476,7 +497,7 @@ const apiClient = (function() {
       });
       
       // Abrir conexión
-      xhr.open('POST', API_BASE_URL + endpoint);
+      xhr.open('POST', url);
       
       // Configurar timeout
       xhr.timeout = options.timeout || DEFAULT_TIMEOUT;
