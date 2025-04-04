@@ -5,8 +5,12 @@
     "baseDir": "./public"
   },
   "ui": false,
-  "notify": false,
+  "notify": true,
   "open": false,
-  "reloadDelay": 500,
-  "reloadDebounce": 500
+  "reloadDelay": 100,
+  "reloadDebounce": 100,
+  "injectChanges": true,
+  "watchOptions": {
+    "ignored": ["node_modules", ".git"]
+  }
 } 

@@ -1,21 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const rimraf = require('rimraf');
 
-// Directorio dist que queremos limpiar
-const distPath = path.resolve(__dirname, '../public/dist');
+// Este script se ejecuta antes de la compilación
+// Ya no usamos el directorio dist, así que este archivo ahora solo muestra información
+console.log('Iniciando proceso de compilación...');
+console.log('✅ Preparando entorno para la compilación');
 
-console.log('Limpiando directorio dist...');
-
-// Verificar si el directorio existe
-if (fs.existsSync(distPath)) {
-  // Eliminar el directorio y su contenido
-  rimraf.sync(distPath);
-  console.log('✅ Directorio dist eliminado correctamente');
-} else {
-  console.log('ℹ️ El directorio dist no existe, no es necesario limpiarlo');
-}
-
-// Crear el directorio dist de nuevo
-fs.mkdirSync(distPath, { recursive: true });
-console.log('✅ Directorio dist creado'); 
+// Aquí se podrían agregar otras operaciones de preparación en el futuro
+// Por ejemplo, validación de configuración, verificación de dependencias, etc. 

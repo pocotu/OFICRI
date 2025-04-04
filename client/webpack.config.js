@@ -35,6 +35,7 @@ module.exports = {
     'utils/devTools': './src/utils/devTools.js',
     'utils/loginUtils/loginFormRenderer': './src/utils/loginUtils/loginFormRenderer.js',
     'utils/loginUtils/loginLayoutRenderer': './src/utils/loginUtils/loginLayoutRenderer.js',
+    'utils/profileDebugger': './src/utils/profileDebugger.js',
     
     // UI Components
     'ui/notifications': './src/ui/notifications.js',
@@ -72,7 +73,8 @@ module.exports = {
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: 'css/[name].css'
+      filename: '[name].css',
+      chunkFilename: '[id].css'
     })
   ],
   output: {
@@ -84,5 +86,11 @@ module.exports = {
     extensions: ['.js', '.css']
   },
   // Para desarrollo
-  devtool: 'source-map'
+  devtool: 'source-map',
+  // Configuración de modo watch para recompilación automática
+  watchOptions: {
+    aggregateTimeout: 300, // Espera 300ms después de detectar cambios antes de recompilar
+    poll: 1000, // Comprueba cambios cada segundo
+    ignored: ['**/node_modules', '**/public'] // Ignora node_modules y el directorio public para mejor rendimiento
+  }
 }; 

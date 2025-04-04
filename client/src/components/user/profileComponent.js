@@ -42,18 +42,23 @@ const profileComponent = (function() {
       return;
     }
     
-    // Obtener el usuario actual
-    currentUser = authService.getUser();
-    
-    if (!currentUser) {
-      console.error('[PERFIL] No hay usuario autenticado');
-      return;
+    try {
+      // Obtener el usuario actual
+      currentUser = authService.getUser();
+      
+      // Verificar si hay un usuario activo, pero no bloqueamos la inicialización
+      if (!currentUser) {
+        console.warn('[PERFIL] No se encontró usuario autenticado en la inicialización. El perfil estará disponible cuando haya un usuario activo.');
+      }
+      
+      // Añadir evento de clic al botón de usuario
+      setupUserInfoButton();
+      
+      console.log('[PERFIL] Componente inicializado');
+    } catch (error) {
+      console.error('[PERFIL] Error al inicializar componente:', error);
+      // No bloqueamos la inicialización por errores
     }
-    
-    // Añadir evento de clic al botón de usuario
-    setupUserInfoButton();
-    
-    console.log('[PERFIL] Componente inicializado');
   };
   
   /**
@@ -127,34 +132,34 @@ const profileComponent = (function() {
       </div>
     `;
     
-    // Cargar datos del perfil
-    profileService.getCurrentUserProfile()
+    // Usar el método mejorado que maneja mejor los errores y tiene recuperación
+    profileService.ensureUserProfile()
       .then(profileData => {
         // Verificar si tenemos datos válidos
         if (!profileData) {
           throw new Error('No se recibieron datos del perfil');
         }
         
-        renderProfileContent(tabElement, profileData);
+        // Si el perfil es mock (en desarrollo), mostrar indicador
+        if (profileData.__isMockProfile) {
+          console.info('[PERFIL] Usando datos de perfil simulados para desarrollo');
+        }
         
-        // Cargar actividad del usuario
-        return profileService.getUserActivity({ limit: 5 })
-          .catch(activityError => {
-            // Manejar error de actividad pero continuar mostrando el perfil
-            console.warn('[PERFIL] Error al cargar actividad:', activityError);
-            return []; // Devolver array vacío para mostrar mensaje de "sin actividad"
-          });
-      })
-      .then(activityData => {
-        renderActivityContent(tabElement, activityData);
+        renderProfileContent(tabElement, profileData);
       })
       .catch(error => {
         console.error('[PERFIL] Error al cargar perfil:', error);
         
         // Determinar mensaje de error específico
         let errorMessage = config.errorMessage;
+        let errorDetails = '';
+        
         if (error.status === 404) {
           errorMessage = "No se pudo cargar la información del perfil: Endpoint no encontrado";
+          errorDetails = "El servidor no tiene implementado el endpoint de perfil de usuario.";
+        } else if (error.message.includes('autenticado')) {
+          errorMessage = "Error al cargar perfil: No hay usuario autenticado";
+          errorDetails = "No se encontró una sesión activa. Intente cerrar sesión y volver a ingresar.";
         } else if (error.message) {
           errorMessage = `${config.errorMessage}: ${error.message}`;
         }
@@ -163,10 +168,49 @@ const profileComponent = (function() {
           <div class="alert alert-danger m-4" role="alert">
             <h4 class="alert-heading">Error al cargar perfil</h4>
             <p>${errorMessage}</p>
+            ${errorDetails ? `<p>${errorDetails}</p>` : ''}
             <hr>
             <p class="mb-0">Si el problema persiste, por favor contacte al administrador del sistema.</p>
+            ${window.location.hostname === 'localhost' ? 
+              `<div class="mt-3">
+                <button id="profile-retry-btn" class="btn btn-sm btn-primary">
+                  <i class="fas fa-sync"></i> Reintentar
+                </button>
+                <button id="profile-debug-btn" class="btn btn-sm btn-secondary ms-2">
+                  <i class="fas fa-bug"></i> Depurar
+                </button>
+              </div>` : ''}
           </div>
         `;
+        
+        // En ambiente de desarrollo, agregar botones para reintentar y depurar
+        if (window.location.hostname === 'localhost') {
+          // Configurar botón de reintento
+          const retryButton = document.getElementById('profile-retry-btn');
+          if (retryButton) {
+            retryButton.addEventListener('click', () => {
+              // Limpiar caché y reintentar con forzado
+              profileService.clearProfileCache();
+              loadProfileContent(tabElement);
+            });
+          }
+          
+          // Configurar botón de depuración
+          const debugButton = document.getElementById('profile-debug-btn');
+          if (debugButton) {
+            debugButton.addEventListener('click', () => {
+              // Intentar usar el depurador de perfil si está disponible
+              if (window.OFICRI && window.OFICRI.profileDebugger) {
+                window.OFICRI.profileDebugger.enable(true);
+                window.OFICRI.profileDebugger.checkAuthState();
+                window.OFICRI.profileDebugger.printSummary();
+                alert('Información de depuración generada. Vea la consola para detalles.');
+              } else {
+                alert('Depurador de perfil no disponible. Importe profileDebugger.js.');
+              }
+            });
+          }
+        }
       });
   };
   
@@ -250,16 +294,6 @@ const profileComponent = (function() {
               </button>
             </div>
           </div>
-          
-          <div class="profile-section" id="profile-activity-section">
-            <h3 class="profile-section-title">Actividad Reciente</h3>
-            <div class="profile-activity" id="profile-activity">
-              <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2">Cargando actividad reciente...</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     `;
@@ -272,94 +306,6 @@ const profileComponent = (function() {
     if (changePasswordButton) {
       changePasswordButton.addEventListener('click', showChangePasswordModal);
     }
-  };
-  
-  /**
-   * Renderiza el contenido de actividad del usuario
-   * @param {HTMLElement} container - Contenedor principal
-   * @param {Array} activityData - Datos de actividad
-   */
-  const renderActivityContent = function(container, activityData) {
-    const activityContainer = document.getElementById('profile-activity');
-    
-    if (!activityContainer) {
-      console.error('[PERFIL] No se encontró el contenedor de actividad');
-      return;
-    }
-    
-    if (!activityData || activityData.length === 0) {
-      activityContainer.innerHTML = '<p class="text-muted text-center py-3">No hay actividad reciente para mostrar.</p>';
-      return;
-    }
-    
-    let activityHtml = '';
-    
-    // Generar HTML para cada actividad
-    activityData.forEach(activity => {
-      // Validar que tengamos FechaEvento y manejar valores por defecto
-      const fecha = activity.FechaEvento ? 
-          new Date(activity.FechaEvento).toLocaleString() : 
-          'Fecha desconocida';
-      
-      activityHtml += `
-        <div class="activity-item">
-          <div class="activity-date">${fecha}</div>
-          <p class="activity-description">
-            <i class="fas fa-${getActivityIcon(activity.TipoEvento)} me-2"></i>
-            ${getActivityDescription(activity)}
-          </p>
-        </div>
-      `;
-    });
-    
-    // Actualizar contenido
-    activityContainer.innerHTML = activityHtml;
-  };
-  
-  /**
-   * Obtiene el ícono adecuado para un tipo de actividad
-   * @param {string} activityType - Tipo de actividad
-   * @returns {string} Nombre del ícono de FontAwesome
-   */
-  const getActivityIcon = function(activityType) {
-    const iconMap = {
-      'LOGIN': 'sign-in-alt',
-      'LOGOUT': 'sign-out-alt',
-      'CAMBIO_PASSWORD': 'key',
-      'EDITAR_PERFIL': 'user-edit',
-      'VER_DOCUMENTO': 'file-alt',
-      'CREAR_DOCUMENTO': 'file-plus',
-      'EDITAR_DOCUMENTO': 'edit',
-      'ELIMINAR_DOCUMENTO': 'trash-alt',
-      'DERIVAR_DOCUMENTO': 'exchange-alt'
-    };
-    
-    return iconMap[activityType] || 'history';
-  };
-  
-  /**
-   * Genera una descripción legible para la actividad
-   * @param {Object} activity - Datos de la actividad
-   * @returns {string} Descripción de la actividad
-   */
-  const getActivityDescription = function(activity) {
-    if (!activity || !activity.TipoEvento) {
-      return 'Actividad desconocida';
-    }
-    
-    const descriptionMap = {
-      'LOGIN': 'Inicio de sesión',
-      'LOGOUT': 'Cierre de sesión',
-      'CAMBIO_PASSWORD': 'Cambio de contraseña',
-      'EDITAR_PERFIL': 'Actualización de perfil',
-      'VER_DOCUMENTO': `Consultó el documento ${activity.Detalles || ''}`,
-      'CREAR_DOCUMENTO': `Creó un nuevo documento ${activity.Detalles || ''}`,
-      'EDITAR_DOCUMENTO': `Editó el documento ${activity.Detalles || ''}`,
-      'ELIMINAR_DOCUMENTO': `Eliminó el documento ${activity.Detalles || ''}`,
-      'DERIVAR_DOCUMENTO': `Derivó el documento ${activity.Detalles || ''}`
-    };
-    
-    return descriptionMap[activity.TipoEvento] || `${activity.TipoEvento} ${activity.Detalles || ''}`;
   };
   
   /**

@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Frontend para el Sistema de Gestión Documental OFICRI",
   "scripts": {
-    "clean": "node -e \"const fs=require('fs');const path=require('path');const distPath=path.join(__dirname,'public','dist');if(fs.existsSync(distPath)){fs.rmSync(distPath,{recursive:true});console.log('Dist directory cleaned');}\"",
-    "dev": "npm run clean && npm run build && lite-server --baseDir=\"public\" --port=3001",
+    "dev": "webpack --mode development && lite-server --baseDir=\"public\" --port=3001",
     "start": "lite-server --baseDir=\"public\" --port=3001",
     "prebuild": "node scripts/build.js",
-    "build": "npm run prebuild && webpack --mode development",
+    "build": "webpack --mode development",
     "build:prod": "webpack --mode=production",
     "watch": "webpack --watch --mode=development",
+    "dev:all": "concurrently \"npm run watch\" \"lite-server --baseDir=\\\"public\\\" --port=3001\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test-endpoints": "node src/tools/endpoint-tester.js",
     "test-endpoints-supertest": "node src/tools/create-supertest.js"
@@ -22,6 +22,7 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "chalk": "^4.1.2",
+    "concurrently": "^8.2.2",
     "css-loader": "^6.8.0",
     "express": "^5.1.0",
     "lite-server": "^2.6.1",
