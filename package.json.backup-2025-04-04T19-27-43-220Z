@@ -48,6 +48,9 @@
     "db:crear-admin": "node server/scripts/crear-admin.js",
     "db:limpiar": "node server/scripts/limpiar-db.js",
     "fix:utf32": "node server/scripts/fix-utf32.js",
+    "fix:express": "node server/scripts/fix-express.js",
+    "fix:all": "node server/scripts/fix-dependencies.js",
+    "diagnose": "node server/scripts/dependencies-check.js",
     "setup": "node server/scripts/setup-env.js"
   },
   "nodemonConfig": {

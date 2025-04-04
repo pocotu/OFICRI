@@ -1,339 +1,193 @@
 /**
- * Database Initialization Script
- * Sets up initial database records required for application functionality
- * ISO/IEC 27001 compliant implementation
+ * Script para inicializar la base de datos OFICRI
+ * Ejecuta los scripts SQL para crear la estructura y cargar datos iniciales
  */
 
-const bcrypt = require('bcryptjs');
-const { createLogger, format, transports } = require('winston');
+// Cargar shims globales antes de cualquier otra dependencia
+require('../utils/global-shims');
+
+require('dotenv').config();
 const path = require('path');
+const fs = require('fs');
+const { createLogger, format, transports } = require('winston');
+const { spawn } = require('child_process');
+const dbConnector = require('../utils/db-connector');
 
-// Importar funciones de ayuda para base de datos
-const {
-  loadEnv,
-  executeQuery,
-  disableConstraints,
-  enableConstraints,
-  getDefaultRoles,
-  getDefaultAreas,
-  getDefaultPermissions,
-  hashPassword
-} = require('../utils/database-helpers');
-
-// Cargar variables de entorno desde la raíz del proyecto
-loadEnv(path.resolve(__dirname, '../../.env'));
-
-// Configurar logger con salida a consola más detallada
-const logger = createLogger({
-  level: 'info',
+// Crear logger específico para este script
+const scriptLogger = createLogger({
   format: format.combine(
     format.timestamp({
       format: 'YYYY-MM-DD HH:mm:ss'
     }),
-    format.errors({ stack: true }),
-    format.splat(),
-    format.colorize(),
-    format.printf(info => `${info.timestamp} ${info.level}: ${info.message}${info.stack ? '\n' + info.stack : ''}`)
+    format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
   ),
   transports: [
     new transports.Console({
-      stderrLevels: ['error'],
-      consoleWarnLevels: ['warn'],
       format: format.combine(
         format.colorize(),
-        format.printf(
-          info => `${info.timestamp} ${info.level}: ${info.message}${info.stack ? '\n' + info.stack : ''}`
-        )
-      ),
+        format.simple()
+      )
     })
   ]
 });
 
 /**
- * Initialize basic areas needed for the system
+ * Ejecuta una consulta SQL y devuelve los resultados
  */
-async function initializeAreas() {
+async function executeQuery(sql, params = []) {
+  let connection;
   try {
-    logger.info('Verificando y creando áreas básicas...');
-    
-    const areas = getDefaultAreas();
-
-    for (const area of areas) {
-      const existing = await executeQuery(
-        'SELECT IDArea FROM AreaEspecializada WHERE CodigoIdentificacion = ?',
-        [area.codigoIdentificacion]
-      );
-
-      if (existing.length === 0) {
-        await executeQuery(
-          `INSERT INTO AreaEspecializada (
-            NombreArea, CodigoIdentificacion, TipoArea, Descripcion, IsActive
-          ) VALUES (?, ?, ?, ?, TRUE)`,
-          [area.nombreArea, area.codigoIdentificacion, area.tipoArea, area.descripcion]
-        );
-        logger.info(`Área ${area.nombreArea} creada exitosamente`);
-      } else {
-        logger.info(`Área ${area.nombreArea} ya existe`);
+    connection = await dbConnector.createConnection();
+    const [results] = await connection.query(sql, params);
+    return results;
+  } catch (error) {
+    throw error;
+  } finally {
+    if (connection) {
+      try {
+        await connection.end();
+      } catch (err) {
+        scriptLogger.error(`Error al cerrar conexión: ${err.message}`);
       }
     }
-  } catch (error) {
-    logger.error('Error al inicializar áreas:', { error: error.message, stack: error.stack });
-    throw error;
   }
 }
 
 /**
- * Initialize basic roles with appropriate permissions
+ * Ejecuta un archivo SQL completo
  */
-async function initializeRoles() {
-  try {
-    logger.info('Verificando y creando roles básicos...');
+async function executeSqlFile(filePath) {
+  console.log(`Ejecutando archivo SQL: ${filePath}`);
+  return new Promise((resolve, reject) => {
+    // Construir comando
+    const mysqlCmd = 'mysql';
+    const args = [
+      '-h', process.env.DB_HOST || 'localhost',
+      '-u', process.env.DB_USER || 'root'
+    ];
     
-    const roles = getDefaultRoles();
-
-    for (const rol of roles) {
-      const existing = await executeQuery(
-        'SELECT IDRol FROM Rol WHERE NombreRol = ?',
-        [rol.nombreRol]
-      );
-
-      if (existing.length === 0) {
-        await executeQuery(
-          'INSERT INTO Rol (NombreRol, Descripcion, NivelAcceso, Permisos) VALUES (?, ?, ?, ?)',
-          [rol.nombreRol, rol.descripcion, rol.nivelAcceso, rol.permisos]
-        );
-        logger.info(`Rol ${rol.nombreRol} creado exitosamente`);
+    // Agregar password si existe
+    if (process.env.DB_PASSWORD) {
+      args.push('-p' + process.env.DB_PASSWORD);
+    }
+    
+    // Iniciar proceso
+    const mysql = spawn(mysqlCmd, args);
+    
+    // Ejecutar archivo SQL
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(mysql.stdin);
+    
+    // Manejar salida
+    mysql.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+    
+    mysql.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+    
+    mysql.on('close', (code) => {
+      if (code === 0) {
+        console.log(`✅ Archivo SQL ejecutado correctamente: ${filePath}`);
+        resolve(true);
       } else {
-        // Actualizar los permisos del rol existente
-        await executeQuery(
-          'UPDATE Rol SET Descripcion = ?, NivelAcceso = ?, Permisos = ? WHERE NombreRol = ?',
-          [rol.descripcion, rol.nivelAcceso, rol.permisos, rol.nombreRol]
-        );
-        logger.info(`Rol ${rol.nombreRol} actualizado exitosamente`);
+        console.error(`❌ Error al ejecutar archivo SQL: ${filePath} (código ${code})`);
+        reject(new Error(`Error al ejecutar archivo SQL: código ${code}`));
       }
-    }
-  } catch (error) {
-    logger.error('Error al inicializar roles:', { error: error.message, stack: error.stack });
-    throw error;
-  }
+    });
+  });
 }
 
 /**
- * Create the main Mesa de Partes entry
+ * Inicializa la base de datos completa
  */
-async function initializeMesaPartes() {
+async function initializeDatabase() {
+  console.log('=== INICIALIZACIÓN DE BASE DE DATOS OFICRI ===\n');
+  
   try {
-    logger.info('Verificando y creando Mesa de Partes principal...');
-    
-    const existing = await executeQuery(
-      'SELECT IDMesaPartes FROM MesaPartes WHERE CodigoIdentificacion = ?',
-      ['MP-PRIN']
-    );
-
-    if (existing.length === 0) {
-      await executeQuery(
-        'INSERT INTO MesaPartes (Descripcion, IsActive, CodigoIdentificacion) VALUES (?, TRUE, ?)',
-        ['Mesa de Partes Principal', 'MP-PRIN']
-      );
-      logger.info('Mesa de Partes principal creada exitosamente');
-    } else {
-      logger.info('Mesa de Partes principal ya existe');
+    // 1. Verificar conexión básica
+    console.log('-- VERIFICANDO CONEXIÓN --');
+    const connected = await dbConnector.testConnection();
+    if (!connected) {
+      console.log('❌ No se puede conectar a la base de datos. Verifique las credenciales en el archivo .env');
+      return false;
     }
-  } catch (error) {
-    logger.error('Error al inicializar Mesa de Partes:', { error: error.message, stack: error.stack });
-    throw error;
-  }
-}
-
-/**
- * Create default admin user if not exists
- */
-async function createDefaultAdmin() {
-  try {
-    logger.info('Creando usuario administrador predeterminado...');
+    console.log('✅ Conexión a la base de datos establecida correctamente\n');
     
-    // Verificar si ya existe
-    const existingAdmin = await executeQuery(
-      'SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?',
-      ['12345678']
-    );
+    // 2. Ejecutar archivo principal de la base de datos
+    console.log('-- CREANDO ESTRUCTURA DE TABLAS --');
+    const dbSqlPath = path.resolve(__dirname, '../../db/db.sql');
     
-    if (existingAdmin.length > 0) {
-      logger.info('Usuario administrador ya existe');
+    if (!fs.existsSync(dbSqlPath)) {
+      console.error(`❌ Archivo no encontrado: ${dbSqlPath}`);
+      return false;
+    }
+    
+    await executeSqlFile(dbSqlPath);
+    console.log('✅ Estructura de base de datos creada correctamente\n');
+    
+    // 3. Ejecutar archivo de triggers
+    console.log('-- CREANDO TRIGGERS --');
+    const triggersSqlPath = path.resolve(__dirname, '../../db/trigger-control.sql');
+    
+    if (!fs.existsSync(triggersSqlPath)) {
+      console.error(`❌ Archivo no encontrado: ${triggersSqlPath}`);
+      return false;
+    }
+    
+    await executeSqlFile(triggersSqlPath);
+    console.log('✅ Triggers creados correctamente\n');
+    
+    // 4. Crear usuario administrador
+    console.log('-- CREANDO USUARIO ADMINISTRADOR --');
+    const crearAdminPath = path.resolve(__dirname, './crear-admin.js');
+    
+    if (!fs.existsSync(crearAdminPath)) {
+      console.error(`❌ Script no encontrado: ${crearAdminPath}`);
+      return false;
+    }
+    
+    await new Promise((resolve, reject) => {
+      const crearAdmin = spawn('node', [crearAdminPath]);
       
-      // Actualizar datos del administrador existente
-      await executeQuery(
-        `UPDATE Usuario 
-         SET Nombres = ?, Apellidos = ?, Grado = ?, PasswordHash = ? 
-         WHERE IDUsuario = ?`,
-        [
-          'Jan',
-          'Perez',
-          'Teniente',
-          await hashPassword('admin123'),
-          existingAdmin[0].IDUsuario
-        ]
-      );
-      logger.info(`Usuario administrador actualizado con ID: ${existingAdmin[0].IDUsuario}`);
+      crearAdmin.stdout.on('data', (data) => {
+        console.log(`${data}`);
+      });
       
-      return true;
-    }
-    
-    // Obtener IDs de rol y área administrativos
-    const rolResult = await executeQuery(
-      'SELECT IDRol FROM Rol WHERE NombreRol = ?',
-      ['Administrador']
-    );
-    
-    const areaResult = await executeQuery(
-      'SELECT IDArea FROM Area WHERE NombreArea = ?',
-      ['Administración']
-    );
-    
-    if (rolResult.length === 0 || areaResult.length === 0) {
-      throw new Error('No se encontró el rol o área de administrador');
-    }
-    
-    const rolId = rolResult[0].IDRol;
-    const areaId = areaResult[0].IDArea;
-    
-    // Crear hash de contraseña utilizando bcrypt
-    const passwordHash = await hashPassword('admin123');
-    
-    // Insertar usuario administrador
-    const result = await executeQuery(`
-      INSERT INTO Usuario (
-        CodigoCIP, Nombres, Apellidos, Grado,
-        PasswordHash, IDArea, IDRol,
-        UltimoAcceso, IntentosFallidos, Bloqueado
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 0, 0)
-    `, [
-      '12345678', 'Jan', 'Perez', 'Teniente',
-      passwordHash, areaId, rolId
-    ]);
-    
-    logger.info(`Usuario administrador creado con ID: ${result.insertId}`);
-    logger.info('Credenciales de acceso:');
-    logger.info('CIP: 12345678');
-    logger.info('Contraseña: admin123');
+      crearAdmin.stderr.on('data', (data) => {
+        console.error(`${data}`);
+      });
+      
+      crearAdmin.on('close', (code) => {
+        if (code === 0) {
+          console.log('✅ Usuario administrador creado correctamente\n');
+          resolve();
+        } else {
+          console.error(`❌ Error al crear usuario administrador (código ${code})\n`);
+          reject(new Error(`Error al crear administrador: código ${code}`));
+        }
+      });
+    });
     
     return true;
   } catch (error) {
-    logger.error('Error al crear usuario administrador:', error.message);
-    throw error;
+    console.error(`Error al inicializar la base de datos: ${error}`);
+    return false;
   }
 }
 
-/**
- * Initialize base security-related records and permissions
- */
-async function initializeSecurity() {
-  try {
-    logger.info('Inicializando permisos de seguridad básicos...');
-    
-    // Crear permisos básicos si no existen
-    const permisos = getDefaultPermissions();
-
-    for (const permiso of permisos) {
-      const existing = await executeQuery(
-        'SELECT IDPermiso FROM Permiso WHERE NombrePermiso = ?',
-        [permiso.nombrePermiso]
-      );
-
-      if (existing.length === 0) {
-        await executeQuery(
-          'INSERT INTO Permiso (NombrePermiso, Alcance, Restringido) VALUES (?, ?, ?)',
-          [permiso.nombrePermiso, permiso.alcance, permiso.restringido]
-        );
-        logger.info(`Permiso ${permiso.nombrePermiso} creado exitosamente`);
-      }
+// Ejecutar inicialización
+initializeDatabase()
+  .then(success => {
+    if (success) {
+      console.log('\n✅ Base de datos inicializada correctamente');
+    } else {
+      console.log('\n❌ Error al inicializar la base de datos');
+      console.log('Revise los mensajes anteriores para más detalles');
     }
-
-    // Asignar permisos al rol administrador
-    const adminRol = await executeQuery(
-      'SELECT IDRol FROM Rol WHERE NombreRol = ?',
-      ['Administrador']
-    );
-
-    if (adminRol[0]) {
-      const permisoIds = await executeQuery('SELECT IDPermiso FROM Permiso');
-      
-      for (const permiso of permisoIds) {
-        // Verificar si ya existe la asignación
-        const existing = await executeQuery(
-          'SELECT 1 FROM RolPermiso WHERE IDRol = ? AND IDPermiso = ?',
-          [adminRol[0].IDRol, permiso.IDPermiso]
-        );
-
-        if (existing.length === 0) {
-          await executeQuery(
-            'INSERT INTO RolPermiso (IDRol, IDPermiso) VALUES (?, ?)',
-            [adminRol[0].IDRol, permiso.IDPermiso]
-          );
-        }
-      }
-      
-      logger.info('Permisos asignados al rol Administrador');
-    }
-  } catch (error) {
-    logger.error('Error al inicializar seguridad:', { error: error.message, stack: error.stack });
-    throw error;
-  }
-}
-
-/**
- * Main function to initialize the database
- */
-async function initializeDatabase() {
-  try {
-    logger.info('Iniciando configuración de la base de datos OFICRI...');
-    
-    // Deshabilitar temporalmente las verificaciones de clave foránea
-    // Esto permite crear registros en cualquier orden sin problemas
-    logger.info('Desactivando verificadores de clave foránea y triggers...');
-    await disableConstraints();
-    
-    try {
-      // Crear usuario administrador primero
-      // Este usuario es necesario para los registros de auditoría
-      await initializeRoles();
-      await initializeAreas();
-      await createDefaultAdmin();
-      await initializeMesaPartes();
-      await initializeSecurity();
-      
-      logger.info('Base de datos inicializada exitosamente');
-      return true;
-    } finally {
-      // Reactivar las restricciones de clave foránea al finalizar
-      logger.info('Reactivando verificadores de clave foránea y triggers...');
-      await enableConstraints();
-    }
-  } catch (error) {
-    logger.error('Error en la inicialización de la base de datos:', { error: error.message, stack: error.stack });
-    throw error;
-  }
-}
-
-// Si este archivo se ejecuta directamente, inicializar la base de datos
-if (require.main === module) {
-  initializeDatabase()
-    .then(() => {
-      logger.info('Inicialización completada con éxito');
-      process.exit(0);
-    })
-    .catch(error => {
-      logger.error('Error durante la inicialización:', error);
-      process.exit(1);
-    });
-} else {
-  // Exportar funciones para uso en otros módulos
-  module.exports = {
-    initializeDatabase,
-    initializeAreas,
-    initializeRoles,
-    initializeMesaPartes,
-    createDefaultAdmin,
-    initializeSecurity
-  };
-} 
+  })
+  .catch(error => {
+    console.error('Error crítico:', error);
+    process.exit(1);
+  }); 

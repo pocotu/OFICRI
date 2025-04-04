@@ -654,16 +654,19 @@ const server = http.createServer(app);
 
 // Función para iniciar el servidor con fallback a puertos alternativos
 function startServer(port) {
-  server.listen(port, () => {
+  // Asegurarse de usar siempre el puerto especificado
+  const fixedPort = 3000;
+  
+  server.listen(fixedPort, () => {
     console.log(`========================================`);
     console.log(`  SERVIDOR OFICRI COMPLETO`);
-    console.log(`  PUERTO: ${port}`);
+    console.log(`  PUERTO: ${fixedPort}`);
     console.log(`  ENTORNO: ${process.env.NODE_ENV || 'desarrollo'}`);
     console.log(`========================================`);
-    console.log(`🌐 URL principal: http://localhost:${port}`);
-    console.log(`🔒 Login API: http://localhost:${port}/api/auth/login`);
-    console.log(`🔍 Estado: http://localhost:${port}/status`);
-    console.log(`📚 Documentación: http://localhost:${port}/api-docs`);
+    console.log(`🌐 URL principal: http://localhost:${fixedPort}`);
+    console.log(`🔒 Login API: http://localhost:${fixedPort}/api/auth/login`);
+    console.log(`🔍 Estado: http://localhost:${fixedPort}/status`);
+    console.log(`📚 Documentación: http://localhost:${fixedPort}/api-docs`);
     console.log(`========================================`);
     console.log(`📝 Credenciales de prueba:`);
     console.log(`   - CIP: 12345678`);
@@ -673,8 +676,8 @@ function startServer(port) {
 
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
-      console.log(`Puerto ${port} en uso, intentando puerto alternativo ${port + 1}`);
-      startServer(port + 1);
+      console.error(`ERROR: El puerto ${fixedPort} está en uso. Por favor detén cualquier otro proceso que esté usando este puerto.`);
+      process.exit(1);
     } else {
       console.error('Error al iniciar el servidor:', error);
     }

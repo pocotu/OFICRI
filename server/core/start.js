@@ -3,8 +3,9 @@
  * y ejecuta la creación del admin automáticamente
  */
 
-// Redirigir las importaciones de 'punycode' al módulo punycode2
-require('module').Module._cache['punycode'] = require('./punycode-shim');
+// Cargar shims globales antes de cualquier otra dependencia
+require('../utils/global-shims');
+console.log('Shims globales cargados correctamente');
 
 // Cargar variables de entorno desde .env
 require('dotenv').config();

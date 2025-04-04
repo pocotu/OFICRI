@@ -1,90 +1,138 @@
 /**
  * Script para verificar el estado de la base de datos
- * Muestra información sobre las tablas principales
+ * Comprueba la existencia y estructura de las tablas principales
+ * y verifica que exista al menos un usuario administrador
  */
 
-const dotenv = require('dotenv');
+// Cargar shims globales antes de cualquier otra dependencia
+require('../utils/global-shims');
+
+require('dotenv').config();
 const path = require('path');
-const mysql = require('mysql2/promise');
+const { createLogger, format, transports } = require('winston');
+const dbConnector = require('../utils/db-connector');
 
-// Cargar variables de entorno desde la raíz del proyecto
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Crear logger específico para este script
+const scriptLogger = createLogger({
+  format: format.combine(
+    format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+  ),
+  transports: [
+    new transports.Console({
+      format: format.combine(
+        format.colorize(),
+        format.simple()
+      )
+    })
+  ]
+});
 
-// Definir función para ejecutar consultas
+/**
+ * Ejecuta una consulta SQL y devuelve los resultados
+ */
 async function executeQuery(sql, params = []) {
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-  });
-  
+  let connection;
   try {
+    connection = await dbConnector.createConnection();
     const [results] = await connection.query(sql, params);
     return results;
+  } catch (error) {
+    throw error;
   } finally {
-    await connection.end();
+    if (connection) {
+      try {
+        await connection.end();
+      } catch (err) {
+        scriptLogger.error(`Error al cerrar conexión: ${err.message}`);
+      }
+    }
   }
 }
 
+/**
+ * Verificar la base de datos
+ */
 async function checkDatabase() {
-  console.log('=== VERIFICACIÓN DE ESTADO DE BASE DE DATOS ===');
+  console.log('=== VERIFICACIÓN DE ESTADO DE BASE DE DATOS ===\n');
   
   try {
-    // Verificar usuario administrador
-    console.log('\n-- USUARIO ADMINISTRADOR --');
-    const adminUser = await executeQuery(
-      'SELECT IDUsuario, CodigoCIP, Nombres, Apellidos, IDRol, IDArea FROM Usuario WHERE CodigoCIP = ?',
-      ['12345678']
-    );
-    console.log(adminUser.length > 0 ? 'Usuario administrador encontrado:' : 'Usuario administrador NO encontrado');
-    if (adminUser.length > 0) {
-      console.log(adminUser[0]);
+    // 1. Verificar conexión básica
+    console.log('-- CONEXIÓN --');
+    const connected = await dbConnector.testConnection();
+    if (!connected) {
+      console.log('❌ No se puede conectar a la base de datos. Verifique las credenciales en el archivo .env');
+      return false;
     }
-
-    // Verificar roles
-    console.log('\n-- ROLES --');
-    const roles = await executeQuery('SELECT IDRol, NombreRol, NivelAcceso, Permisos FROM Rol');
-    console.log(`Total de roles: ${roles.length}`);
-    roles.forEach(rol => {
-      console.log(`- ${rol.NombreRol} (ID: ${rol.IDRol}, Nivel: ${rol.NivelAcceso}, Permisos: ${rol.Permisos})`);
-    });
-
-    // Verificar áreas
-    console.log('\n-- ÁREAS --');
-    const areas = await executeQuery('SELECT IDArea, NombreArea, CodigoIdentificacion, TipoArea FROM AreaEspecializada');
-    console.log(`Total de áreas: ${areas.length}`);
-    areas.forEach(area => {
-      console.log(`- ${area.NombreArea} (ID: ${area.IDArea}, Código: ${area.CodigoIdentificacion}, Tipo: ${area.TipoArea})`);
-    });
-
-    // Verificar mesa de partes
-    console.log('\n-- MESA DE PARTES --');
-    const mesaPartes = await executeQuery('SELECT IDMesaPartes, Descripcion, CodigoIdentificacion FROM MesaPartes');
-    console.log(`Total de mesas de partes: ${mesaPartes.length}`);
-    mesaPartes.forEach(mp => {
-      console.log(`- ${mp.Descripcion} (ID: ${mp.IDMesaPartes}, Código: ${mp.CodigoIdentificacion})`);
-    });
-
-    // Verificar asignaciones de usuario
-    console.log('\n-- ASIGNACIONES DE USUARIO --');
-    const asignaciones = await executeQuery(`
-      SELECT CONCAT(u.Nombres, ' ', u.Apellidos) AS NombreCompleto, r.NombreRol, a.NombreArea 
-      FROM Usuario u
-      LEFT JOIN Rol r ON u.IDRol = r.IDRol
-      LEFT JOIN AreaEspecializada a ON u.IDArea = a.IDArea
-    `);
-    console.log(`Total de asignaciones: ${asignaciones.length}`);
-    asignaciones.forEach(asig => {
-      console.log(`- Usuario: ${asig.NombreCompleto || 'Desconocido'}, Rol: ${asig.NombreRol || 'No asignado'}, Área: ${asig.NombreArea || 'No asignado'}`);
-    });
-
+    console.log('✅ Conexión a la base de datos establecida correctamente');
+    
+    // 2. Verificar tablas principales
+    console.log('\n-- TABLAS PRINCIPALES --');
+    const tables = await executeQuery(`
+      SELECT TABLE_NAME 
+      FROM information_schema.TABLES 
+      WHERE TABLE_SCHEMA = ?
+    `, [process.env.DB_NAME || 'oficri_sistema']);
+    
+    const requiredTables = ['Usuario', 'Rol', 'AreaEspecializada', 'Documento', 'MesaPartes'];
+    const missingTables = [];
+    
+    for (const requiredTable of requiredTables) {
+      if (!tables.some(t => t.TABLE_NAME.toLowerCase() === requiredTable.toLowerCase())) {
+        missingTables.push(requiredTable);
+      }
+    }
+    
+    if (missingTables.length > 0) {
+      console.log(`❌ Faltan las siguientes tablas: ${missingTables.join(', ')}`);
+      console.log('Ejecute npm run db:init para crear la estructura de la base de datos');
+    } else {
+      console.log('✅ Todas las tablas requeridas existen en la base de datos');
+    }
+    
+    // 3. Verificar usuario administrador
+    console.log('\n-- USUARIO ADMINISTRADOR --');
+    try {
+      const adminCount = await executeQuery(`
+        SELECT COUNT(*) as count FROM Usuario u
+        JOIN Rol r ON u.IDRol = r.IDRol
+        WHERE r.NivelAcceso = 1 AND Bloqueado = 0
+      `);
+      
+      if (adminCount[0].count === 0) {
+        console.log('❌ No existe ningún usuario administrador activo');
+        console.log('Ejecute npm run db:crear-admin para crear un usuario administrador');
+      } else {
+        console.log(`✅ Existen ${adminCount[0].count} usuario(s) administrador(es) activo(s)`);
+      }
+    } catch (error) {
+      if (error.message.includes('ER_NO_SUCH_TABLE')) {
+        console.log('❌ No se puede verificar usuario administrador: la tabla Usuario o Rol no existe');
+      } else {
+        throw error;
+      }
+    }
+    
+    return true;
   } catch (error) {
-    console.error('Error al verificar la base de datos:', error);
-  } finally {
-    process.exit(0);
+    console.log(`Error al verificar la base de datos: ${error}`);
+    return false;
   }
 }
 
 // Ejecutar la verificación
-checkDatabase(); 
+checkDatabase()
+  .then(success => {
+    if (success) {
+      console.log('\n✅ La base de datos está configurada correctamente');
+    } else {
+      console.log('\n❌ La base de datos requiere configuración adicional');
+      console.log('Revise los mensajes anteriores para más detalles');
+    }
+  })
+  .catch(error => {
+    console.error('Error crítico:', error);
+    process.exit(1);
+  }); 
