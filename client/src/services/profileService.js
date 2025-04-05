@@ -8,6 +8,8 @@ import { apiClient } from '../api/apiClient.js';
 import { authService } from './authService.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { appConfig } from '../config/appConfig.js';
+import { normalizeUserProfile } from '../utils/userProfileNormalizer.js';
+import { profileDebugger } from '../utils/profileDebugger.js';
 
 // Crear namespace
 window.OFICRI = window.OFICRI || {};
@@ -36,20 +38,23 @@ const profileService = (function() {
     const { forceRefresh = false, useMockInDev = true } = options;
     
     try {
+      logger.debug('🔍 getCurrentUserProfile - Opciones:', { forceRefresh, useMockInDev });
+      
       // Si hay una petición en curso, retornar esa promesa
       if (_profilePromise && !forceRefresh) {
-        logger.debug('Reutilizando promesa de perfil en curso');
+        logger.debug('🔄 Reutilizando promesa de perfil en curso');
         return _profilePromise;
       }
       
       // Si hay datos en caché y no se fuerza recarga, y han pasado menos de 5 minutos
       if (_cachedProfile && !forceRefresh && Date.now() - _lastFetchTime < 5 * 60 * 1000) {
-        logger.debug('Usando datos de perfil en caché');
+        logger.debug('📋 Usando datos de perfil en caché:', _cachedProfile);
         return _cachedProfile;
       }
       
       // Obtener usuario actual del authService
       const currentUser = authService.getUser(true); // Forzar recarga desde localStorage
+      logger.debug('👤 Usuario actual obtenido del authService:', currentUser);
       
       // Si no hay usuario autenticado
       if (!currentUser || !currentUser.IDUsuario) {
@@ -77,24 +82,78 @@ const profileService = (function() {
         try {
           // Usar el endpoint correcto según la documentación de API
           // La documentación indica que debe ser /api/users/:id o /usuarios/:id
-          logger.debug(`Obteniendo perfil para usuario ID: ${currentUser.IDUsuario}`);
+          logger.debug(`🔄 Obteniendo perfil para usuario ID: ${currentUser.IDUsuario}`);
           
           // Intentar usar el endpoint principal
           const endpoint = `/users/${currentUser.IDUsuario}`;
-          logger.debug(`Llamando al endpoint: ${endpoint}`);
+          logger.debug(`🔄 Llamando al endpoint: ${endpoint}`);
           
           const response = await apiClient.get(endpoint);
+          logger.debug('📦 Respuesta recibida del endpoint:', response);
+          
+          // Capturar respuesta en el depurador de perfil si está disponible
+          if (window.OFICRI && window.OFICRI.profileDebugger) {
+            try {
+              const responseData = {
+                timestamp: new Date(),
+                endpoint: endpoint,
+                userId: currentUser.IDUsuario,
+                data: JSON.parse(JSON.stringify(response))
+              };
+              logger.debug('🔍 Capturando respuesta en depurador de perfil');
+              window.OFICRI._capturedResponses = window.OFICRI._capturedResponses || [];
+              window.OFICRI._capturedResponses.push(responseData);
+            } catch (e) {
+              logger.warn('Error al capturar respuesta en depurador:', e);
+            }
+          }
           
           // Verificar respuesta
           if (!response || !response.data) {
+            logger.error('❌ Respuesta inválida al obtener perfil - sin datos', { response });
             throw new Error('Respuesta inválida al obtener perfil');
           }
           
-          // Guardar en caché
-          _cachedProfile = response.data;
+          // Analizar la estructura de la respuesta para depuración
+          logger.debug('🔍 Estructura de respuesta completa:', response);
+          logger.debug('🔍 Estructura de data en respuesta:', response.data);
+          
+          // Log detallado de la estructura de datos antes de normalizar
+          if (typeof response.data === 'object') {
+            logger.debug('🔍 Campos disponibles en response.data:', Object.keys(response.data));
+            
+            // Verificar si hay un objeto usuario en la respuesta
+            if (response.data.user) {
+              logger.debug('🔍 Campos en response.data.user:', Object.keys(response.data.user));
+            }
+            
+            // Verificar estructura de rol y área antes de normalizar
+            const dataObj = response.data.user || response.data;
+            
+            if (dataObj.rol) {
+              logger.debug('🔍 Estructura de rol antes de normalizar:', dataObj.rol);
+            } else {
+              logger.warn('⚠️ No se encontró objeto rol en la respuesta');
+            }
+            
+            if (dataObj.area) {
+              logger.debug('🔍 Estructura de área antes de normalizar:', dataObj.area);
+            } else {
+              logger.warn('⚠️ No se encontró objeto area en la respuesta');
+            }
+          }
+          
+          // Normalizar los campos del perfil para asegurar compatibilidad con interfaces
+          const userData = response.data.user || response.data;
+          logger.debug('🔄 Datos a normalizar:', userData);
+          
+          // Usar la utilidad de normalización
+          _cachedProfile = normalizeUserProfile(userData, currentUser);
+          logger.debug('✅ Perfil normalizado y guardado en caché:', _cachedProfile);
+          
           _lastFetchTime = Date.now();
           
-          logger.info('Perfil obtenido correctamente de la base de datos', {
+          logger.info('✅ Perfil obtenido correctamente de la base de datos', {
             userId: currentUser.IDUsuario,
             profile: _cachedProfile
           });
@@ -106,6 +165,22 @@ const profileService = (function() {
             userId: currentUser.IDUsuario
           });
           
+          // Capturar error en el depurador
+          if (window.OFICRI && window.OFICRI.profileDebugger) {
+            try {
+              const errorData = {
+                timestamp: new Date(),
+                error: error.message,
+                userId: currentUser.IDUsuario,
+                stack: error.stack
+              };
+              window.OFICRI._capturedErrors = window.OFICRI._capturedErrors || [];
+              window.OFICRI._capturedErrors.push(errorData);
+            } catch (e) {
+              logger.warn('Error al capturar error en depurador:', e);
+            }
+          }
+          
           // Intentar endpoint alternativo si el primero falla
           try {
             const alternativeEndpoint = `/usuarios/${currentUser.IDUsuario}`;
@@ -113,12 +188,32 @@ const profileService = (function() {
             
             const altResponse = await apiClient.get(alternativeEndpoint);
             
+            // Capturar respuesta alternativa en el depurador
+            if (window.OFICRI && window.OFICRI.profileDebugger) {
+              try {
+                const responseData = {
+                  timestamp: new Date(),
+                  endpoint: alternativeEndpoint,
+                  userId: currentUser.IDUsuario,
+                  data: JSON.parse(JSON.stringify(altResponse))
+                };
+                window.OFICRI._capturedResponses = window.OFICRI._capturedResponses || [];
+                window.OFICRI._capturedResponses.push(responseData);
+              } catch (e) {
+                logger.warn('Error al capturar respuesta alternativa en depurador:', e);
+              }
+            }
+            
             if (!altResponse || !altResponse.data) {
               throw new Error('Respuesta inválida en endpoint alternativo');
             }
             
-            // Guardar en caché
-            _cachedProfile = altResponse.data;
+            // Normalizar los campos del perfil para asegurar compatibilidad con interfaces
+            const altUserData = altResponse.data.user || altResponse.data;
+            
+            // Usar la utilidad de normalización
+            _cachedProfile = normalizeUserProfile(altUserData, currentUser);
+            
             _lastFetchTime = Date.now();
             
             logger.info('Perfil obtenido correctamente usando endpoint alternativo', {
@@ -128,6 +223,23 @@ const profileService = (function() {
             return _cachedProfile;
           } catch (altError) {
             logger.error('Error en endpoint alternativo', { error: altError.message });
+            
+            // Capturar error alternativo en el depurador
+            if (window.OFICRI && window.OFICRI.profileDebugger) {
+              try {
+                const errorData = {
+                  timestamp: new Date(),
+                  error: altError.message,
+                  userId: currentUser.IDUsuario,
+                  source: 'endpoint alternativo',
+                  stack: altError.stack
+                };
+                window.OFICRI._capturedErrors = window.OFICRI._capturedErrors || [];
+                window.OFICRI._capturedErrors.push(errorData);
+              } catch (e) {
+                logger.warn('Error al capturar error alternativo en depurador:', e);
+              }
+            }
             
             // Solo usar MOCK en último caso y solo en desarrollo
             if (appConfig.isDevelopment() && useMockInDev) {
@@ -159,10 +271,11 @@ const profileService = (function() {
       const token = localStorage.getItem('oficri_token');
       
       if (!token) {
+        logger.error('❌ No hay token disponible en localStorage');
         throw new Error('No hay token disponible');
       }
       
-      logger.info('Intentando verificar token para recuperar usuario');
+      logger.info('🔄 Intentando verificar token para recuperar usuario');
       
       // Array de posibles endpoints para probar (en orden de preferencia)
       const endpoints = [
@@ -172,18 +285,21 @@ const profileService = (function() {
         '/api/auth/verify-token'      // Variante en inglés
       ];
       
+      logger.debug('🔍 Intentando verificar token con estos endpoints:', endpoints);
+      
       let lastError = null;
       
       // Probar cada endpoint hasta encontrar uno que funcione
       for (const endpoint of endpoints) {
         try {
-          logger.debug(`Intentando verificar token con endpoint: ${endpoint}`);
+          logger.debug(`🔄 Intentando verificar token con endpoint: ${endpoint}`);
           
           const response = await apiClient.get(endpoint);
+          logger.debug(`📦 Respuesta de ${endpoint}:`, response);
           
           // Verificar la estructura de la respuesta
           if (!response) {
-            logger.warn(`El endpoint ${endpoint} devolvió una respuesta vacía`);
+            logger.warn(`⚠️ El endpoint ${endpoint} devolvió una respuesta vacía`);
             continue;
           }
           
@@ -194,14 +310,16 @@ const profileService = (function() {
                       (response.success && response.user) ||
                       response;
           
+          logger.debug(`🔍 Datos de usuario extraídos de ${endpoint}:`, user);
+          
           if (!user || (!user.id && !user.IDUsuario)) {
-            logger.warn(`El endpoint ${endpoint} no devolvió datos de usuario válidos`);
+            logger.warn(`⚠️ El endpoint ${endpoint} no devolvió datos de usuario válidos:`, user);
             continue;
           }
           
           // Endpoint funcionó, guardar usuario recuperado en localStorage y memoria
           logger.info(`✅ Usuario recuperado desde token usando endpoint: ${endpoint}`);
-          logger.debug('Estructura de respuesta:', response);
+          logger.debug('📦 Estructura completa de respuesta:', response);
           
           // Normalizar el formato del usuario antes de guardarlo
           const normalizedUser = {
@@ -212,11 +330,15 @@ const profileService = (function() {
             rol: user.rol || user.IDRol
           };
           
+          logger.debug('👤 Usuario normalizado:', normalizedUser);
+          
           localStorage.setItem('oficri_user', JSON.stringify(normalizedUser));
+          logger.debug('💾 Usuario guardado en localStorage');
           
           // Actualizar usuario en memoria
           if (authService.getUser) {
             authService.getUser(true);
+            logger.debug('🔄 Usuario actualizado en memoria a través de authService');
           }
           
           return normalizedUser;
@@ -245,7 +367,7 @@ const profileService = (function() {
       return _mockUserInDev;
     }
     
-    // Crear perfil mock básico
+    // Crear perfil mock básico con la misma estructura que usamos en normalización
     _mockUserInDev = {
       IDUsuario: 1,
       CodigoCIP: "12345678",
@@ -253,6 +375,8 @@ const profileService = (function() {
       Apellidos: "Desarrollo",
       Grado: "Desarrollador",
       IDRol: 1,
+      IDArea: 1,
+      UltimoAcceso: new Date().toISOString(),
       rol: {
         IDRol: 1,
         NombreRol: "Desarrollador"
@@ -261,8 +385,6 @@ const profileService = (function() {
         IDArea: 1,
         NombreArea: "Desarrollo de Software"
       },
-      UltimoAcceso: new Date().toISOString(),
-      // Agregar más campos según sea necesario
       __isMockProfile: true
     };
     
@@ -415,17 +537,25 @@ const profileService = (function() {
    */
   const ensureUserProfile = async function() {
     try {
+      logger.debug('🔄 ensureUserProfile - Iniciando obtención de perfil');
       const profile = await getCurrentUserProfile();
       
+      logger.debug('📦 ensureUserProfile - Perfil obtenido:', profile);
+      
+      if (!profile) {
+        logger.error('❌ ensureUserProfile - No se obtuvo un perfil válido');
+        throw new Error('No se pudo obtener un perfil válido');
+      }
+      
       if (profile.__isMockProfile) {
-        logger.warn('[PERFIL] Usando datos de perfil simulados para desarrollo');
+        logger.warn('🔶 ensureUserProfile - Usando datos de perfil simulados para desarrollo');
       } else {
-        logger.info('[PERFIL] Perfil cargado correctamente');
+        logger.info('✅ ensureUserProfile - Perfil cargado correctamente');
       }
       
       return profile;
     } catch (error) {
-      logger.error('[PERFIL] Error al cargar perfil:', error.message);
+      logger.error('❌ [PERFIL] Error al cargar perfil:', error.message);
       throw error;
     }
   };

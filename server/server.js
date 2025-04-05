@@ -488,7 +488,7 @@ app.get('/api/users/:id', async (req, res) => {
       let area = null;
       try {
         const [areas] = await connection.query(
-          `SELECT * FROM area WHERE IDArea = ?`,
+          `SELECT * FROM AreaEspecializada WHERE IDArea = ?`,
           [user.IDArea]
         );
         if (areas.length > 0) {
@@ -522,7 +522,7 @@ app.get('/api/users/:id', async (req, res) => {
           area: area ? {
             IDArea: area.IDArea,
             NombreArea: area.NombreArea,
-            CodigoArea: area.CodigoArea
+            CodigoArea: area.CodigoIdentificacion
           } : null
         }
       });

@@ -45,6 +45,7 @@
 
 .profile-section {
   margin-bottom: 2rem;
+  position: relative;
 }
 
 .profile-section-title {
@@ -120,6 +121,12 @@
 .activity-description {
   color: #212529;
   margin: 0;
+}
+
+.btn-change-password-container {
+  position: absolute;
+  right: 0;
+  bottom: 0;
 }
 
 /* Responsive styles */

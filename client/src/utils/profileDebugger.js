@@ -1,264 +1,397 @@
 /**
- * OFICRI Profile Debugger
- * Herramienta de diagnóstico para problemas de carga de perfil de usuario
+ * profileDebugger.js
+ * Herramienta de depuración especializada para el módulo de perfil
  */
 
+// Importar dependencias
 import { debugLogger } from './debugLogger.js';
 
-// Crear logger específico para este módulo
+// Crear namespace global
+window.OFICRI = window.OFICRI || {};
+
+// Crear variables de almacenamiento en el namespace global
+window.OFICRI._capturedProfiles = window.OFICRI._capturedProfiles || [];
+window.OFICRI._capturedResponses = window.OFICRI._capturedResponses || [];
+window.OFICRI._capturedErrors = window.OFICRI._capturedErrors || [];
+window.OFICRI._normalizerInputs = window.OFICRI._normalizerInputs || [];
+window.OFICRI._normalizerOutputs = window.OFICRI._normalizerOutputs || [];
+
+// Crear logger específico
 const logger = debugLogger.createLogger('ProfileDebugger');
 
-// Estado de la depuración
-const state = {
-  enabled: false,
-  authChecks: [],
-  apiRequests: [],
-  errors: [],
-  lastCheck: null
-};
-
 /**
- * Habilita o deshabilita el depurador de perfil
- * @param {boolean} enable - Si es true, habilita el depurador
+ * Depurador especializado para el módulo de perfil
  */
-function enable(enable = true) {
-  state.enabled = enable;
+const profileDebugger = (function() {
+  'use strict';
+  
+  // Estado interno
+  let _isDebugEnabled = false;
+  
+  /**
+   * Habilita o deshabilita el modo de depuración
+   * @param {boolean} enable - Si se debe habilitar la depuración
+   */
+  const enable = function(enable = true) {
+    _isDebugEnabled = enable;
   logger.info(`Depurador de perfil ${enable ? 'habilitado' : 'deshabilitado'}`);
-}
-
-/**
- * Ejecuta una comprobación completa del estado de autenticación
- * @returns {Object} Resultado de la comprobación
- */
-function checkAuthState() {
-  if (!state.enabled) {
-    logger.warn('El depurador no está habilitado. Use profileDebugger.enable() primero.');
-    return null;
-  }
-
-  logger.info('Ejecutando comprobación de estado de autenticación...');
-
-  const result = {
-    timestamp: new Date().toISOString(),
-    localStorage: {},
-    sessionStorage: {},
-    windowState: {}
+    
+    if (enable) {
+      monkeyPatchProfileService();
+    }
+    
+    return _isDebugEnabled;
   };
-
-  // Verificar localStorage
-  try {
-    result.localStorage.token = !!localStorage.getItem('oficri_token');
-    result.localStorage.refreshToken = !!localStorage.getItem('oficri_refresh_token');
-    
-    const userJson = localStorage.getItem('oficri_user');
-    result.localStorage.userExists = !!userJson;
-    
-    if (userJson) {
-      try {
-        const userData = JSON.parse(userJson);
-        result.localStorage.user = {
-          valid: true,
-          hasId: !!userData.IDUsuario,
-          hasCodigoCIP: !!userData.CodigoCIP,
-          id: userData.IDUsuario,
-          codigoCIP: userData.CodigoCIP
-        };
-      } catch (e) {
-        result.localStorage.user = { valid: false, error: e.message };
-      }
-    }
-  } catch (e) {
-    result.localStorage.error = e.message;
-  }
-
-  // Verificar sessionStorage
-  try {
-    result.sessionStorage.authState = sessionStorage.getItem('oficri_auth_state');
-    result.sessionStorage.authCycleCount = sessionStorage.getItem('oficri_auth_cycle_count');
-    result.sessionStorage.fromLogout = sessionStorage.getItem('oficri_from_logout');
-  } catch (e) {
-    result.sessionStorage.error = e.message;
-  }
-
-  // Verificar estado en window
-  try {
-    result.windowState.hasOFICRI = !!window.OFICRI;
-    
-    if (window.OFICRI) {
-      result.windowState.hasAuthService = !!window.OFICRI.authService;
-      result.windowState.hasProfileService = !!window.OFICRI.profileService;
-      result.windowState.hasProfileComponent = !!window.OFICRI.profileComponent;
-      
-      // Verificar usuario en authService
-      if (window.OFICRI.authService && typeof window.OFICRI.authService.getUser === 'function') {
-        const user = window.OFICRI.authService.getUser();
-        result.windowState.authServiceUser = {
-          exists: !!user,
-          hasId: user ? !!user.IDUsuario : false,
-          hasCodigoCIP: user ? !!user.CodigoCIP : false
-        };
-      }
-      
-      // Verificar estado de autenticación
-      if (window.OFICRI.authService && typeof window.OFICRI.authService.isAuthenticated === 'function') {
-        result.windowState.isAuthenticated = window.OFICRI.authService.isAuthenticated();
-      }
-    }
-  } catch (e) {
-    result.windowState.error = e.message;
-  }
-
-  // Guardar resultado en historial
-  state.authChecks.push(result);
-  state.lastCheck = result;
   
-  logger.info('Comprobación de autenticación completada', { result });
-  
-  return result;
-}
-
-/**
- * Intenta recuperar el estado del perfil
- * @returns {boolean} True si la recuperación tuvo éxito
- */
-function recoverProfileState() {
-  try {
-    logger.info('Intentando recuperar estado del perfil...');
-    
-    // Comprobar estado actual
-    const check = checkAuthState();
-    
-    // Si no hay token pero hay datos de usuario en localStorage, intentar recuperar
-    if (!check.localStorage.token && check.localStorage.userExists) {
-      logger.warn('Se encontraron datos de usuario pero no hay token. Posible desincronización.');
+  /**
+   * Aplica monkey patching al servicio de perfil
+   */
+  const monkeyPatchProfileService = function() {
+    try {
+      // Verificar que el servicio de perfil exista
+      if (!window.OFICRI || !window.OFICRI.profileService) {
+        logger.error('No se puede aplicar monkey patch: profileService no encontrado');
+        return;
+      }
       
-      // Si se encuentra en modo desarrollo, intentar regenerar el token desde localStorage
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // Generar mock token para desarrollo
-        const mockToken = 'mock-token-' + Date.now();
-        localStorage.setItem('oficri_token', mockToken);
-        logger.info('Modo desarrollo: Token mock generado.');
+      // Obtener servicio original
+      const service = window.OFICRI.profileService;
+      
+      // Interceptar getCurrentUserProfile
+      const originalGetProfile = service.getCurrentUserProfile;
+      service.getCurrentUserProfile = async function(...args) {
+        logger.debug('Interceptando getCurrentUserProfile');
         
-        return true;
-      }
-    }
-    
-    // Si no hay datos de usuario en localStorage pero hay token, intentar recuperar
-    if (check.localStorage.token && !check.localStorage.userExists) {
-      logger.warn('Se encontró token pero no hay datos de usuario. Intentando cargar usuario desde API...');
+        try {
+          const result = await originalGetProfile.apply(this, args);
+          
+          if (_isDebugEnabled) {
+            window.OFICRI._capturedProfiles.push({
+              timestamp: new Date(),
+              profile: JSON.parse(JSON.stringify(result)),
+              source: 'getCurrentUserProfile'
+            });
+            
+            logger.debug('Perfil capturado:', result);
+          }
+          
+          return result;
+        } catch (error) {
+          logger.error('Error en getCurrentUserProfile interceptado:', error);
+          throw error;
+        }
+      };
       
-      // Aquí se podría implementar una solicitud a /auth/verificar-token para obtener el usuario
-      // Por ahora solo regresamos false para indicar que se necesita una reinicialización completa
-      return false;
+      // Interceptar normalizeUserProfile si existe
+      if (window.OFICRI.userProfileNormalizer) {
+        const normalizer = window.OFICRI.userProfileNormalizer;
+        const originalNormalize = normalizer.normalizeUserProfile;
+        
+        normalizer.normalizeUserProfile = function(...args) {
+          logger.debug('Interceptando normalizeUserProfile');
+          
+          try {
+            const result = originalNormalize.apply(this, args);
+            
+            if (_isDebugEnabled) {
+              window.OFICRI._capturedProfiles.push({
+                timestamp: new Date(),
+                profile: JSON.parse(JSON.stringify(result)),
+                source: 'normalizeUserProfile',
+                inputData: args[0],
+                currentUser: args[1]
+              });
+              
+              logger.debug('Normalización capturada:', result);
+            }
+            
+            return result;
+          } catch (error) {
+            logger.error('Error en normalizeUserProfile interceptado:', error);
+            throw error;
+          }
+        };
+      }
+      
+      logger.info('Monkey patch aplicado exitosamente');
+    } catch (error) {
+      logger.error('Error al aplicar monkey patch:', error);
+    }
+  };
+  
+  /**
+   * Verifica el estado de autenticación actual
+   */
+  const checkAuthState = function() {
+    try {
+      const token = localStorage.getItem('oficri_token');
+      const user = localStorage.getItem('oficri_user');
+      
+      console.group('Estado de autenticación');
+      console.log('Token almacenado:', token ? 'Presente' : 'Ausente');
+      console.log('Usuario almacenado:', user ? 'Presente' : 'Ausente');
+      
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          console.log('Datos de usuario:', userData);
+        } catch (e) {
+          console.log('Error al parsear usuario:', e);
+        }
+      }
+      
+      console.groupEnd();
+    } catch (error) {
+      logger.error('Error al verificar autenticación:', error);
+    }
+  };
+  
+  /**
+   * Muestra una tabla con el último perfil capturado
+   */
+  const showLastProfile = function() {
+    // Obtenemos el último perfil capturado directamente o desde la normalización
+    let lastProfile = null;
+    
+    if (window.OFICRI._capturedProfiles && window.OFICRI._capturedProfiles.length > 0) {
+      lastProfile = window.OFICRI._capturedProfiles[window.OFICRI._capturedProfiles.length - 1];
+    } else if (window.OFICRI._normalizerOutputs && window.OFICRI._normalizerOutputs.length > 0) {
+      const lastOutput = window.OFICRI._normalizerOutputs[window.OFICRI._normalizerOutputs.length - 1];
+      lastProfile = {
+        timestamp: lastOutput.timestamp,
+        profile: lastOutput.normalizedProfile,
+        source: 'normalizerOutput'
+      };
     }
     
-    return false;
-  } catch (error) {
-    logger.error('Error en recuperación de estado del perfil', { error });
-    return false;
-  }
-}
-
-/**
- * Forzar reinicialización del componente de perfil
- */
-function reinitializeProfile() {
-  try {
-    logger.info('Reinicializando componente de perfil...');
-    
-    // Verificar si existe el componente
-    if (window.OFICRI && window.OFICRI.profileComponent && typeof window.OFICRI.profileComponent.init === 'function') {
-      // Reinicializar
-      window.OFICRI.profileComponent.init();
-      logger.info('Componente de perfil reinicializado.');
-      return true;
-    } else {
-      logger.error('No se pudo reinicializar el componente. No existe o no tiene método init.');
-      return false;
+    if (!lastProfile) {
+      console.log('No hay perfiles capturados');
+      return;
     }
-  } catch (error) {
-    logger.error('Error al reinicializar el componente de perfil', { error });
-    return false;
-  }
-}
-
-/**
- * Registra una solicitud API para depuración
- * @param {string} url - URL de la solicitud
- * @param {Object} options - Opciones de fetch
- * @param {Object} result - Resultado de la solicitud
- */
-function logApiRequest(url, options, result) {
-  if (!state.enabled) return;
-  
-  state.apiRequests.push({
-    timestamp: new Date().toISOString(),
-    url,
-    method: options.method,
-    headers: options.headers,
-    result: {
-      status: result.status,
-      statusText: result.statusText,
-      hasData: !!result.data
-    }
-  });
-  
-  logger.debug('API Request registrada', { url, method: options.method });
-}
-
-/**
- * Limpia el historial de depuración
- */
-function clearHistory() {
-  state.authChecks = [];
-  state.apiRequests = [];
-  state.errors = [];
-  state.lastCheck = null;
-  
-  logger.info('Historial de depuración limpiado');
-}
-
-/**
- * Muestra un resumen del estado actual en consola
- */
-function printSummary() {
-  console.group('🔍 Profile Debugger Summary');
-  
-  if (state.lastCheck) {
-    console.log('📊 Last Check:', state.lastCheck);
     
-    console.group('🔑 Authentication State');
-    console.log('Token exists:', state.lastCheck.localStorage.token);
-    console.log('User data exists:', state.lastCheck.localStorage.userExists);
-    console.log('Auth state:', state.lastCheck.sessionStorage.authState || 'none');
-    console.log('Is authenticated:', state.lastCheck.windowState.isAuthenticated);
+    console.group('Último perfil capturado');
+    console.log('Fuente:', lastProfile.source);
+    console.log('Timestamp:', lastProfile.timestamp);
+    
+    const profile = lastProfile.profile;
+    
+    // Mostrar campos principales en una tabla
+    console.table({
+      'ID Usuario': profile.IDUsuario || 'N/A',
+      'Código CIP': profile.CodigoCIP || 'N/A',
+      'Nombres': profile.Nombres || 'N/A',
+      'Apellidos': profile.Apellidos || 'N/A',
+      'Grado': profile.Grado || 'N/A',
+      'Rol ID': profile.IDRol || (profile.rol && profile.rol.IDRol) || 'N/A',
+      'Nombre Rol': profile.rol && profile.rol.NombreRol ? profile.rol.NombreRol : 'N/A',
+      'Área ID': profile.IDArea || (profile.area && profile.area.IDArea) || 'N/A',
+      'Nombre Área': profile.area && profile.area.NombreArea ? profile.area.NombreArea : 'N/A'
+    });
+    
+    // Mostrar datos completos
+    console.log('Perfil completo:', profile);
+    
+    if (lastProfile.inputData) {
+      console.log('Datos de entrada:', lastProfile.inputData);
+    }
+    
     console.groupEnd();
-  } else {
-    console.log('❌ No check has been performed. Run profileDebugger.checkAuthState() first.');
-  }
+    
+    return profile;
+  };
   
-  console.log('📝 Auth Checks:', state.authChecks.length);
-  console.log('🌐 API Requests:', state.apiRequests.length);
-  console.log('⚠️ Errors:', state.errors.length);
+  /**
+   * Muestra información sobre las respuestas de API capturadas
+   */
+  const showResponses = function() {
+    if (!window.OFICRI._capturedResponses || window.OFICRI._capturedResponses.length === 0) {
+      console.log('No hay respuestas API capturadas');
+      return;
+    }
+    
+    console.group('Respuestas API capturadas');
+    console.log(`Total de respuestas: ${window.OFICRI._capturedResponses.length}`);
+    
+    window.OFICRI._capturedResponses.forEach((response, index) => {
+      console.group(`Respuesta #${index + 1} - ${response.timestamp.toLocaleTimeString()}`);
+      console.log('Endpoint:', response.endpoint);
+      console.log('Usuario ID:', response.userId);
+      
+      if (response.data && response.data.data) {
+        console.log('Estructura de datos:', Object.keys(response.data.data));
+        
+        // Verificar si hay campos importantes
+        const data = response.data.data;
+        if (data.rol) console.log('Rol encontrado:', data.rol);
+        if (data.area) console.log('Área encontrada:', data.area);
+        if (data.CodigoCIP || data.codigoCIP) console.log('CIP encontrado:', data.CodigoCIP || data.codigoCIP);
+      }
+      
+      console.log('Respuesta completa:', response.data);
+      console.groupEnd();
+    });
+    
+    console.groupEnd();
+  };
   
-  console.groupEnd();
-}
-
-// Exportar API pública
-const profileDebugger = {
+  /**
+   * Muestra información sobre los errores capturados
+   */
+  const showErrors = function() {
+    if (!window.OFICRI._capturedErrors || window.OFICRI._capturedErrors.length === 0) {
+      console.log('No hay errores capturados');
+      return;
+    }
+    
+    console.group('Errores capturados');
+    console.log(`Total de errores: ${window.OFICRI._capturedErrors.length}`);
+    
+    window.OFICRI._capturedErrors.forEach((error, index) => {
+      console.group(`Error #${index + 1} - ${error.timestamp.toLocaleTimeString()}`);
+      console.log('Mensaje:', error.error);
+      console.log('Usuario ID:', error.userId);
+      if (error.source) console.log('Fuente:', error.source);
+      if (error.stack) console.log('Stack:', error.stack);
+      console.groupEnd();
+    });
+    
+    console.groupEnd();
+  };
+  
+  /**
+   * Muestra información sobre el proceso de normalización
+   */
+  const showNormalizationProcess = function() {
+    if ((!window.OFICRI._normalizerInputs || window.OFICRI._normalizerInputs.length === 0) &&
+        (!window.OFICRI._normalizerOutputs || window.OFICRI._normalizerOutputs.length === 0)) {
+      console.log('No hay datos de normalización capturados');
+      return;
+    }
+    
+    console.group('Proceso de normalización');
+    
+    if (window.OFICRI._normalizerInputs && window.OFICRI._normalizerInputs.length > 0) {
+      console.group('Entradas de normalización');
+      console.log(`Total de entradas: ${window.OFICRI._normalizerInputs.length}`);
+      
+      // Mostrar la última entrada
+      const lastInput = window.OFICRI._normalizerInputs[window.OFICRI._normalizerInputs.length - 1];
+      console.group(`Última entrada - ${lastInput.timestamp.toLocaleTimeString()}`);
+      
+      if (lastInput.userData) {
+        console.log('Campos en userData:', Object.keys(lastInput.userData));
+        
+        // Verificar campos clave
+        const data = lastInput.userData;
+        if (data.rol) console.log('Rol original:', data.rol);
+        if (data.area) console.log('Área original:', data.area);
+      }
+      
+      console.log('Datos completos:', lastInput.userData);
+      console.log('Usuario actual como fallback:', lastInput.currentUser);
+      console.groupEnd();
+      
+      console.groupEnd();
+    }
+    
+    if (window.OFICRI._normalizerOutputs && window.OFICRI._normalizerOutputs.length > 0) {
+      console.group('Salidas de normalización');
+      console.log(`Total de salidas: ${window.OFICRI._normalizerOutputs.length}`);
+      
+      // Mostrar la última salida
+      const lastOutput = window.OFICRI._normalizerOutputs[window.OFICRI._normalizerOutputs.length - 1];
+      console.group(`Última salida - ${lastOutput.timestamp.toLocaleTimeString()}`);
+      
+      if (lastOutput.normalizedProfile) {
+        // Mostrar comparativa de campos importantes
+        console.table({
+          'Rol (Original)': lastOutput.originalData.rol ? 'Presente' : 'Ausente',
+          'Rol (Normalizado)': lastOutput.normalizedProfile.rol ? 'Presente' : 'Ausente',
+          'Área (Original)': lastOutput.originalData.area ? 'Presente' : 'Ausente',
+          'Área (Normalizado)': lastOutput.normalizedProfile.area ? 'Presente' : 'Ausente',
+          'CIP (Original)': lastOutput.originalData.CodigoCIP || lastOutput.originalData.codigoCIP || 'Ausente',
+          'CIP (Normalizado)': lastOutput.normalizedProfile.CodigoCIP || 'Ausente'
+        });
+        
+        // Mostrar detalles de rol normalizado
+        if (lastOutput.normalizedProfile.rol) {
+          console.log('Rol normalizado:', lastOutput.normalizedProfile.rol);
+        }
+        
+        // Mostrar detalles de área normalizada
+        if (lastOutput.normalizedProfile.area) {
+          console.log('Área normalizada:', lastOutput.normalizedProfile.area);
+        }
+      }
+      
+      console.log('Perfil normalizado completo:', lastOutput.normalizedProfile);
+      console.groupEnd();
+      
+      console.groupEnd();
+    }
+    
+    console.groupEnd();
+  };
+  
+  /**
+   * Limpia los datos capturados
+   */
+  const clear = function() {
+    window.OFICRI._capturedProfiles = [];
+    window.OFICRI._capturedResponses = [];
+    window.OFICRI._capturedErrors = [];
+    window.OFICRI._normalizerInputs = [];
+    window.OFICRI._normalizerOutputs = [];
+    logger.info('Datos de depuración limpiados');
+  };
+  
+  /**
+   * Imprime un resumen del estado actual
+   */
+  const printSummary = function() {
+    console.group('Resumen de depuración de perfil');
+    console.log('Estado:', _isDebugEnabled ? 'Habilitado' : 'Deshabilitado');
+    console.log('Perfiles capturados:', window.OFICRI._capturedProfiles.length);
+    console.log('Respuestas API capturadas:', window.OFICRI._capturedResponses.length);
+    console.log('Errores capturados:', window.OFICRI._capturedErrors.length);
+    console.log('Entradas de normalización:', window.OFICRI._normalizerInputs.length);
+    console.log('Salidas de normalización:', window.OFICRI._normalizerOutputs.length);
+    
+    if (window.OFICRI._capturedProfiles.length > 0) {
+      const lastProfile = window.OFICRI._capturedProfiles[window.OFICRI._capturedProfiles.length - 1];
+      console.log('Último perfil capturado:', 
+        lastProfile.timestamp.toLocaleTimeString(), 
+        'desde', 
+        lastProfile.source);
+    }
+    
+    console.log('');
+    console.log('Comandos disponibles:');
+    console.log('window.OFICRI.profileDebugger.showLastProfile() - Muestra el último perfil');
+    console.log('window.OFICRI.profileDebugger.showResponses() - Muestra respuestas API');
+    console.log('window.OFICRI.profileDebugger.showErrors() - Muestra errores capturados');
+    console.log('window.OFICRI.profileDebugger.showNormalizationProcess() - Muestra el proceso de normalización');
+    console.log('window.OFICRI.profileDebugger.checkAuthState() - Verifica el estado de autenticación');
+    console.log('window.OFICRI.profileDebugger.clear() - Limpia los datos capturados');
+    
+    console.groupEnd();
+  };
+  
+  // API pública
+  return {
   enable,
   checkAuthState,
-  recoverProfileState,
-  reinitializeProfile,
-  logApiRequest,
-  clearHistory,
-  printSummary,
-  getState: () => ({ ...state })
-};
+    showLastProfile,
+    showResponses,
+    showErrors,
+    showNormalizationProcess,
+    clear,
+    printSummary
+  };
+})();
 
-// Exponer en namespace global
-window.OFICRI = window.OFICRI || {};
+// Adjuntar al namespace global
 window.OFICRI.profileDebugger = profileDebugger;
 
+// Exportar el módulo
 export { profileDebugger };
-export default profileDebugger; 

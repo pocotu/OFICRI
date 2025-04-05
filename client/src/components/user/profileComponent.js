@@ -6,9 +6,15 @@
 import { profileService } from '../../services/profileService.js';
 import { authService } from '../../services/authService.js';
 import { notificationManager } from '../../ui/notificationManager.js';
+import { debugLogger } from '../../utils/debugLogger.js';
+import { profileDebugger } from '../../utils/profileDebugger.js';
+import '../../css/profile.css';
 
 // Crear namespace
 window.OFICRI = window.OFICRI || {};
+
+// Crear logger específico para este componente
+const logger = debugLogger.createLogger('ProfileComponent');
 
 // Componente de Perfil
 const profileComponent = (function() {
@@ -43,6 +49,12 @@ const profileComponent = (function() {
     }
     
     try {
+      // Inicializar el depurador en modo desarrollo
+      if (window.location.hostname === 'localhost') {
+        profileDebugger.enable(true);
+        logger.debug('🔧 Depurador de perfil habilitado en modo desarrollo');
+      }
+      
       // Obtener el usuario actual
       currentUser = authService.getUser();
       
@@ -113,6 +125,12 @@ const profileComponent = (function() {
     
     profileTab.classList.add('show', 'active');
     
+    // Limpiar datos de depuración previos
+    if (window.OFICRI && window.OFICRI.profileDebugger) {
+      window.OFICRI.profileDebugger.clear();
+      logger.debug('🧹 Depurador de perfil limpiado para nueva carga');
+    }
+    
     // Cargar contenido
     loadProfileContent(profileTab);
   };
@@ -122,6 +140,8 @@ const profileComponent = (function() {
    * @param {HTMLElement} tabElement - Elemento de la pestaña
    */
   const loadProfileContent = function(tabElement) {
+    logger.debug('🔄 Iniciando carga de contenido de perfil');
+    
     // Mostrar spinner de carga
     tabElement.innerHTML = `
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
@@ -135,20 +155,47 @@ const profileComponent = (function() {
     // Usar el método mejorado que maneja mejor los errores y tiene recuperación
     profileService.ensureUserProfile()
       .then(profileData => {
+        logger.debug('✅ Datos de perfil recibidos del servicio:', profileData);
+        
         // Verificar si tenemos datos válidos
         if (!profileData) {
+          logger.error('⛔ No se recibieron datos del perfil (null/undefined)');
           throw new Error('No se recibieron datos del perfil');
         }
         
         // Si el perfil es mock (en desarrollo), mostrar indicador
         if (profileData.__isMockProfile) {
-          console.info('[PERFIL] Usando datos de perfil simulados para desarrollo');
+          logger.warn('🔶 Usando datos de perfil simulados para desarrollo');
         }
         
+        // Verificar campos críticos antes de renderizar
+        const camposCriticos = ['CodigoCIP', 'Nombres', 'Apellidos', 'Grado', 'rol', 'area'];
+        const camposAusentes = camposCriticos.filter(campo => !profileData[campo]);
+        
+        if (camposAusentes.length > 0) {
+          logger.warn(`⚠️ Faltan campos críticos en los datos: ${camposAusentes.join(', ')}`);
+        }
+        
+        // Verificar estructura de rol y área
+        if (profileData.rol) {
+          logger.debug('🔍 Estructura de rol para renderizar:', profileData.rol);
+        } else {
+          logger.warn('⚠️ Objeto rol no disponible para renderizado');
+        }
+        
+        if (profileData.area) {
+          logger.debug('🔍 Estructura de área para renderizar:', profileData.area);
+        } else {
+          logger.warn('⚠️ Objeto area no disponible para renderizado');
+        }
+        
+        // Proceder con el renderizado
+        logger.debug('🎨 Iniciando renderizado de perfil con datos:', profileData);
         renderProfileContent(tabElement, profileData);
+        logger.debug('✅ Renderizado de perfil completado');
       })
       .catch(error => {
-        console.error('[PERFIL] Error al cargar perfil:', error);
+        logger.error('❌ Error al cargar perfil:', error);
         
         // Determinar mensaje de error específico
         let errorMessage = config.errorMessage;
@@ -199,7 +246,7 @@ const profileComponent = (function() {
           const debugButton = document.getElementById('profile-debug-btn');
           if (debugButton) {
             debugButton.addEventListener('click', () => {
-              // Intentar usar el depurador de perfil si está disponible
+              // Usar el depurador de perfil
               if (window.OFICRI && window.OFICRI.profileDebugger) {
                 window.OFICRI.profileDebugger.enable(true);
                 window.OFICRI.profileDebugger.checkAuthState();
@@ -220,6 +267,13 @@ const profileComponent = (function() {
    * @param {Object} profileData - Datos del perfil
    */
   const renderProfileContent = function(container, profileData) {
+    logger.debug('🔄 renderProfileContent - Datos recibidos para renderizar:', profileData);
+    
+    // Capturar datos de renderizado en el depurador
+    if (window.OFICRI && window.OFICRI.profileDebugger) {
+      window.OFICRI.profileDebugger.showLastProfile();
+    }
+    
     // Extraer datos del perfil con valores por defecto para evitar errores
     const { 
       IDUsuario = 0, 
@@ -228,26 +282,48 @@ const profileComponent = (function() {
       Grado = 'No disponible', 
       CodigoCIP = 'No disponible',
       rol = null,
-      area = null
+      area = null,
+      UltimoAcceso = null
     } = profileData;
+    
+    logger.debug('🔍 Valores extraídos para renderizado:',
+      { IDUsuario, Nombres, Apellidos, Grado, CodigoCIP, rol, area, UltimoAcceso }
+    );
     
     // Valores seguros para rol y área
     const rolNombre = rol && rol.NombreRol ? rol.NombreRol : 'No disponible';
     const areaNombre = area && area.NombreArea ? area.NombreArea : 'No asignada';
+    
+    logger.debug('🔍 Valores derivados:', { rolNombre, areaNombre });
     
     // Iniciales para avatar (con manejo para evitar errores)
     const inicialNombre = Nombres && Nombres.length > 0 ? Nombres.charAt(0) : 'U';
     const inicialApellido = Apellidos && Apellidos.length > 0 ? Apellidos.charAt(0) : 'D';
     const initials = (inicialNombre + inicialApellido).toUpperCase();
     
-    // Template del perfil
+    logger.debug('🔍 Renderizando con iniciales:', initials);
+
+    // Formatear fecha de último acceso
+    let ultimoAccesoFormatted = 'No disponible';
+    if (UltimoAcceso) {
+      try {
+        const fecha = new Date(UltimoAcceso);
+        ultimoAccesoFormatted = fecha.toLocaleString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        logger.warn('Error al formatear fecha de último acceso:', e);
+      }
+    }
+    
+    // Template del perfil usando clases CSS desde profile.css
     const template = `
-      <div class="container-fluid px-4">
-        <div class="row mb-4">
-          <div class="col-12">
-            <h1 class="mt-4 mb-3">Mi Perfil</h1>
-          </div>
-        </div>
+      <div class="container-fluid">
+        <h1 class="mt-4 mb-4">Mi Perfil</h1>
         
         <div class="profile-container">
           <div class="profile-header">
@@ -282,6 +358,11 @@ const profileComponent = (function() {
               <div class="profile-info-label">Rol:</div>
               <div class="profile-info-value">${rolNombre}</div>
             </div>
+            
+            <div class="profile-info-item">
+              <div class="profile-info-label">Último acceso:</div>
+              <div class="profile-info-value">${ultimoAccesoFormatted}</div>
+            </div>
           </div>
           
           <div class="profile-section">
@@ -289,10 +370,10 @@ const profileComponent = (function() {
             
             <div class="profile-info-item">
               <div class="profile-info-label">Contraseña:</div>
-              <div class="profile-info-value">••••••••••</div>
+              <div class="profile-info-value">•••••••••</div>
             </div>
             
-            <div class="profile-actions">
+            <div class="btn-change-password-container">
               <button type="button" class="btn btn-change-password" id="btn-change-password">
                 <i class="fas fa-key me-2"></i> Cambiar Contraseña
               </button>
@@ -304,11 +385,15 @@ const profileComponent = (function() {
     
     // Actualizar contenido
     container.innerHTML = template;
+    logger.debug('🎨 HTML del perfil renderizado');
     
     // Añadir evento al botón de cambiar contraseña
     const changePasswordButton = document.getElementById('btn-change-password');
     if (changePasswordButton) {
       changePasswordButton.addEventListener('click', showChangePasswordModal);
+      logger.debug('✅ Evento de cambio de contraseña configurado');
+    } else {
+      logger.warn('⚠️ Botón de cambio de contraseña no encontrado en el DOM');
     }
   };
   
