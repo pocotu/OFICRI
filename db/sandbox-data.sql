@@ -124,15 +124,72 @@ INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador
 INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido) VALUES
 (7, 1, 3, 2, 3, 'REG-2025-007', 'OFICIO-007', CURDATE() - INTERVAL 10 DAY, 'EXTERNO', 'COMPLETADO', 'Fiscalía Provincial', 'Análisis de sustancia controlada');
 
--- Derivaciones para documentos
+-- EJEMPLOS ADICIONALES (10 más)
+
+-- Documento 8: Creado en Mesa de Partes y Pendiente
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido) VALUES
+(8, 1, 2, 2, 'REG-2025-008', 'OFICIO-008', CURDATE(), 'EXTERNO', 'RECIBIDO', 'Fiscalía Anticorrupción', 'Solicitud de análisis de sustancias halladas en incautación');
+
+-- Documento 9: Derivado a Química con Urgencia
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido, Prioridad) VALUES
+(9, 1, 3, 2, 3, 'REG-2025-009', 'OFICIO-009', CURDATE() - INTERVAL 1 DAY, 'EXTERNO', 'EN_PROCESO', 'Fiscalía de Delitos de Alta Complejidad', 'Análisis urgente de polvo sospechoso encontrado en almacén', 'ALTA');
+
+-- Documento 10: Derivado a Forense Digital con Urgencia
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido, Prioridad) VALUES
+(10, 1, 4, 2, 4, 'REG-2025-010', 'OFICIO-010', CURDATE() - INTERVAL 1 DAY, 'EXTERNO', 'EN_PROCESO', 'DIVIAC', 'Análisis forense de dispositivos móviles en investigación de crimen organizado', 'ALTA');
+
+-- Documento 11: Completado en Dosaje
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido) VALUES
+(11, 1, 5, 2, 5, 'REG-2025-011', 'OFICIO-011', CURDATE() - INTERVAL 8 DAY, 'EXTERNO', 'COMPLETADO', 'Comisaría de Tránsito', 'Dosaje etílico para caso de homicidio culposo en accidente de tránsito');
+
+-- Documento 12: Rechazado por falta de información
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido, Observaciones) VALUES
+(12, 1, 2, 2, 'REG-2025-012', 'OFICIO-012', CURDATE() - INTERVAL 5 DAY, 'EXTERNO', 'RECHAZADO', 'Comisaría Sectorial', 'Solicitud de análisis sin especificar tipo', 'Documento rechazado por falta de información específica sobre el tipo de análisis requerido');
+
+-- Documento 13: Documento interno para evaluación
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido) VALUES
+(13, 1, 3, 3, 3, 'REG-2025-013', 'OFICIO-013', CURDATE() - INTERVAL 3 DAY, 'INTERNO', 'EN_PROCESO', 'Área de Química', 'Informe de evaluación periódica de equipos de laboratorio');
+
+-- Documento 14: Análisis complejo en proceso
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido) VALUES
+(14, 1, 4, 2, 4, 'REG-2025-014', 'OFICIO-014', CURDATE() - INTERVAL 7 DAY, 'EXTERNO', 'EN_PROCESO', 'Fiscalía Especializada', 'Análisis forense digital de equipo con posible software malicioso gubernamental');
+
+-- Documento 15: Vencido sin procesar
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido, Observaciones) VALUES
+(15, 1, 2, 2, 'REG-2025-015', 'OFICIO-015', CURDATE() - INTERVAL 30 DAY, 'EXTERNO', 'VENCIDO', 'Juzgado Penal', 'Solicitud de análisis de documentos', 'El documento excedió el tiempo límite de procesamiento sin ser derivado');
+
+-- Documento 16: En espera de insumos
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido, Observaciones) VALUES
+(16, 1, 3, 2, 3, 'REG-2025-016', 'OFICIO-016', CURDATE() - INTERVAL 4 DAY, 'EXTERNO', 'EN_ESPERA', 'Fiscalía de Crimen Organizado', 'Análisis toxicológico avanzado', 'En espera de reactivos especiales para completar análisis');
+
+-- Documento 17: Derivado a múltiples áreas
+INSERT INTO Documento (IDDocumento, IDMesaPartes, IDAreaActual, IDUsuarioCreador, IDUsuarioAsignado, NroRegistro, NumeroOficioDocumento, FechaDocumento, OrigenDocumento, Estado, Procedencia, Contenido) VALUES
+(17, 1, 3, 2, 3, 'REG-2025-017', 'OFICIO-017', CURDATE() - INTERVAL 2 DAY, 'EXTERNO', 'EN_PROCESO', 'Fiscalía Suprema', 'Caso de alta prioridad que requiere análisis químico y digital');
+
+-- Derivaciones adicionales para nuevos documentos
 INSERT INTO Derivacion (IDDocumento, IDMesaPartes, IDAreaOrigen, IDAreaDestino, IDUsuarioDeriva, IDUsuarioRecibe, FechaDerivacion, FechaRecepcion, EstadoDerivacion) VALUES
+-- Derivaciones para documentos existentes
 (4, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 2 DAY, CURDATE() - INTERVAL 2 DAY, 'RECIBIDO'),
 (5, 1, 2, 4, 2, 4, CURDATE() - INTERVAL 3 DAY, CURDATE() - INTERVAL 3 DAY, 'RECIBIDO'),
 (6, 1, 2, 5, 2, 5, CURDATE() - INTERVAL 4 DAY, CURDATE() - INTERVAL 4 DAY, 'RECIBIDO'),
-(7, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 10 DAY, CURDATE() - INTERVAL 10 DAY, 'COMPLETADO');
+(7, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 10 DAY, CURDATE() - INTERVAL 10 DAY, 'COMPLETADO'),
 
--- Estados de documentos
+-- Derivaciones para nuevos documentos
+(9, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 1 DAY, CURDATE() - INTERVAL 1 DAY, 'RECIBIDO'),
+(10, 1, 2, 4, 2, 4, CURDATE() - INTERVAL 1 DAY, CURDATE() - INTERVAL 1 DAY, 'RECIBIDO'),
+(11, 1, 2, 5, 2, 5, CURDATE() - INTERVAL 8 DAY, CURDATE() - INTERVAL 8 DAY, 'COMPLETADO'),
+(13, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 3 DAY, CURDATE() - INTERVAL 3 DAY, 'RECIBIDO'),
+(14, 1, 2, 4, 2, 4, CURDATE() - INTERVAL 7 DAY, CURDATE() - INTERVAL 7 DAY, 'RECIBIDO'),
+(16, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 4 DAY, CURDATE() - INTERVAL 4 DAY, 'EN_ESPERA'),
+(17, 1, 2, 3, 2, 3, CURDATE() - INTERVAL 2 DAY, CURDATE() - INTERVAL 2 DAY, 'RECIBIDO');
+
+-- Segunda derivación para el documento 17 (que requiere múltiples análisis)
+INSERT INTO Derivacion (IDDocumento, IDMesaPartes, IDAreaOrigen, IDAreaDestino, IDUsuarioDeriva, IDUsuarioRecibe, FechaDerivacion, FechaRecepcion, EstadoDerivacion) VALUES
+(17, 1, 3, 4, 3, 4, CURDATE() - INTERVAL 1 DAY, CURDATE() - INTERVAL 1 DAY, 'RECIBIDO');
+
+-- Estados de documentos adicionales
 INSERT INTO DocumentoEstado (IDDocumento, IDUsuario, EstadoAnterior, EstadoNuevo, FechaCambio, Observaciones) VALUES
+-- Estados para documentos existentes
 (1, 2, NULL, 'RECIBIDO', CURDATE(), 'Documento registrado en Mesa de Partes'),
 (2, 2, NULL, 'RECIBIDO', CURDATE(), 'Documento registrado en Mesa de Partes'),
 (3, 2, NULL, 'RECIBIDO', CURDATE(), 'Documento registrado en Mesa de Partes'),
@@ -144,7 +201,31 @@ INSERT INTO DocumentoEstado (IDDocumento, IDUsuario, EstadoAnterior, EstadoNuevo
 (6, 5, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 4 DAY, 'Documento derivado a Dosaje'),
 (7, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 10 DAY, 'Documento registrado en Mesa de Partes'),
 (7, 3, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 10 DAY, 'Documento derivado a Química'),
-(7, 3, 'EN_PROCESO', 'COMPLETADO', CURDATE() - INTERVAL 5 DAY, 'Análisis completado');
+(7, 3, 'EN_PROCESO', 'COMPLETADO', CURDATE() - INTERVAL 5 DAY, 'Análisis completado'),
+
+-- Estados para nuevos documentos
+(8, 2, NULL, 'RECIBIDO', CURDATE(), 'Documento registrado en Mesa de Partes'),
+(9, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 1 DAY, 'Documento registrado en Mesa de Partes'),
+(9, 3, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 1 DAY, 'Documento derivado a Química con urgencia'),
+(10, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 1 DAY, 'Documento registrado en Mesa de Partes'),
+(10, 4, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 1 DAY, 'Documento derivado a Forense Digital con urgencia'),
+(11, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 8 DAY, 'Documento registrado en Mesa de Partes'),
+(11, 5, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 8 DAY, 'Documento derivado a Dosaje'),
+(11, 5, 'EN_PROCESO', 'COMPLETADO', CURDATE() - INTERVAL 3 DAY, 'Análisis completado con resultado positivo'),
+(12, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 5 DAY, 'Documento registrado en Mesa de Partes'),
+(12, 2, 'RECIBIDO', 'RECHAZADO', CURDATE() - INTERVAL 5 DAY, 'Rechazado por falta de información'),
+(13, 3, NULL, 'RECIBIDO', CURDATE() - INTERVAL 3 DAY, 'Documento interno creado'),
+(13, 3, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 3 DAY, 'En proceso de revisión'),
+(14, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 7 DAY, 'Documento registrado en Mesa de Partes'),
+(14, 4, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 7 DAY, 'Derivado a Forense Digital para análisis complejo'),
+(15, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 30 DAY, 'Documento registrado en Mesa de Partes'),
+(15, 2, 'RECIBIDO', 'VENCIDO', CURDATE() - INTERVAL 1 DAY, 'Documento venció sin ser procesado'),
+(16, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 4 DAY, 'Documento registrado en Mesa de Partes'),
+(16, 3, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 4 DAY, 'Derivado a Química'),
+(16, 3, 'EN_PROCESO', 'EN_ESPERA', CURDATE() - INTERVAL 2 DAY, 'En espera de reactivos especiales'),
+(17, 2, NULL, 'RECIBIDO', CURDATE() - INTERVAL 2 DAY, 'Documento registrado en Mesa de Partes'),
+(17, 3, 'RECIBIDO', 'EN_PROCESO', CURDATE() - INTERVAL 2 DAY, 'Derivado a Química para primer análisis'),
+(17, 4, 'EN_PROCESO', 'EN_PROCESO', CURDATE() - INTERVAL 1 DAY, 'Derivado también a Forense Digital para análisis complementario');
 
 -- ########################################################
 -- 7. DATOS PARA MÓDULOS ESPECIALIZADOS
