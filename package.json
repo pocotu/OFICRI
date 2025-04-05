@@ -9,6 +9,7 @@
     "quick": "set NODE_ENV=development&& node --env-file=.env server/dev.js",
     "dev:simple": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=true&& nodemon --env-file=.env server/core/start.js",
     "dev:full": "set NODE_ENV=development&& set USE_SIMPLE_SERVER=false&& nodemon --env-file=.env server/core/start.js",
+    "postinstall": "node -e \"const fs=require('fs'); const backups=fs.readdirSync('.').filter(f=>f.includes('.backup-')); backups.forEach(f=>fs.unlinkSync(f)); const npmrc='.npmrc'; if(fs.existsSync(npmrc)) fs.unlinkSync(npmrc); console.log('Limpieza completada: ' + backups.length + ' archivos eliminados');\"",
     "mock": "node server/mock-server.js",
     "simple": "set NODE_ENV=development&& node --env-file=.env server/server.js",
     "start:client": "webpack serve --mode development",
