@@ -56,7 +56,7 @@ POST /api/auth/login
 ```json
 {
   "codigoCIP": "12345678",  // Código de Identificación Policial (8 dígitos)
-  "password": "Admin123!"
+  "password": "admin123"
 }
 ```
 

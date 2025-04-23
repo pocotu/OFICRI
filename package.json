@@ -73,6 +73,7 @@
     "delay": "500"
   },
   "dependencies": {
+    "@vitejs/plugin-vue": "^5.2.3",
     "axios": "^1.8.4",
     "bcryptjs": "^2.4.3",
     "bootstrap": "^5.3.0",
@@ -98,7 +99,12 @@
     "multer": "^1.4.5-lts.2",
     "mysql2": "^3.14.0",
     "node-cache": "^5.1.2",
+    "pinia": "^3.0.1",
     "punycode2": "^1.0.1",
+    "vitest": "^3.1.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "vue-test-utils": "^0.5.0",
     "winston": "^3.17.0",
     "xss-clean": "^0.1.4"
   },

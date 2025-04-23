@@ -109,7 +109,7 @@ async function setupSystem() {
     console.log('\n\x1b[32m%s\x1b[0m', '¡Configuración inicial completada exitosamente! 🎉');
     console.log('\nPuede iniciar sesión con las siguientes credenciales:');
     console.log('\x1b[33m%s\x1b[0m', '  CIP:        12345678');
-    console.log('\x1b[33m%s\x1b[0m', '  Contraseña: Admin123!');
+    console.log('\x1b[33m%s\x1b[0m', '  Contraseña: admin123');
     
     console.log('\n\x1b[1m%s\x1b[0m', 'Próximos pasos:');
     console.log('  1. Inicie el servidor: npm run dev');

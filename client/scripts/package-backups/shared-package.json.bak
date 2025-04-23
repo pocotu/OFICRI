@@ -1,0 +1,42 @@
+{
+  "name": "@oficri/shared",
+  "version": "1.0.0",
+  "description": "Biblioteca compartida para OFICRI",
+  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5008",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:unit": "vitest",
+    "lint": "eslint . --fix",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "@originjs/vite-plugin-federation": "^1.4.0",
+    "axios": "^1.6.7",
+    "browser-image-compression": "^2.0.2",
+    "crypto-js": "^4.2.0",
+    "file-type": "^18.7.0",
+    "mitt": "^3.0.1",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.15",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@vitejs/plugin-vue": "^5.0.3",
+    "@vitejs/plugin-vue-jsx": "^4.1.2",
+    "@vitest/eslint-plugin": "^1.1.39",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.22.0",
+    "eslint-plugin-vue": "~10.0.0",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
+    "prettier": "3.5.3",
+    "vite": "^5.0.12",
+    "vitest": "^3.1.1"
+  }
+} 

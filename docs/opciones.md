@@ -20,7 +20,6 @@ _Versión: 1.0.0 (Actualizado: Junio 2024)_
 - **Administrador**: bits 0..7 (todos, valor 255) - Acceso completo a todas las funcionalidades.
 - **Mesa de Partes**: bits 0,1,3,4,6 (Crear, Editar, Ver, Derivar, Exportar) = valor 91.
 - **Responsable de Área**: bits 0,1,3,4,6 (igual a Mesa de Partes) = valor 91.
-- **Operador**: bits 0,1,3,4 (Crear, Editar, Ver, Derivar) = valor 27.
 
 ### Implementación en Base de Datos
 
@@ -90,14 +89,6 @@ CREATE TABLE PermisoContextual (
    }
    ```
 
-3. **Tiempo**: Permitir editar documentos solo en las primeras 24 horas
-   ```json
-   {
-     "tipo": "TIEMPO",
-     "accion": "EDITAR",
-     "condicion": "MENOS_DE_24_HORAS"
-   }
-   ```
 
 ## **3. Interfaces de Usuario según Permisos**
 
