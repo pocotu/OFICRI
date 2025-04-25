@@ -58,34 +58,55 @@
 </template>
 
 <script setup>
-import { computed, ref, provide } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from './store/auth';
+import { ref, computed, provide, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
 
-const router = useRouter();
-const authStore = useAuthStore();
+const router = useRouter()
+const authStore = useAuthStore()
 
-const isAuthenticated = computed(() => authStore.isAuthenticated);
-const user = computed(() => authStore.user);
-const currentYear = new Date().getFullYear();
+const currentYear = new Date().getFullYear()
+const navigationVisible = ref(window.innerWidth > 768)
 
-// Estado para el control de la navegación
-const navigationVisible = ref(window.innerWidth > 768);
-provide('navigationVisible', navigationVisible);
+// Compartir estado de navegación con componentes hijos
+provide('navigationVisible', navigationVisible)
+
+// Cargar datos de usuario al iniciar la aplicación
+onMounted(async () => {
+  // Verificar si hay token guardado
+  const token = localStorage.getItem('token')
+  
+  if (token) {
+    console.log('Se encontró un token guardado, restaurando sesión...')
+    authStore.setToken(token)
+    
+    try {
+      // Cargar datos del usuario si hay un token
+      const userData = await authStore.refreshUserData()
+      console.log('Datos de usuario cargados:', userData)
+    } catch (error) {
+      console.error('Error al cargar datos del usuario:', error)
+    }
+  }
+})
+
+// Calcular estado de autenticación para cambiar el layout
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const user = computed(() => authStore.user)
 
 // Función para alternar el estado de la navegación
 const toggleNavigation = () => {
-  navigationVisible.value = !navigationVisible.value;
-};
+  navigationVisible.value = !navigationVisible.value
+}
 
 const hasPermission = (permission) => {
-  return authStore.hasPermission(permission);
-};
+  return authStore.hasPermission(permission)
+}
 
 const logout = () => {
-  authStore.logout();
-  router.push('/login');
-};
+  authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <style scoped>

@@ -16,9 +16,37 @@ import { BundleOptimizerPlugin } from './utils/bundleOptimizer'
 import { TestUtilsPlugin } from './utils/testUtils'
 import { AccessibilityPlugin } from '@shared/src/services/accessibility/accessibilityService'
 import { auditService } from '@shared/src/services/security/auditTrail'
+import axios from 'axios'
 
 // Configuración para detección de rendimiento
 const APP_START_TIME = performance.now()
+
+// Configuración global de axios
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+// No modificar la configuración global para evitar interferir con código existente
+// axios.defaults.baseURL = API_URL
+console.log('URL de la API configurada:', API_URL)
+
+// Crear una instancia de axios separada para uso general
+export const apiClient = axios.create({
+  baseURL: API_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
+// Aplicar los interceptores solo a esta instancia
+apiClient.interceptors.request.use(
+  config => {
+    console.log(`Petición ${config.method.toUpperCase()} a ${config.url}`)
+    return config
+  },
+  error => {
+    console.error('Error en petición:', error)
+    return Promise.reject(error)
+  }
+)
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -41,6 +69,9 @@ app.use(AccessibilityPlugin)
 
 // Configurar monitoreo de rendimiento y errores
 setupMonitoring(app)
+
+// Configurar la ruta para usar en la app
+app.config.globalProperties.$apiUrl = API_URL
 
 // Función para cargar módulos remotos con priorización y manejo de errores
 async function loadRemoteModules() {

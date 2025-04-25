@@ -33,7 +33,7 @@
           <div class="user-info-header">Información de Usuario</div>
           <div class="user-details">
             <div class="avatar">
-              <span class="avatar-placeholder">{{ userInitials }}</span>
+              <span class="avatar-placeholder">{{ userInitials || 'U' }}</span>
             </div>
             <div class="user-text">
               <span class="user-name">{{ userFullName || 'Usuario' }}</span>
@@ -43,7 +43,7 @@
                 {{ isAuthenticated ? 'Activo' : 'Desconectado' }}
               </span>
             </div>
-          </div>
+        </div>
         </div>
       </div>
 
@@ -125,20 +125,25 @@ const closeSidebar = () => {
   isSidebarVisible.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', handleResize)
   handleResize() // Inicializar estado
 
-  // Intentar cargar los datos del usuario si no están disponibles
-  if (!authStore.user && authStore.isAuthenticated) {
-    // Utilizar la nueva función para recargar los datos del usuario
-    authStore.refreshUserData().then(userData => {
+  // Intentar cargar los datos del usuario si no están disponibles o están incompletos
+  if (authStore.isAuthenticated && (!authStore.user || !authStore.user.Nombres)) {
+    console.log('Intentando cargar datos de usuario en inicialización del Navigation')
+    try {
+      const userData = await authStore.refreshUserData()
       if (!userData) {
-        console.warn('No se pudieron cargar los datos del usuario')
+        console.warn('No se pudieron cargar los datos del usuario desde el servidor')
+      } else {
+        console.log('Datos de usuario cargados correctamente:', userData)
       }
-    }).catch(error => {
+    } catch (error) {
       console.error('Error al cargar datos del usuario:', error)
-    })
+    }
+  } else {
+    console.log('Usuario ya cargado:', authStore.user)
   }
 })
 
@@ -151,24 +156,24 @@ const currentYear = new Date().getFullYear()
 const appVersion = import.meta.env.VITE_APP_VERSION || '1.0.0'
 
 const userFullName = computed(() => {
-  const user = authStore.user
-  return user ? `${user.Nombres} ${user.Apellidos}` : ''
+  const u = authStore.user
+  return u ? `${u.Nombres} ${u.Apellidos}`.trim() : 'Usuario'
 })
 
 const userInitials = computed(() => {
-  const user = authStore.user
-  if (!user || !user.Nombres) return 'U'
+  const u = authStore.user
+  if (!u || !u.Nombres) return 'U'
   
   // Obtener la primera letra del nombre y apellido
-  const firstInitial = user.Nombres.charAt(0)
-  const lastInitial = user.Apellidos ? user.Apellidos.charAt(0) : ''
+  const firstInitial = u.Nombres.charAt(0)
+  const lastInitial = u.Apellidos ? u.Apellidos.charAt(0) : ''
   
   return (firstInitial + lastInitial).toUpperCase()
 })
 
 const userRole = computed(() => {
-  const user = authStore.user
-  return user ? user.NombreRol : ''
+  const u = authStore.user
+  return u && u.NombreRol ? u.NombreRol : 'Sin rol asignado'
 })
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
