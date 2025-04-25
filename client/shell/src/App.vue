@@ -43,8 +43,10 @@
           <span class="system-name">Sistema de Gestión OFICRI</span>
         </div>
         <div class="user-actions">
-          <span class="username">{{ user?.Nombres || 'Usuario' }}</span>
-          <button class="logout-button" @click="logout">Cerrar Sesión</button>
+          <div class="user-compact">
+            <span class="username">{{ user?.Nombres || 'Usuario' }}</span>
+            <button class="logout-button" @click="logout">Cerrar Sesión</button>
+          </div>
         </div>
       </header>
       
@@ -185,11 +187,20 @@ const logout = () => {
 .user-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+}
+
+.user-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 5px 10px;
 }
 
 .username {
   font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .logout-button {
@@ -200,6 +211,7 @@ const logout = () => {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
+  font-size: 0.85rem;
 }
 
 .logout-button:hover {

@@ -30,8 +30,20 @@
       <!-- Información de usuario en un div separado del header -->
       <div class="user-info-container">
         <div class="user-info">
-          <span class="user-name">{{ userFullName || 'Bienvenido' }}</span>
-          <span class="user-role">{{ userRole || 'Cargando información...' }}</span>
+          <div class="user-info-header">Información de Usuario</div>
+          <div class="user-details">
+            <div class="avatar">
+              <span class="avatar-placeholder">{{ userInitials }}</span>
+            </div>
+            <div class="user-text">
+              <span class="user-name">{{ userFullName || 'Usuario' }}</span>
+              <span class="user-role">{{ userRole || 'Sin rol asignado' }}</span>
+              <span class="user-status" :class="{ 'status-active': isAuthenticated }">
+                <span class="status-dot"></span>
+                {{ isAuthenticated ? 'Activo' : 'Desconectado' }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -143,10 +155,23 @@ const userFullName = computed(() => {
   return user ? `${user.Nombres} ${user.Apellidos}` : ''
 })
 
+const userInitials = computed(() => {
+  const user = authStore.user
+  if (!user || !user.Nombres) return 'U'
+  
+  // Obtener la primera letra del nombre y apellido
+  const firstInitial = user.Nombres.charAt(0)
+  const lastInitial = user.Apellidos ? user.Apellidos.charAt(0) : ''
+  
+  return (firstInitial + lastInitial).toUpperCase()
+})
+
 const userRole = computed(() => {
   const user = authStore.user
   return user ? user.NombreRol : ''
 })
+
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const hasPermission = (permission) => {
   if (!permission) return true
@@ -353,6 +378,41 @@ const menuSections = computed(() => {
   margin-right: 0;
 }
 
+.user-info-header {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-details {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-placeholder {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .user-name {
   font-weight: 600;
   font-size: 0.9rem;
@@ -368,6 +428,27 @@ const menuSections = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.user-status {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-active {
+  color: #4caf50;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  display: inline-block;
+  margin-right: 4px;
 }
 
 /* Contenedor del menú */
