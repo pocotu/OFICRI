@@ -28,6 +28,17 @@
     <template v-else>
       <header class="dashboard-header">
         <div class="logo-container">
+          <!-- Botón hamburguesa integrado en el header -->
+          <button 
+            v-if="navigationVisible !== undefined && !navigationVisible"
+            @click="toggleNavigation" 
+            class="menu-hamburger-btn"
+            aria-label="Abrir menú de navegación"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
           <img src="/logoOficri2x2.png" alt="Logo OFICRI" class="logo-small">
           <span class="system-name">Sistema de Gestión OFICRI</span>
         </div>
@@ -45,7 +56,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, provide } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from './store/auth';
 
@@ -55,6 +66,15 @@ const authStore = useAuthStore();
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const user = computed(() => authStore.user);
 const currentYear = new Date().getFullYear();
+
+// Estado para el control de la navegación
+const navigationVisible = ref(window.innerWidth > 768);
+provide('navigationVisible', navigationVisible);
+
+// Función para alternar el estado de la navegación
+const toggleNavigation = () => {
+  navigationVisible.value = !navigationVisible.value;
+};
 
 const hasPermission = (permission) => {
   return authStore.hasPermission(permission);
@@ -143,6 +163,13 @@ const logout = () => {
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000; /* Asegurar que esté por encima de otros elementos */
+  position: relative;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
 }
 
 .logo-small {
@@ -200,5 +227,36 @@ const logout = () => {
   .header-title {
     order: 2;
   }
+}
+
+/* Estilos para el botón hamburguesa en el header */
+.menu-hamburger-btn {
+  width: 36px;
+  height: 36px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.3s ease;
+  margin-right: 12px;
+}
+
+.menu-hamburger-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.menu-hamburger-btn span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background-color: white;
+  border-radius: 1px;
+  transition: all 0.3s ease;
 }
 </style> 

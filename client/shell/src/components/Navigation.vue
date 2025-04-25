@@ -1,18 +1,5 @@
 <template>
   <div class="sidebar-container">
-    <!-- Botón hamburguesa en el header (visible solo cuando el sidebar está oculto) -->
-    <button 
-      v-if="!isSidebarVisible"
-      @click="toggleSidebar" 
-      class="hamburger-btn"
-      aria-label="Abrir menú de navegación"
-      :aria-expanded="false"
-    >
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-    
     <!-- Overlay para cerrar en móvil -->
     <div 
       class="sidebar-overlay" 
@@ -23,27 +10,28 @@
     <!-- Sidebar con navegación -->
     <nav class="navigation" :class="{ 'navigation-visible': isSidebarVisible }">
       <div class="header">
+        <!-- Logo ahora a la izquierda -->
         <div class="logo">
-          <img src="/logoOficri2x2.png" alt="Logo OFICRI" class="logo-img">
           <h1>Sistema de Gestión OFICRI</h1>
+          <img src="/logoOficri2x2.png" alt="Logo OFICRI" class="logo-img">
         </div>
         
-        <!-- Botón para cerrar el sidebar (visible solo cuando el sidebar está abierto) -->
+        <!-- Botón para cerrar el sidebar (ahora a la derecha) -->
         <button 
           @click="toggleSidebar" 
           class="close-btn"
           aria-label="Cerrar menú de navegación"
           :aria-expanded="true"
         >
-          <i class="fas fa-times"></i>
+          ✕
         </button>
-        
-        <div class="user-info" v-if="userFullName">
-          <span class="user-name">{{ userFullName }}</span>
-          <span class="user-role">{{ userRole }}</span>
-        </div>
-        <div v-else class="user-info">
-          <span class="user-name">undefined undefined</span>
+      </div>
+      
+      <!-- Información de usuario en un div separado del header -->
+      <div class="user-info-container">
+        <div class="user-info">
+          <span class="user-name">{{ userFullName || 'Bienvenido' }}</span>
+          <span class="user-role">{{ userRole || 'Cargando información...' }}</span>
         </div>
       </div>
 
@@ -74,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { menuService } from '../services/menuService'
@@ -83,8 +71,17 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// Control del sidebar
-const isSidebarVisible = ref(window.innerWidth > 768) // Visible en desktop por defecto, oculto en móvil
+// Recibir el estado de navegación compartido desde App.vue
+const sharedNavigationVisible = inject('navigationVisible', ref(window.innerWidth > 768))
+
+// Control del sidebar sincronizado con el estado compartido
+const isSidebarVisible = computed({
+  get: () => sharedNavigationVisible.value,
+  set: (value) => {
+    sharedNavigationVisible.value = value
+  }
+})
+
 const isSmallScreen = ref(window.innerWidth <= 768)
 
 // Exportar el estado de visibilidad para que pueda ser accedido por el BaseLayout
@@ -119,6 +116,18 @@ const closeSidebar = () => {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   handleResize() // Inicializar estado
+
+  // Intentar cargar los datos del usuario si no están disponibles
+  if (!authStore.user && authStore.isAuthenticated) {
+    // Utilizar la nueva función para recargar los datos del usuario
+    authStore.refreshUserData().then(userData => {
+      if (!userData) {
+        console.warn('No se pudieron cargar los datos del usuario')
+      }
+    }).catch(error => {
+      console.error('Error al cargar datos del usuario:', error)
+    })
+  }
 })
 
 // Limpiar event listener al desmontar
@@ -224,76 +233,6 @@ const menuSections = computed(() => {
   position: relative;
 }
 
-/* Botón hamburguesa (fuera del sidebar) */
-.hamburger-btn {
-  position: fixed;
-  top: 15px;
-  left: 15px;
-  z-index: 1050; /* Mayor z-index para asegurar visibilidad por encima de todo */
-  width: 50px;
-  height: 50px;
-  background-color: #0d4e25;
-  border: none;
-  border-radius: 10px; /* Esquinas redondeadas pero no circular */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  outline: 3px solid rgba(255, 255, 255, 0.2); /* Contorno sutil para mayor visibilidad */
-}
-
-.hamburger-btn:hover {
-  transform: scale(1.08);
-  background-color: #116b33;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-}
-
-.hamburger-btn span {
-  display: block;
-  width: 28px;
-  height: 3px; /* Líneas más gruesas */
-  background-color: white;
-  border-radius: 3px;
-  transition: all 0.3s ease;
-}
-
-/* Botón X para cerrar el sidebar (dentro del sidebar) */
-.close-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  z-index: 1050;
-  width: 50px;
-  height: 50px;
-  background-color: #0d4e25;
-  border: none;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  outline: 3px solid rgba(255, 255, 255, 0.2);
-}
-
-.close-btn i {
-  font-size: 28px;
-  color: white;
-}
-
-.close-btn:hover {
-  transform: scale(1.08);
-  background-color: #116b33;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-}
-
 /* Overlay para cerrar el sidebar en móvil */
 .sidebar-overlay {
   position: fixed;
@@ -330,6 +269,37 @@ const menuSections = computed(() => {
   transform: translateX(0);
 }
 
+/* Botón para cerrar el sidebar (ahora a la derecha) */
+.close-btn {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  width: auto;
+  height: auto;
+  background-color: transparent;
+  border: none;
+  color: white;
+  font-size: 22px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  z-index: 10;
+}
+
+.close-btn:hover {
+  opacity: 0.8;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.close-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
 /* Cabecera del sidebar */
 .header {
   padding: 1rem;
@@ -337,14 +307,15 @@ const menuSections = computed(() => {
   color: white;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative; /* Para posicionar el botón de cierre */
+  padding-right: 50px; /* Espacio para el botón X a la derecha */
 }
 
+/* Logo modificado para estar a la izquierda */
 .logo {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  padding-right: 30px; /* Espacio para el botón X */
+  margin-bottom: 0;
 }
 
 .logo-img {
@@ -363,23 +334,40 @@ const menuSections = computed(() => {
   letter-spacing: 0.5px;
 }
 
+/* Contenedor para la información del usuario, ahora separado del header */
+.user-info-container {
+  padding: 0 1rem 1rem 1rem;
+  background-color: #0d4e25;
+}
+
+/* Mejora de estilos para información de usuario */
 .user-info {
   display: flex;
   flex-direction: column;
-  padding: 0.5rem;
+  padding: 0.75rem;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .user-name {
   font-weight: 600;
   font-size: 0.9rem;
   margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-role {
   font-size: 0.8rem;
   opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Contenedor del menú */
@@ -464,21 +452,15 @@ const menuSections = computed(() => {
     width: 260px;
   }
   
-  /* El botón hamburguesa se oculta cuando el sidebar está abierto en móvil */
-  .hamburger-btn, .close-btn {
-    width: 55px;
-    height: 55px;
+  /* Ajustes para la versión móvil */
+  .header-controls {
     top: 10px;
     left: 10px;
   }
   
-  .hamburger-btn span {
-    width: 30px;
-    height: 3px;
-  }
-  
-  .close-btn i {
-    font-size: 30px;
+  .hamburger-btn {
+    width: 40px;
+    height: 40px;
   }
 }
 

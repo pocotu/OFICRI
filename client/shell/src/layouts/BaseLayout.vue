@@ -15,7 +15,7 @@
 
 <script setup>
 import Navigation from '@/components/Navigation.vue'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 
@@ -23,9 +23,17 @@ const router = useRouter()
 const authStore = useAuthStore()
 const navigationRef = ref(null)
 
-// Acceso al estado del sidebar para poder desplazar el contenido principal
-const isSidebarVisible = computed(() => {
-  return navigationRef.value?.isSidebarVisible || false
+// Acceso al estado del sidebar compartido para poder desplazar el contenido principal
+const sharedNavigationVisible = inject('navigationVisible', ref(window.innerWidth > 768))
+const isSidebarVisible = computed(() => sharedNavigationVisible.value)
+
+// Añadir una clase al body cuando se muestra el sidebar
+watch(isSidebarVisible, (visible) => {
+  if (visible) {
+    document.body.classList.add('sidebar-open')
+  } else {
+    document.body.classList.remove('sidebar-open')
+  }
 })
 
 onMounted(() => {
