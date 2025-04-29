@@ -3,25 +3,22 @@ import { ref, computed } from 'vue';
 import { 
   getDashboardStats, 
   getDashboardKPIs, 
-  getDashboardAlerts, 
-  configureDashboardCache,
-  clearDashboardCache
+  getDashboardAlerts 
 } from '../services/dashboardService';
 import { 
-  getAlerts, 
   acknowledgeAlert, 
-  escalateAlert, 
-  getUserAlertConfig 
+  escalateAlert 
 } from '../services/alertService';
-import { 
-  exportStats, 
-  exportKPIs, 
-  exportAlerts 
-} from '../services/exportService';
+import { exportData as exportDashboardData } from '../services/exportService';
 
 export const useDashboardStore = defineStore('dashboard', () => {
   // Estado
-  const stats = ref([]);
+  const stats = ref({
+    documents: {},
+    users: 0,
+    areas: 0,
+    pending: 0
+  });
   const kpis = ref([]);
   const alerts = ref([]);
   const isLoading = ref(false);
@@ -41,31 +38,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     compactView: false,
     showAllAlerts: false
   });
-  const alertConfig = ref({
-    thresholds: {},
-    notificationChannels: {
-      dashboard: true,
-      email: true,
-      push: false
-    },
-    alertsEnabled: true
-  });
 
-  // Getters
-  const statsByType = computed(() => {
-    return (type) => stats.value.filter(stat => stat.type === type);
-  });
-
-  const kpisByType = computed(() => {
-    return (type) => kpis.value.filter(kpi => kpi.type === type);
-  });
-
-  const alertsBySeverity = computed(() => {
-    return (severity) => alerts.value.filter(alert => alert.severity === severity);
-  });
-
+  // Getters computados
   const criticalAlerts = computed(() => {
-    return alerts.value.filter(alert => alert.severity === 'critical' && !alert.acknowledged);
+    return alerts.value.filter(alert => 
+      alert.severity === 'critical' && !alert.acknowledged
+    );
   });
 
   const unacknowledgedAlerts = computed(() => {
@@ -73,10 +51,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   });
 
   const totalDocuments = computed(() => {
-    const statsData = stats.value.find(stat => stat.type === 'documentos-estado');
-    if (!statsData || !statsData.data) return 0;
-    
-    return Object.values(statsData.data).reduce((total, count) => total + count, 0);
+    return Object.values(stats.value.documents).reduce((total, count) => total + count, 0);
   });
 
   const kpiTrends = computed(() => {
@@ -84,7 +59,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       id: kpi.id,
       title: kpi.title,
       trend: kpi.trend,
-      trendPercentage: kpi.trendPercentage
+      trendPercentage: kpi.trend.value
     }));
   });
 
@@ -98,15 +73,21 @@ export const useDashboardStore = defineStore('dashboard', () => {
     try {
       // Cargar datos en paralelo
       const [statsData, kpisData, alertsData] = await Promise.all([
-        getDashboardStats('general', filters.value, forceRefresh),
-        getDashboardKPIs('general', filters.value, forceRefresh),
-        getDashboardAlerts('general', filters.value, forceRefresh)
+        getDashboardStats(filters.value),
+        getDashboardKPIs(filters.value),
+        getDashboardAlerts(filters.value)
       ]);
       
+      // Actualizar estado
       stats.value = statsData;
       kpis.value = kpisData;
       alerts.value = alertsData;
       lastUpdated.value = new Date();
+      
+      // Guardar en caché si no es una recarga forzada
+      if (!forceRefresh) {
+        saveToCache();
+      }
     } catch (err) {
       error.value = err.message || 'Error al cargar datos del dashboard';
       console.error('Error cargando datos del dashboard:', err);
@@ -117,135 +98,105 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   async function updateFilters(newFilters) {
     filters.value = { ...filters.value, ...newFilters };
-    await loadDashboardData();
+  }
+
+  async function saveFilters() {
+    try {
+      localStorage.setItem('dashboard_filters', JSON.stringify(filters.value));
+    } catch (error) {
+      console.error('Error guardando filtros:', error);
+    }
+  }
+
+  async function loadSavedConfig() {
+    try {
+      // Cargar filtros guardados
+      const savedFilters = localStorage.getItem('dashboard_filters');
+      if (savedFilters) {
+        filters.value = { ...filters.value, ...JSON.parse(savedFilters) };
+      }
+
+      // Cargar configuración UI guardada
+      const savedUIConfig = localStorage.getItem('dashboard_ui_config');
+      if (savedUIConfig) {
+        uiConfig.value = { ...uiConfig.value, ...JSON.parse(savedUIConfig) };
+      }
+    } catch (error) {
+      console.error('Error cargando configuración guardada:', error);
+    }
   }
 
   async function acknowledgeAlertAndUpdate(alertId) {
     try {
       await acknowledgeAlert(alertId);
-      // Actualizar la alerta en local
-      const alertIndex = alerts.value.findIndex(alert => alert.id === alertId);
-      if (alertIndex !== -1) {
-        alerts.value[alertIndex] = { 
-          ...alerts.value[alertIndex], 
-          acknowledged: true,
-          acknowledgedAt: new Date(),
-        };
+      // Actualizar estado local
+      const alert = alerts.value.find(a => a.id === alertId);
+      if (alert) {
+        alert.acknowledged = true;
       }
-    } catch (err) {
-      error.value = err.message || 'Error al confirmar la alerta';
-      console.error('Error al confirmar la alerta:', err);
+    } catch (error) {
+      console.error('Error al confirmar alerta:', error);
+      throw error;
     }
   }
 
-  async function escalateAlertAndUpdate(alertId, options = {}) {
+  async function escalateAlertAndUpdate(alertId) {
     try {
-      await escalateAlert(alertId, options);
-      // Actualizar la alerta en local
-      const alertIndex = alerts.value.findIndex(alert => alert.id === alertId);
-      if (alertIndex !== -1) {
-        alerts.value[alertIndex] = { 
-          ...alerts.value[alertIndex], 
-          escalated: true,
-          escalatedAt: new Date(),
-          escalatedTo: options.escalateTo
-        };
-      }
-    } catch (err) {
-      error.value = err.message || 'Error al escalar la alerta';
-      console.error('Error al escalar la alerta:', err);
+      await escalateAlert(alertId);
+      // Recargar alertas para obtener el estado actualizado
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error al escalar alerta:', error);
+      throw error;
     }
   }
 
-  async function exportDashboardStats(format, options = {}) {
+  async function exportData(options) {
     try {
-      const statType = options.statType || 'general';
-      return await exportStats(statType, filters.value, format, options);
-    } catch (err) {
-      error.value = err.message || 'Error al exportar estadísticas';
-      console.error('Error al exportar estadísticas:', err);
-      throw err;
-    }
-  }
-
-  async function exportDashboardKPIs(format, options = {}) {
-    try {
-      const kpiType = options.kpiType || 'general';
-      return await exportKPIs(kpiType, filters.value, format, options);
-    } catch (err) {
-      error.value = err.message || 'Error al exportar KPIs';
-      console.error('Error al exportar KPIs:', err);
-      throw err;
-    }
-  }
-
-  async function exportDashboardAlerts(format, options = {}) {
-    try {
-      const alertType = options.alertType || 'general';
-      return await exportAlerts(alertType, filters.value, format, options);
-    } catch (err) {
-      error.value = err.message || 'Error al exportar alertas';
-      console.error('Error al exportar alertas:', err);
-      throw err;
-    }
-  }
-
-  async function updateUIConfig(newConfig) {
-    uiConfig.value = { ...uiConfig.value, ...newConfig };
-    // Guardar en localStorage para persistencia
-    localStorage.setItem('dashboardUIConfig', JSON.stringify(uiConfig.value));
-  }
-
-  async function loadSavedConfig() {
-    try {
-      // Cargar configuración UI desde localStorage
-      const savedUIConfig = localStorage.getItem('dashboardUIConfig');
-      if (savedUIConfig) {
-        uiConfig.value = { ...uiConfig.value, ...JSON.parse(savedUIConfig) };
-      }
+      const data = {
+        kpis: kpis.value,
+        stats: stats.value,
+        alerts: alerts.value,
+        filters: filters.value,
+        lastUpdated: lastUpdated.value
+      };
       
-      // Cargar configuración de alertas desde el servidor
-      const userAlertCfg = await getUserAlertConfig();
-      alertConfig.value = userAlertCfg;
-      
-      // Cargar filtros guardados
-      const savedFilters = localStorage.getItem('dashboardFilters');
-      if (savedFilters) {
-        const parsedFilters = JSON.parse(savedFilters);
-        // Solo aplicar filtros válidos
-        const validFilters = {};
-        for (const key in parsedFilters) {
-          if (key in filters.value) {
-            validFilters[key] = parsedFilters[key];
-          }
-        }
-        filters.value = { ...filters.value, ...validFilters };
+      await exportDashboardData(data, options);
+    } catch (error) {
+      console.error('Error al exportar datos:', error);
+      throw error;
+    }
+  }
+
+  function saveToCache() {
+    try {
+      const cacheData = {
+        stats: stats.value,
+        kpis: kpis.value,
+        alerts: alerts.value,
+        lastUpdated: lastUpdated.value
+      };
+      localStorage.setItem('dashboard_cache', JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Error guardando en caché:', error);
+    }
+  }
+
+  function loadFromCache() {
+    try {
+      const cached = localStorage.getItem('dashboard_cache');
+      if (cached) {
+        const data = JSON.parse(cached);
+        stats.value = data.stats;
+        kpis.value = data.kpis;
+        alerts.value = data.alerts;
+        lastUpdated.value = new Date(data.lastUpdated);
+        return true;
       }
-    } catch (err) {
-      console.error('Error al cargar configuración guardada:', err);
+    } catch (error) {
+      console.error('Error cargando desde caché:', error);
     }
-  }
-
-  async function saveFilters() {
-    localStorage.setItem('dashboardFilters', JSON.stringify(filters.value));
-  }
-
-  async function configureCache(config) {
-    try {
-      await configureDashboardCache(config);
-    } catch (err) {
-      error.value = err.message || 'Error al configurar caché';
-      console.error('Error al configurar caché:', err);
-    }
-  }
-
-  async function clearCache(cacheType) {
-    try {
-      await clearDashboardCache(cacheType);
-    } catch (err) {
-      error.value = err.message || 'Error al limpiar caché';
-      console.error('Error al limpiar caché:', err);
-    }
+    return false;
   }
 
   return {
@@ -258,12 +209,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
     lastUpdated,
     filters,
     uiConfig,
-    alertConfig,
     
     // Getters
-    statsByType,
-    kpisByType,
-    alertsBySeverity,
     criticalAlerts,
     unacknowledgedAlerts,
     totalDocuments,
@@ -272,15 +219,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
     // Acciones
     loadDashboardData,
     updateFilters,
+    saveFilters,
+    loadSavedConfig,
     acknowledgeAlertAndUpdate,
     escalateAlertAndUpdate,
-    exportDashboardStats,
-    exportDashboardKPIs,
-    exportDashboardAlerts,
-    updateUIConfig,
-    loadSavedConfig,
-    saveFilters,
-    configureCache,
-    clearCache
+    exportData
   };
+}); 
 }); 

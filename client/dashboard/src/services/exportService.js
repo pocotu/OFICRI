@@ -1,9 +1,10 @@
 import { api } from '../../shared/src/services/api';
 import { logOperation } from '../../shared/src/services/audit/auditService';
+import axios from 'axios';
 
 // Formatos de exportación disponibles
 export const EXPORT_FORMATS = {
-  EXCEL: 'excel',
+  EXCEL: 'xlsx',
   PDF: 'pdf',
   CSV: 'csv',
   JSON: 'json'
@@ -368,4 +369,57 @@ function getFileExtension(format) {
   };
   
   return extensions[format] || 'xlsx';
+}
+
+/**
+ * Exporta datos del dashboard en el formato especificado
+ */
+export async function exportData(data, options = {}) {
+  const {
+    format = EXPORT_FORMATS.EXCEL,
+    includeHeaders = true,
+    timestamp = true,
+    autoFilter = true,
+    filename = 'dashboard-export'
+  } = options;
+
+  try {
+    const response = await axios.post('/api/dashboard/export', {
+      data,
+      format,
+      options: {
+        includeHeaders,
+        timestamp,
+        autoFilter,
+        filename
+      }
+    }, {
+      responseType: 'blob'
+    });
+
+    // Crear nombre de archivo con timestamp si está habilitado
+    let exportFilename = filename;
+    if (timestamp) {
+      const date = new Date().toISOString().split('T')[0];
+      exportFilename = `${filename}-${date}`;
+    }
+
+    // Agregar extensión según formato
+    exportFilename += `.${format}`;
+
+    // Descargar archivo
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', exportFilename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return true;
+  } catch (error) {
+    console.error('Error al exportar datos:', error);
+    throw new Error('Error al exportar datos del dashboard');
+  }
 } 

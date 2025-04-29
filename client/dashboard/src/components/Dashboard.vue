@@ -256,37 +256,38 @@ const formattedLastUpdate = computed(() => {
 });
 
 // Manejadores de eventos
-const handleTimeRangeChange = () => {
-  dashboardStore.saveFilters();
-  dashboardStore.loadDashboardData();
+const handleTimeRangeChange = async () => {
+  await dashboardStore.saveFilters();
+  await dashboardStore.loadDashboardData();
 };
 
-const handleAreaChange = () => {
+const handleAreaChange = async () => {
   // Resetear subárea cuando cambia el área
   dashboardStore.updateFilters({ subareaId: '' });
-  dashboardStore.saveFilters();
+  await dashboardStore.saveFilters();
+  await dashboardStore.loadDashboardData();
 };
 
-const handleSubareaChange = () => {
-  dashboardStore.saveFilters();
-  dashboardStore.loadDashboardData();
+const handleSubareaChange = async () => {
+  await dashboardStore.saveFilters();
+  await dashboardStore.loadDashboardData();
 };
 
-const refreshDashboard = () => {
-  dashboardStore.loadDashboardData(true); // true = forzar recarga ignorando caché
+const refreshDashboard = async () => {
+  await dashboardStore.loadDashboardData(true); // true = forzar recarga ignorando caché
 };
 
-const handleAlertAcknowledged = (alertId) => {
-  dashboardStore.acknowledgeAlertAndUpdate(alertId);
+const handleAlertAcknowledged = async (alertId) => {
+  await dashboardStore.acknowledgeAlertAndUpdate(alertId);
 };
 
-const handleAlertEscalated = (alertId) => {
-  dashboardStore.escalateAlertAndUpdate(alertId);
+const handleAlertEscalated = async (alertId) => {
+  await dashboardStore.escalateAlertAndUpdate(alertId);
 };
 
-const handleAlertAction = ({ alertId, actionId }) => {
+const handleAlertAction = async ({ alertId, actionId }) => {
   // Recargar datos después de ejecutar acción de alerta
-  dashboardStore.loadDashboardData();
+  await dashboardStore.loadDashboardData();
 };
 
 // Exportar datos
@@ -295,39 +296,7 @@ const exportData = async () => {
   
   exporting.value = true;
   try {
-    const options = { ...exportOptions.value };
-    const format = options.format;
-    
-    switch (options.dataType) {
-      case 'kpis':
-        await dashboardStore.exportDashboardKPIs(format, { filename: 'kpis-export', ...options });
-        break;
-      case 'stats':
-        await dashboardStore.exportDashboardStats(format, { filename: 'estadisticas-export', ...options });
-        break;
-      case 'alerts':
-        await dashboardStore.exportDashboardAlerts(format, { filename: 'alertas-export', ...options });
-        break;
-      case 'all':
-      default:
-        // Exportar todo requiere especial manejo, creamos un objeto con todos los datos
-        const data = {
-          kpis: dashboardStore.kpis,
-          stats: dashboardStore.stats,
-          alerts: dashboardStore.alerts,
-          filters: dashboardStore.filters,
-          lastUpdated: dashboardStore.lastUpdated
-        };
-        
-        // Utilizamos exportDashboardStats como base, pero pasamos todo el conjunto de datos
-        await dashboardStore.exportDashboardStats(format, { 
-          filename: options.filename,
-          allData: data,
-          ...options 
-        });
-        break;
-    }
-    
+    await dashboardStore.exportData(exportOptions.value);
     showExportModal.value = false;
   } catch (error) {
     console.error('Error al exportar datos:', error);
@@ -375,12 +344,12 @@ onMounted(async () => {
   }
   
   // Cargar datos iniciales
-  dashboardStore.loadDashboardData();
+  await dashboardStore.loadDashboardData();
   
   // Configurar intervalo de actualización automática si está habilitado
   if (dashboardStore.uiConfig.autoRefresh) {
-    refreshInterval = setInterval(() => {
-      dashboardStore.loadDashboardData();
+    refreshInterval = setInterval(async () => {
+      await dashboardStore.loadDashboardData();
     }, dashboardStore.uiConfig.refreshInterval);
   }
 });

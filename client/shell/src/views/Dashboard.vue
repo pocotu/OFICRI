@@ -28,15 +28,9 @@
       </div>
     </div>
 
-    <div class="panel-section">
-      <div class="panel-header">
-        <h2>Panel de Control</h2>
-        <button @click="refreshData" class="actualizar-btn" v-if="hasPermission(8)">
-          <i class="fas fa-sync-alt"></i> Actualizar
-        </button>
-      </div>
-
-      <div class="panel-content">
+    <div class="panel-content">
+      <div class="panel-row">
+        <!-- Actividad Reciente -->
         <div class="panel-card" v-if="hasPermission(8)">
           <h3>Actividad Reciente</h3>
           <div v-if="isLoading" class="loading-state">
@@ -44,34 +38,37 @@
           </div>
           <div v-else-if="activity.length > 0" class="activity-list">
             <div v-for="(item, index) in activity" :key="index" class="activity-item">
-              <div class="user-info">{{ item.user }}</div>
-              <div class="activity-content">
-                <span class="activity-action">{{ item.action }}</span>
-                <span class="activity-details">{{ item.details }}</span>
+              <div class="activity-info">
+                <div class="activity-user">{{ item.usuario }}</div>
+                <div class="activity-details">
+                  <span class="activity-action">{{ item.accion }}</span>
+                  <span class="activity-target">{{ item.detalles }}</span>
+                </div>
               </div>
-              <div class="activity-time">{{ formatTimeAgo(item.date) }}</div>
+              <div class="activity-time">{{ formatTimeAgo(item.fecha) }}</div>
             </div>
           </div>
           <div v-else class="empty-state">
-            No hay actividad reciente para mostrar
+            No hay actividad reciente
           </div>
         </div>
 
+        <!-- Documentos Pendientes -->
         <div class="panel-card" v-if="hasPermission(8)">
           <h3>Documentos Pendientes</h3>
           <div v-if="isLoading" class="loading-state">
             Cargando documentos pendientes...
           </div>
           <div v-else-if="pendingDocuments.length > 0" class="document-list">
-            <div v-for="(doc, index) in pendingDocuments" :key="index" class="document-item">
+            <div v-for="doc in pendingDocuments" :key="doc.id" class="document-item">
               <div class="document-info">
-                <div class="document-title">{{ doc.title }}</div>
+                <div class="document-title">{{ doc.titulo }}</div>
                 <div class="document-meta">
-                  <span class="document-type">{{ doc.type }}</span>
-                  <span class="document-date">{{ formatDate(doc.date) }}</span>
+                  <span class="document-type">{{ doc.tipo }}</span>
+                  <span class="document-date">{{ formatDate(doc.fecha) }}</span>
                 </div>
               </div>
-              <div class="document-priority" :class="doc.priority">{{ doc.priority }}</div>
+              <div class="document-priority" :class="doc.prioridad.toLowerCase()">{{ doc.prioridad }}</div>
             </div>
           </div>
           <div v-else class="empty-state">
@@ -85,7 +82,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useAuthStore } from '@/store/auth'
+import { useAuthStore } from '../store/auth'
+import { getDashboardData } from '../services/dashboardService'
 
 // Referencias al estado
 const stats = ref({
@@ -150,83 +148,10 @@ const formatTimeAgo = (date) => {
 const loadDashboardData = async () => {
   isLoading.value = true
   try {
-    // En un escenario real, estos datos vendrían de una API
-    // Por ahora, usamos datos simulados
-    
-    // Simular retraso de red
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    stats.value = {
-      documents: 157,
-      pending: 0,
-      users: 0,
-      areas: 0
-    }
-
-    // Obtener actividad reciente
-    activity.value = [
-      { 
-        date: new Date(Date.now() - 1000 * 60 * 10), 
-        user: 'Capitán García', 
-        action: 'Documento creado', 
-        details: 'Informe #2023-042'
-      },
-      { 
-        date: new Date(Date.now() - 1000 * 60 * 30), 
-        user: 'Teniente Rodríguez', 
-        action: 'Documento derivado', 
-        details: 'A Oficina Central'
-      },
-      { 
-        date: new Date(Date.now() - 1000 * 60 * 60), 
-        user: 'Coronel Martínez', 
-        action: 'Usuario actualizado', 
-        details: 'Cambio de área'
-      },
-      { 
-        date: new Date(Date.now() - 1000 * 60 * 60 * 3), 
-        user: 'Mayor López', 
-        action: 'Documento archivado', 
-        details: 'Caso cerrado'
-      },
-    ]
-
-    // Obtener documentos pendientes basados en rol
-    // Si es administrador, ve todos. Sino, solo ve los de su área
-    pendingDocuments.value = [
-      {
-        id: 1,
-        title: 'Informe Pericial #2023-042',
-        type: 'Informe',
-        date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-        priority: 'alta',
-        areaId: 1
-      },
-      {
-        id: 2,
-        title: 'Solicitud de Revisión Técnica',
-        type: 'Solicitud',
-        date: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        priority: 'media',
-        areaId: 2
-      },
-      {
-        id: 3,
-        title: 'Memorándum Interno #MEM-2023-108',
-        type: 'Memorándum',
-        date: new Date(Date.now() - 1000 * 60 * 60 * 5),
-        priority: 'baja',
-        areaId: 1
-      }
-    ]
-
-    // Aplicar filtro según permisos contextuales
-    if (!isAdmin.value) {
-      const userAreaId = authStore.user?.areaId || 0
-      pendingDocuments.value = pendingDocuments.value.filter(
-        doc => doc.areaId === userAreaId
-      )
-    }
+    const data = await getDashboardData()
+    stats.value = data.stats
+    activity.value = data.activity
+    pendingDocuments.value = data.pendingDocuments
   } catch (error) {
     console.error('Error al cargar datos del dashboard:', error)
   } finally {
@@ -354,134 +279,86 @@ onMounted(() => {
 }
 
 /* Panel principal */
-.panel-section {
-  background-color: var(--white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.panel-header h2 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
 .panel-content {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
-  padding: 1rem;
 }
 
 .panel-card {
-  background-color: var(--background-blue);
-  border: 1px solid var(--border-color);
+  background-color: var(--white);
   border-radius: var(--border-radius);
-  overflow: hidden;
+  padding: 1rem;
+  box-shadow: var(--box-shadow);
 }
 
 .panel-card h3 {
-  margin: 0;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
+  margin: 0 0 1rem 0;
+  color: var(--text-dark);
+  font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-medium);
-  background-color: var(--white);
-  border-bottom: 1px solid var(--border-color);
 }
 
 /* Estados de carga y vacío */
 .loading-state, .empty-state {
-  padding: 1rem;
   text-align: center;
   color: var(--text-light);
-  font-style: italic;
+  padding: 2rem;
 }
 
 /* Lista de actividades */
 .activity-list, .document-list {
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .activity-item, .document-item {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-.activity-item:hover, .document-item:hover {
-  background-color: rgba(255,255,255,0.4);
-}
-
-.activity-item:last-child, .document-item:last-child {
-  border-bottom: none;
-}
-
-.user-info {
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 0.25rem;
-}
-
-.activity-content {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  background-color: var(--background-light);
 }
 
-.activity-action {
-  color: var(--primary-color);
+.activity-info, .document-info {
+  flex: 1;
+}
+
+.activity-user {
   font-weight: 500;
+  color: var(--text-dark);
 }
 
 .activity-details {
   color: var(--text-medium);
+  font-size: 0.875rem;
 }
 
 .activity-time {
-  font-size: 0.75rem;
   color: var(--text-light);
-  display: block;
-  margin-top: 0.1rem;
+  font-size: 0.75rem;
 }
 
 /* Información de documentos */
-.document-info {
-  margin-bottom: 0.25rem;
-}
-
 .document-title {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-dark);
 }
 
 .document-meta {
   display: flex;
   gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-light);
-}
-
-.document-type {
-  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-medium);
 }
 
 .document-priority {
-  align-self: flex-start;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
@@ -501,23 +378,15 @@ onMounted(() => {
 }
 
 /* Responsive */
-@media (max-width: 992px) {
-  .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
+@media (min-width: 768px) {
   .panel-content {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .panel-content {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -530,16 +399,6 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
-  }
-  
-  .panel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .stat-value {
-    font-size: 2rem;
   }
 }
 </style> 
