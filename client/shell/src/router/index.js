@@ -12,28 +12,29 @@ import NotFound from '@/views/NotFound.vue'
 
 // Vistas protegidas (Estas probablemente se cargan dinámicamente desde los módulos)
 import Dashboard from '@/views/Dashboard.vue' // Mantener Dashboard como placeholder inicial
-/* Comentando importaciones estáticas de vistas de módulos
-import Documents from '@/views/documents/Documents.vue'
-import DocumentCreate from '@/views/documents/Create.vue'
-import DocumentList from '@/views/documents/List.vue'
-import DocumentPending from '@/views/documents/Pending.vue'
-import MesaPartes from '@/views/mesa-partes/MesaPartes.vue'
-import MesaPartesReception from '@/views/mesa-partes/Reception.vue'
-import MesaPartesPending from '@/views/mesa-partes/Pending.vue'
-import MesaPartesHistory from '@/views/mesa-partes/History.vue'
-import Areas from '@/views/areas/Areas.vue'
-import AreaList from '@/views/areas/List.vue'
-import AreaCreate from '@/views/areas/Create.vue'
-import Users from '@/views/users/Users.vue'
-import UserList from '@/views/users/List.vue'
-import UserCreate from '@/views/users/Create.vue'
-import Roles from '@/views/roles/Roles.vue'
-import RoleList from '@/views/roles/List.vue'
-import RoleCreate from '@/views/roles/Create.vue'
-import Audit from '@/views/audit/Audit.vue'
-import AuditLogs from '@/views/audit/Logs.vue'
-import AuditSecurity from '@/views/audit/Security.vue'
-*/
+
+// Importaciones comentadas de vistas de módulos
+// import Documents from '@/views/documents/Documents.vue'
+// import DocumentCreate from '@/views/documents/Create.vue'
+// import DocumentList from '@/views/documents/List.vue'
+// import DocumentPending from '@/views/documents/Pending.vue'
+// import MesaPartes from '@/views/mesa-partes/MesaPartes.vue'
+// import MesaPartesReception from '@/views/mesa-partes/Reception.vue'
+// import MesaPartesPending from '@/views/mesa-partes/Pending.vue'
+// import MesaPartesHistory from '@/views/mesa-partes/History.vue'
+// import Areas from '@/views/areas/Areas.vue'
+// import AreaList from '@/views/areas/List.vue'
+// import AreaCreate from '@/views/areas/Create.vue'
+// import Users from '@/views/users/Users.vue'
+// import UserList from '@/views/users/List.vue'
+// import UserCreate from '@/views/users/Create.vue'
+// import Roles from '@/views/roles/Roles.vue'
+// import RoleList from '@/views/roles/List.vue'
+// import RoleCreate from '@/views/roles/Create.vue'
+// import Audit from '@/views/audit/Audit.vue'
+// import AuditLogs from '@/views/audit/Logs.vue'
+// import AuditSecurity from '@/views/audit/Security.vue'
+
 import AccessibilityTesting from '@/components/AccessibilityTesting.vue'
 
 const router = createRouter({
