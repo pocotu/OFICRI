@@ -1,0 +1,11 @@
+{
+  "name": "@oficri/backend",
+  "version": "1.0.0",
+  "description": "Backend del sistema OFICRI",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

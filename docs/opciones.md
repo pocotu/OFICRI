@@ -1,6 +1,20 @@
 # Sistema de Permisos OFICRI: Implementación y Configuración
 
-_Versión: 1.0.0 (Actualizado: Junio 2024)_
+
+# ⚠️ RESTRICCIONES CRÍTICAS DE SEGURIDAD ⚠️
+
+El sistema OFICRI de la Policía Nacional implementa las siguientes restricciones de seguridad que son INMUTABLES y de OBLIGATORIO cumplimiento:
+
+1. **CREACIÓN DE USUARIOS**: EXCLUSIVAMENTE los usuarios con el permiso ADMIN_SISTEMA (bit 7, valor 128) están autorizados para crear nuevos usuarios. Esta restricción garantiza que solo oficiales de alto rango debidamente autorizados puedan otorgar acceso al sistema.
+
+2. **RESETEO DE CONTRASEÑAS**: EXCLUSIVAMENTE los usuarios con el permiso ADMIN_SISTEMA pueden resetear contraseñas de otros usuarios. Esta operación debe realizarse siguiendo el protocolo de seguridad establecido por la Policía Nacional, con la debida autorización y documentación.
+
+3. **IDENTIFICACIÓN DE USUARIOS**: El sistema utiliza EXCLUSIVAMENTE el Código de Identificación Policial (CIP) como identificador primario de los usuarios. NO se utiliza email ni username para identificación o acceso al sistema.
+
+4. **MODELO DE DATOS RESTRINGIDO**: El sistema SOLO almacena en la base de datos los campos definidos en el esquema de la tabla Usuario (CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol y campos de control). NO se almacenan datos personales adicionales como DNI, teléfono, username o correo electrónico, cumpliendo con los protocolos de protección de datos de la Policía Nacional.
+
+**NOTA IMPORTANTE**: Cualquier intento de eludir estas restricciones será considerado una violación grave de seguridad, se registrará en el sistema de auditoría y será reportado a las autoridades correspondientes. No se implementarán modificaciones que contravengan estas restricciones.
+
 
 ## **1. Modelo de Permisos (Bits 0..7)**
 
