@@ -82,7 +82,7 @@
     </div>
 
     <div class="card docs-table-wrapper">
-      <DocumentosTable :documentos="documentos" />
+      <ResponsiveWrapper :documentos="documentos" :areas="areas" />
     </div>
   </div>
 </template>
@@ -92,7 +92,7 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchDocumentos, createDocumento } from '../api/documentoApi'
 import { fetchAreasActivas } from '../api/areaApi'
-import DocumentosTable from '../components/DocumentosTable.vue'
+import ResponsiveWrapper from '../components/ResponsiveWrapper.vue'
 
 const authStore = useAuthStore()
 const token = authStore.token
@@ -123,8 +123,12 @@ function cargarAreas() {
 function mostrarFormulario() {
   mostrarForm.value = !mostrarForm.value
   if (mostrarForm.value) {
+    const maxNro = documentos.value.length
+      ? Math.max(...documentos.value.map(d => Number(d.NroRegistro) || 0))
+      : 0
     form.value = {
-      NroRegistro: '', FechaDocumento: '', OrigenDocumento: '', NumeroOficioDocumento: '',
+      NroRegistro: String(maxNro + 1),
+      FechaDocumento: '', OrigenDocumento: '', NumeroOficioDocumento: '',
       Procedencia: '', IDAreaActual: '', Contenido: '', Estado: '', IDMesaPartes: 1, IDUsuarioCreador: user?.IDUsuario,
       Observaciones: '', TipoDocumentoSalida: '', FechaDocumentoSalida: ''
     }
