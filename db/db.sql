@@ -341,6 +341,23 @@ CREATE TABLE BackupLog (
 ) ENGINE=InnoDB;
 
 -- ########################################################
+-- ESTADO DOCUMENTO (CATÁLOGO DINÁMICO)
+-- ########################################################
+
+CREATE TABLE EstadoDocumento (
+    IDEstado INT AUTO_INCREMENT PRIMARY KEY,
+    NombreEstado VARCHAR(50) NOT NULL UNIQUE,
+    Descripcion VARCHAR(255),
+    Color VARCHAR(20)
+) ENGINE=InnoDB;
+
+INSERT INTO EstadoDocumento (NombreEstado, Descripcion, Color) VALUES
+('En trámite', 'Documento en proceso', '#f7c948'),
+('Finalizado', 'Documento finalizado', '#2dc76d'),
+('Observado', 'Documento observado', '#e67e22'),
+('Archivado', 'Documento archivado', '#b0c4b1');
+
+-- ########################################################
 -- 3. TABLAS DE DOCUMENTOS, DERIVACIONES, LOGS
 -- ########################################################
 
@@ -350,23 +367,17 @@ CREATE TABLE Documento (
     IDAreaActual INT NOT NULL,
     IDUsuarioCreador INT NOT NULL,
     IDUsuarioAsignado INT DEFAULT NULL,
-
     IDDocumentoPadre INT DEFAULT NULL,
-
     NroRegistro VARCHAR(50) NOT NULL,
     NumeroOficioDocumento VARCHAR(50) NOT NULL,
-
     FechaDocumento DATE,
     OrigenDocumento VARCHAR(20),
-    Estado VARCHAR(50),
     Observaciones TEXT,
-
     Procedencia VARCHAR(255),
     Contenido TEXT,
-
     TipoDocumentoSalida VARCHAR(100),
     FechaDocumentoSalida DATE,
-
+    IDEstado INT NULL,
     CONSTRAINT fk_documento_mesapartes
         FOREIGN KEY (IDMesaPartes) REFERENCES MesaPartes(IDMesaPartes)
         ON DELETE RESTRICT
@@ -385,6 +396,10 @@ CREATE TABLE Documento (
         ON UPDATE CASCADE,
     CONSTRAINT fk_documento_padre
         FOREIGN KEY (IDDocumentoPadre) REFERENCES Documento(IDDocumento)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_documento_estado
+        FOREIGN KEY (IDEstado) REFERENCES EstadoDocumento(IDEstado)
         ON DELETE SET NULL
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -646,7 +661,7 @@ BEGIN
            CONCAT('Documento lleva más de 30 días en EN_PROCESO. NroRegistro=', d.NroRegistro),
            '(Monitor Event)'
     FROM Documento d
-    WHERE d.Estado = 'EN_PROCESO'
+    WHERE d.IDEstado = (SELECT IDEstado FROM EstadoDocumento WHERE NombreEstado = 'En trámite')
       AND d.FechaDocumento < DATE_SUB(NOW(), INTERVAL 30 DAY);
 END$$
 
@@ -695,7 +710,7 @@ BEGIN
         NumeroOficioDocumento,
         OrigenDocumento,
         Contenido,
-        Estado,
+        IDEstado,
         TipoDocumentoSalida,
         FechaDocumentoSalida
     ) VALUES (
@@ -706,7 +721,7 @@ BEGIN
         p_NumeroOficioDocumento,
         p_OrigenDocumento,
         p_Contenido,
-        'RECIBIDO',
+        (SELECT IDEstado FROM EstadoDocumento WHERE NombreEstado='En trámite'),
         p_TipoDocumentoSalida,
         p_FechaDocumentoSalida
     );
@@ -895,7 +910,7 @@ BEGIN
     
     -- Obtener área del usuario y documento
     SELECT IDArea INTO v_area_usuario FROM Usuario WHERE IDUsuario = p_IDUsuario;
-    SELECT IDAreaActual, Estado INTO v_area_documento, v_estado_actual FROM Documento WHERE IDDocumento = p_IDDocumento;
+    SELECT IDAreaActual, IDEstado INTO v_area_documento, v_estado_actual FROM Documento WHERE IDDocumento = p_IDDocumento;
     
     -- Verificar si el usuario es responsable del área
     SET v_es_area_responsable = (v_area_usuario = v_area_documento);
@@ -944,7 +959,7 @@ BEGIN
             
             -- Mover a papelera (cambiar estado)
             UPDATE Documento 
-            SET Estado = 'PAPELERA', 
+            SET IDEstado = (SELECT IDEstado FROM EstadoDocumento WHERE NombreEstado='Archivado'), 
                 Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Movido a papelera por usuario ID: ', p_IDUsuario, ' en ', NOW())
             WHERE IDDocumento = p_IDDocumento;
             
@@ -955,7 +970,7 @@ BEGIN
             
             -- Restaurar de papelera (volver a estado anterior)
             UPDATE Documento 
-            SET Estado = 'ACTIVO', 
+            SET IDEstado = (SELECT IDEstado FROM EstadoDocumento WHERE NombreEstado=v_estado_actual), 
                 Observaciones = CONCAT(IFNULL(Observaciones, ''), ' | Restaurado de papelera por usuario ID: ', p_IDUsuario, ' en ', NOW())
             WHERE IDDocumento = p_IDDocumento;
             

@@ -61,7 +61,12 @@
         <div class="form-row">
           <div class="form-group">
             <label for="estado">Estado</label>
-            <input id="estado" v-model="form.Estado" required />
+            <select id="estado" v-model="form.Estado" required>
+              <option value="" disabled>Seleccione un estado</option>
+              <option v-for="estado in ESTADOS_DOCUMENTO" :key="estado" :value="estado">
+                {{ estado }}
+              </option>
+            </select>
           </div>
         </div>
         <div class="form-row">
@@ -102,6 +107,12 @@ const puedeCrear = user && user.Permisos && (user.Permisos & 1) === 1
 const documentos = ref([])
 const areas = ref([])
 const mostrarForm = ref(false)
+const ESTADOS_DOCUMENTO = [
+  'En trámite',
+  'Finalizado',
+  'Observado',
+  'Archivado'
+]
 const form = ref({
   NroRegistro: '', FechaDocumento: '', OrigenDocumento: '', NumeroOficioDocumento: '',
   Procedencia: '', IDAreaActual: '', Contenido: '', Estado: '', IDMesaPartes: 1, IDUsuarioCreador: user?.IDUsuario,
