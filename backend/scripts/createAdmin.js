@@ -4,6 +4,19 @@ const bcrypt = require('bcryptjs');
 async function crearBase() {
   console.log('\n=== INICIANDO SCRIPT DE CREACIÓN DE BASE ===\n');
 
+  // 0. Crear mesas de partes base si no existen
+  console.log('0. Creando mesas de partes base...');
+  const mesasBase = [
+    { descripcion: 'Mesa Principal', codigo: 'MESA-001' }
+  ];
+  for (const mesa of mesasBase) {
+    await pool.query(
+      'INSERT IGNORE INTO MesaPartes (Descripcion, IsActive, CodigoIdentificacion) VALUES (?, 1, ?)',
+      [mesa.descripcion, mesa.codigo]
+    );
+    console.log(`   ✓ Mesa de partes "${mesa.descripcion}" creada o actualizada`);
+  }
+
   // 1. Crear áreas base si no existen (sin loguear aún)
   console.log('1. Creando áreas base...');
   const areasBase = [

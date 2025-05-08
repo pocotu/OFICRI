@@ -158,7 +158,7 @@ CREATE TABLE UsuarioSeguridad (
 -- ---------------- USUARIO LOG (ACTUALIZADO PARA GEOLOCALIZACIÓN) ----------------
 CREATE TABLE UsuarioLog (
     IDLog INT AUTO_INCREMENT PRIMARY KEY,
-    IDUsuario INT NOT NULL DEFAULT 0,
+    IDUsuario INT NOT NULL,
 
     TipoEvento VARCHAR(100),
 
@@ -190,9 +190,7 @@ CREATE TABLE UsuarioLog (
     CONSTRAINT fk_usuariolog_usuario
         FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
         ON DELETE CASCADE
-        ON UPDATE CASCADE,
-    CONSTRAINT chk_usuariolog_id
-        CHECK (IDUsuario >= 0)
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;
 
 CREATE INDEX idx_usuariolog_tipo_fecha ON UsuarioLog(TipoEvento, FechaEvento);
@@ -365,6 +363,9 @@ CREATE TABLE Documento (
 
     Procedencia VARCHAR(255),
     Contenido TEXT,
+
+    TipoDocumentoSalida VARCHAR(100),
+    FechaDocumentoSalida DATE,
 
     CONSTRAINT fk_documento_mesapartes
         FOREIGN KEY (IDMesaPartes) REFERENCES MesaPartes(IDMesaPartes)
@@ -596,9 +597,9 @@ CREATE TABLE QuimicaToxicologiaForense (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-###########################################################
-###########################################################
-###########################################################
+###################################################################
+###################################################################
+###################################################################
 
 -- ########################################################
 -- 7. EVENTOS (MONITORES)
@@ -678,7 +679,9 @@ CREATE PROCEDURE sp_crear_documento_derivacion(
     IN p_OrigenDocumento VARCHAR(20),
     IN p_Contenido TEXT,
     IN p_IDAreaDestino INT,
-    IN p_IDUsuarioDeriva INT
+    IN p_IDUsuarioDeriva INT,
+    IN p_TipoDocumentoSalida VARCHAR(100),
+    IN p_FechaDocumentoSalida DATE
 )
 BEGIN
     DECLARE v_IDDocumento INT;
@@ -692,7 +695,9 @@ BEGIN
         NumeroOficioDocumento,
         OrigenDocumento,
         Contenido,
-        Estado
+        Estado,
+        TipoDocumentoSalida,
+        FechaDocumentoSalida
     ) VALUES (
         p_IDMesaPartes,
         p_IDAreaActual,
@@ -701,7 +706,9 @@ BEGIN
         p_NumeroOficioDocumento,
         p_OrigenDocumento,
         p_Contenido,
-        'RECIBIDO'
+        'RECIBIDO',
+        p_TipoDocumentoSalida,
+        p_FechaDocumentoSalida
     );
 
     SET v_IDDocumento = LAST_INSERT_ID();

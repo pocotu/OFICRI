@@ -7,6 +7,7 @@ const roleRoutes = require('../routes/roleRoutes');
 const areaRoutes = require('../routes/areaRoutes');
 const userRoutes = require('../routes/userRoutes');
 const auditRoutes = require('../routes/auditRoutes');
+const documentoRoutes = require('../routes/documentoRoutes');
 
 // Configuración de variables de entorno
 dotenv.config();
@@ -44,3 +45,4 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/areas', areaRoutes);
 app.use('/api/usuarios', userRoutes); 
 app.use('/api/auditoria', auditRoutes); 
+app.use('/api/documentos', documentoRoutes); 

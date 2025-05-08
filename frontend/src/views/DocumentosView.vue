@@ -2,13 +2,14 @@
   <div class="documentos-view">
     <h1 class="main-title"><i class="fa-solid fa-file-alt"></i> Recepción de Documentos</h1>
     <div class="acciones-bar">
-      <button v-if="puedeCrear" class="btn-principal" @click="mostrarFormulario">
-        {{ mostrarForm ? 'Cancelar' : '+ Nuevo Documento' }}
+      <button v-if="puedeCrear" class="btn btn-primary" @click="mostrarFormulario">
+        <i :class="mostrarForm ? 'fa-solid fa-xmark' : 'fa-solid fa-plus'" style="margin-right: 6px;"></i>
+        {{ mostrarForm ? 'Cancelar' : 'Nuevo Documento' }}
       </button>
     </div>
 
     <div v-if="mostrarForm" class="formulario-centrado">
-      <form @submit.prevent="guardarDocumento" class="formulario-documento-rediseñado">
+      <form @submit.prevent="guardarDocumento" class="formulario-documento-rediseñado card">
         <h2 class="form-title">Nuevo Documento</h2>
         <div class="form-row">
           <div class="form-group">
@@ -17,7 +18,12 @@
           </div>
           <div class="form-group">
             <label for="area-derivado">Área Derivado</label>
-            <input id="area-derivado" v-model="form.IDAreaActual" required />
+            <select id="area-derivado" v-model="form.IDAreaActual" required>
+              <option value="" disabled>Seleccione un área</option>
+              <option v-for="area in areas" :key="area.IDArea" :value="area.IDArea">
+                {{ area.NombreArea }}
+              </option>
+            </select>
           </div>
         </div>
         <div class="form-row">
@@ -35,19 +41,11 @@
             <label for="tipo-doc-clase">Tipo Doc Entrada (Clase)</label>
             <input id="tipo-doc-clase" v-model="form.OrigenDocumento" required />
           </div>
-          <div class="form-group">
-            <label for="tipo-doc-salida">Tipo Doc Salida</label>
-            <input id="tipo-doc-salida" v-model="form.TipoDocumentoSalida" />
-          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="tipo-doc-nro">Tipo Doc Entrada (Nro)</label>
             <input id="tipo-doc-nro" v-model="form.NumeroOficioDocumento" required />
-          </div>
-          <div class="form-group">
-            <label for="fecha-doc-salida">Fecha doc salida</label>
-            <input id="fecha-doc-salida" v-model="form.FechaDocumentoSalida" type="date" />
           </div>
         </div>
         <div class="form-row">
@@ -66,46 +64,25 @@
             <input id="estado" v-model="form.Estado" required />
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tipo-doc-salida">Tipo Doc Salida</label>
+            <input id="tipo-doc-salida" v-model="form.TipoDocumentoSalida" />
+          </div>
+          <div class="form-group">
+            <label for="fecha-doc-salida">Fecha doc salida</label>
+            <input id="fecha-doc-salida" v-model="form.FechaDocumentoSalida" type="date" />
+          </div>
+        </div>
         <div class="form-actions-horizontal">
-          <button type="submit" class="btn-principal">Guardar</button>
-          <button type="button" class="btn-cerrar" @click="mostrarFormulario">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-secondary" @click="mostrarFormulario">Cancelar</button>
         </div>
       </form>
     </div>
 
-    <div class="docs-table-wrapper">
-      <table class="docs-table">
-        <thead>
-          <tr>
-            <th>Nro Registro</th>
-            <th>Fecha Ingreso<br/>doc entrada</th>
-            <th>Tipo Doc Entrada<br/>Clase</th>
-            <th>Tipo Doc Entrada<br/>Nro</th>
-            <th>Fecha doc entrada</th>
-            <th>Procedencia</th>
-            <th>Área Derivado</th>
-            <th>Contenido</th>
-            <th>Tipo Doc Salida</th>
-            <th>Fecha doc salida</th>
-            <th>Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="doc in documentos" :key="doc.IDDocumento">
-            <td>{{ doc.NroRegistro }}</td>
-            <td>{{ fechaDesglosada(doc.FechaDocumento) }}</td>
-            <td>{{ doc.OrigenDocumento }}</td>
-            <td>{{ doc.NumeroOficioDocumento }}</td>
-            <td>{{ fechaDesglosada(doc.FechaDocumento) }}</td>
-            <td>{{ doc.Procedencia }}</td>
-            <td>{{ doc.IDAreaActual }}</td>
-            <td>{{ doc.Contenido }}</td>
-            <td>{{ doc.TipoDocumentoSalida }}</td>
-            <td>{{ fechaDesglosada(doc.FechaDocumentoSalida) }}</td>
-            <td>{{ doc.Observaciones }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="card docs-table-wrapper">
+      <DocumentosTable :documentos="documentos" />
     </div>
   </div>
 </template>
@@ -114,6 +91,8 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchDocumentos, createDocumento } from '../api/documentoApi'
+import { fetchAreasActivas } from '../api/areaApi'
+import DocumentosTable from '../components/DocumentosTable.vue'
 
 const authStore = useAuthStore()
 const token = authStore.token
@@ -121,16 +100,23 @@ const user = authStore.user
 const puedeCrear = user && user.Permisos && (user.Permisos & 1) === 1
 
 const documentos = ref([])
+const areas = ref([])
 const mostrarForm = ref(false)
 const form = ref({
   NroRegistro: '', FechaDocumento: '', OrigenDocumento: '', NumeroOficioDocumento: '',
   Procedencia: '', IDAreaActual: '', Contenido: '', Estado: '', IDMesaPartes: 1, IDUsuarioCreador: user?.IDUsuario,
-  TipoDocumentoSalida: '', FechaDocumentoSalida: '', Observaciones: ''
+  Observaciones: '', TipoDocumentoSalida: '', FechaDocumentoSalida: ''
 })
 
 function cargarDocumentos() {
   fetchDocumentos(token).then(res => {
     documentos.value = res.data
+  })
+}
+
+function cargarAreas() {
+  fetchAreasActivas(token).then(res => {
+    areas.value = res.data
   })
 }
 
@@ -140,15 +126,19 @@ function mostrarFormulario() {
     form.value = {
       NroRegistro: '', FechaDocumento: '', OrigenDocumento: '', NumeroOficioDocumento: '',
       Procedencia: '', IDAreaActual: '', Contenido: '', Estado: '', IDMesaPartes: 1, IDUsuarioCreador: user?.IDUsuario,
-      TipoDocumentoSalida: '', FechaDocumentoSalida: '', Observaciones: ''
+      Observaciones: '', TipoDocumentoSalida: '', FechaDocumentoSalida: ''
     }
   }
 }
 
 async function guardarDocumento() {
+  try {
   await createDocumento(form.value, token)
   mostrarForm.value = false
   cargarDocumentos()
+  } catch (error) {
+    alert('Error al guardar el documento: ' + (error.response?.data?.message || error.message))
+  }
 }
 
 function fechaDesglosada(fecha) {
@@ -158,7 +148,10 @@ function fechaDesglosada(fecha) {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
 }
 
-onMounted(cargarDocumentos)
+onMounted(() => {
+  cargarDocumentos()
+  cargarAreas()
+})
 </script>
 
 <style scoped>
