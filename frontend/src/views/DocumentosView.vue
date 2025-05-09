@@ -87,7 +87,7 @@
     </div>
 
     <div class="card docs-table-wrapper">
-      <ResponsiveWrapper :documentos="documentos" :areas="areas" />
+      <ResponsiveWrapper :documentos="documentos" :areas="areas" :estados="ESTADOS_DOCUMENTO" />
     </div>
   </div>
 </template>

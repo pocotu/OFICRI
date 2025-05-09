@@ -1,6 +1,6 @@
 <template>
   <div class="responsive-wrapper">
-    <DocumentosTable v-if="!isMobile" :documentos="documentos" :areas="areas" @show-details="showDetails" />
+    <DocumentosTable v-if="!isMobile" :documentos="documentos" :areas="areas" :estados="estados" @show-details="showDetails" />
     <div v-else class="documentos-cards">
       <DocumentoCard
         v-for="doc in documentos"
@@ -26,6 +26,11 @@ const props = defineProps({
     required: true
   },
   areas: {
+    type: Array,
+    required: false,
+    default: () => []
+  },
+  estados: {
     type: Array,
     required: false,
     default: () => []

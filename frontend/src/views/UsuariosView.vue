@@ -1,6 +1,7 @@
 <template>
   <div class="usuarios-view">
-    <h1>Gestión de Usuarios</h1>
+    <h1 class="main-title"><i class="fa-solid fa-users"></i> Gestión de Usuarios</h1>
+    <p class="subtitle">Administra los usuarios del sistema de forma segura y eficiente.</p>
     <div v-if="!puedeVer">
       <div class="alert alert-danger">No tienes permisos para ver esta sección.</div>
     </div>
@@ -36,10 +37,10 @@
                 </span>
               </td>
               <td>
-                <button v-if="puedeEditar" class="btn btn-edit" @click="abrirModalEditar(usuario)"><i class="fa fa-edit"></i></button>
-                <button v-if="puedeEliminar && usuario.IDUsuario !== user.IDUsuario" class="btn btn-delete" @click="eliminarUsuario(usuario.IDUsuario)"><i class="fa fa-trash"></i></button>
-                <button v-if="puedeResetear && usuario.IDUsuario !== user.IDUsuario" class="btn btn-reset" @click="resetearContrasena(usuario.IDUsuario)"><i class="fa fa-key"></i></button>
-                <button v-if="puedeResetear && usuario.IDUsuario !== user.IDUsuario" class="btn btn-block" :class="usuario.Bloqueado ? 'btn-success' : 'btn-danger'" @click="toggleBloqueo(usuario)">
+                <button v-if="puedeEditar" class="btn btn-edit" @click="abrirModalEditar(usuario)" title="Editar usuario"><i class="fa fa-edit"></i></button>
+                <button v-if="puedeEliminar && usuario.IDUsuario !== user.IDUsuario" class="btn btn-delete" @click="eliminarUsuario(usuario.IDUsuario)" title="Eliminar usuario"><i class="fa fa-trash"></i></button>
+                <button v-if="puedeResetear && usuario.IDUsuario !== user.IDUsuario" class="btn btn-reset" @click="resetearContrasena(usuario.IDUsuario)" title="Resetear contraseña"><i class="fa fa-key"></i></button>
+                <button v-if="puedeResetear && usuario.IDUsuario !== user.IDUsuario" class="btn btn-block" :class="usuario.Bloqueado ? 'btn-success' : 'btn-danger'" @click="toggleBloqueo(usuario)" :title="usuario.Bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario'">
                   <i :class="usuario.Bloqueado ? 'fa fa-unlock' : 'fa fa-lock'" />
                 </button>
               </td>
@@ -49,7 +50,6 @@
       </div>
       <!-- Modales para crear/editar usuario -->
       <div v-if="modalCrear" class="modal">
-        <!-- Formulario de creación de usuario -->
         <div class="modal-content">
           <h2>Crear Usuario</h2>
           <form @submit.prevent="crearUsuario">
@@ -258,11 +258,27 @@ async function toggleBloqueo(usuario) {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 .usuarios-view {
+  font-family: 'Roboto', Arial, sans-serif;
   padding: 2rem 1.5rem 1.5rem 1.5rem;
   width: 100%;
   max-width: none;
   margin: 0;
+}
+.main-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #14532d;
+  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.subtitle {
+  color: #4b5563;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
 }
 .usuarios-header {
   display: flex;
@@ -272,9 +288,13 @@ async function toggleBloqueo(usuario) {
 }
 .usuarios-table-wrapper {
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.13);
   padding: 1.5rem 1rem;
+  transition: box-shadow 0.2s;
+}
+.usuarios-table-wrapper:hover {
+  box-shadow: 0 8px 32px rgba(44, 62, 80, 0.18);
 }
 .usuarios-table {
   width: 100%;
@@ -285,29 +305,35 @@ async function toggleBloqueo(usuario) {
 }
 .usuarios-table th, .usuarios-table td {
   border-bottom: 1px solid #e1e1e1;
-  padding: 0.75rem 1.2rem;
+  padding: 0.85rem 1.2rem;
   text-align: left;
 }
 .usuarios-table th {
   background: #f7f7f7;
   font-weight: bold;
-  color: #263238;
+  color: #14532d;
+  font-size: 1.08rem;
 }
 .usuarios-table tr:last-child td {
   border-bottom: none;
 }
 .btn {
   margin-right: 0.3rem;
-  padding: 0.4rem 0.9rem;
+  padding: 0.48rem 1.1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  font-size: 1rem;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  font-size: 1.08rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  box-shadow: 0 1px 4px rgba(44,62,80,0.07);
+}
+.btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 4px 16px rgba(44,62,80,0.13);
 }
 .btn-success {
   background: #2dc76d;
@@ -344,6 +370,19 @@ async function toggleBloqueo(usuario) {
 .btn-cancel:hover {
   background: #888;
 }
+.btn-block {
+  background: #b0b0b0;
+  color: #fff;
+}
+.btn-block.btn-success {
+  background: #2dc76d;
+}
+.btn-block.btn-danger {
+  background: #e74c3c;
+}
+.btn-block:hover {
+  filter: brightness(0.95);
+}
 .alert-danger {
   background: #fee2e2;
   color: #d32f2f;
@@ -351,10 +390,18 @@ async function toggleBloqueo(usuario) {
   border-radius: 8px;
   margin-bottom: 1rem;
 }
+.text-success {
+  color: #2dc76d;
+  font-weight: 600;
+}
+.text-danger {
+  color: #e74c3c;
+  font-weight: 600;
+}
 .modal {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.18);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -373,7 +420,7 @@ async function toggleBloqueo(usuario) {
 }
 .modal-content h2 {
   margin-bottom: 1.5rem;
-  color: #263238;
+  color: #14532d;
   font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
@@ -404,26 +451,6 @@ async function toggleBloqueo(usuario) {
   gap: 1rem;
   margin-top: 1.2rem;
 }
-.btn-success {
-  background: #2dc76d;
-  color: #fff;
-  font-size: 1.1rem;
-  padding: 0.7rem 2.2rem;
-  border-radius: 8px;
-}
-.btn-cancel {
-  background: #b0b0b0;
-  color: #fff;
-  font-size: 1.1rem;
-  padding: 0.7rem 2.2rem;
-  border-radius: 8px;
-}
-.btn-success:hover {
-  background: #1e9e4a;
-}
-.btn-cancel:hover {
-  background: #888;
-}
 @media (max-width: 900px) {
   .usuarios-view {
     padding: 1rem;
@@ -435,6 +462,9 @@ async function toggleBloqueo(usuario) {
     min-width: 90vw;
     max-width: 98vw;
     padding: 1.2rem 0.5rem;
+  }
+  .main-title {
+    font-size: 1.3rem;
   }
 }
 </style> 

@@ -19,7 +19,13 @@ import { computed, ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const authStore = useAuthStore()
-const metrics = ref({ totalDocs: 0, pendientes: 0 })
+const metrics = ref({
+  totalDocs: 0,
+  pendientes: 0,
+  derivados: 0,
+  usuariosActivos: 0,
+  areasActivas: 0
+})
 const loading = ref(true)
 const token = computed(() => authStore.token)
 
@@ -39,16 +45,16 @@ const widgets = computed(() => {
   const rol = authStore.user?.NombreRol?.toLowerCase() || ''
   if (rol.includes('admin')) {
     return [
-      { label: 'USUARIOS ACTIVOS', value: 0 },
+      { label: 'USUARIOS ACTIVOS', value: metrics.value.usuariosActivos },
       { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
       { label: 'DOCUMENTOS REGISTRADOS', value: metrics.value.totalDocs },
-      { label: 'ÁREAS ACTIVAS', value: 0 },
+      { label: 'ÁREAS ACTIVAS', value: metrics.value.areasActivas },
     ]
   }
   if (rol.includes('mesa')) {
     return [
       { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
-      { label: 'DOCUMENTOS DERIVADOS', value: 0 },
+      { label: 'DOCUMENTOS DERIVADOS', value: metrics.value.derivados },
     ]
   }
   if (rol.includes('responsable')) {
