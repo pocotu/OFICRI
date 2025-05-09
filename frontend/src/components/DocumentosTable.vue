@@ -112,7 +112,7 @@
               <input v-else v-model="editRowData.Estado" class="edit-input" />
             </template>
             <template v-else>
-              {{ doc.Estado }}
+              {{ doc.EstadoNombre || 'Desconocido' }}
             </template>
           </td>
           <td>

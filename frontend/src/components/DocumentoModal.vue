@@ -49,6 +49,10 @@
             <span class="label">Observaciones:</span>
             <span class="value">{{ documento.Observaciones }}</span>
           </div>
+          <div class="info-item">
+            <span class="label">Estado:</span>
+            <span class="value">{{ documento.EstadoNombre || 'Desconocido' }}</span>
+          </div>
         </div>
       </div>
     </div>
