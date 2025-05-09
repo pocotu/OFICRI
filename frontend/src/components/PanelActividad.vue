@@ -14,18 +14,25 @@
 <style scoped>
 .panel {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
-  padding: 1.5rem 1rem;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(44, 62, 80, 0.07);
+  padding: 1.5rem 1.2rem;
   min-width: 320px;
   min-height: 100px;
   margin: 0.5rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.panel:hover {
+  box-shadow: 0 6px 24px rgba(44, 62, 80, 0.13);
+  transform: translateY(-2px) scale(1.02);
 }
 .panel-title {
   font-weight: bold;
-  color: #0f492e;
+  color: #14532d;
   margin-bottom: 1rem;
   font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 .panel-content {
   color: #263238;

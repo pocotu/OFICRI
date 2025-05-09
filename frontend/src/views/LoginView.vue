@@ -6,7 +6,6 @@
         <div class="login-avatar">
           <img src="../assets/img/logoOficri2x2.png" alt="OFICRI Logo" />
         </div>
-        <h2>Sistema de Gestión OFICRI</h2>
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
             <div class="input-icon">
@@ -101,6 +100,7 @@ const handleLogin = async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #f7f9fa;
 }
 .login-wrapper {
   flex: 1;
@@ -112,7 +112,7 @@ const handleLogin = async () => {
 .login-card {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.13);
   padding: 2.5rem 2.5rem 2rem 2.5rem;
   min-width: 350px;
   max-width: 420px;
@@ -120,30 +120,23 @@ const handleLogin = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: box-shadow 0.2s;
+}
+.login-card:hover {
+  box-shadow: 0 8px 32px rgba(44, 62, 80, 0.18);
 }
 .login-avatar {
-  width: 80px;
-  height: 80px;
-  background: #2dc76d22;
-  border-radius: 50%;
+  width: 110px;
+  height: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
-  color: #0f492e;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 .login-avatar img {
-  width: 60px;
-  height: 60px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
-}
-h2 {
-  margin-bottom: 1.5rem;
-  color: #0f492e;
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-align: center;
 }
 .login-form {
   width: 100%;
@@ -166,16 +159,16 @@ h2 {
 }
 .input-icon input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
-  border: 2px solid #e1e1e1;
+  padding: 0.7rem 0.7rem 0.7rem 2.5rem;
+  border: 1px solid #e1e1e1;
   border-radius: 8px;
   font-size: 1rem;
-  background: rgba(255, 255, 255, 0.9);
+  background: #fafbfa;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 .input-icon input:focus {
-  border-color: #2dc76d;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(45, 199, 109, 0.1);
+  border: 1.5px solid #2dc76d;
+  box-shadow: 0 0 0 2px #2dc76d22;
 }
 .input-icon i:last-child {
   left: auto;
@@ -184,22 +177,22 @@ h2 {
   color: #0f492e;
 }
 .btn-login {
-  width: 100%;
-  padding: 1rem;
-  background: #2dc76d;
-  color: white;
+  background: #14532d;
+  color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
+  padding: 0.7rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  width: 100%;
+  transition: background 0.2s, box-shadow 0.2s, filter 0.2s;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
 }
-.btn-login:hover:not(:disabled) {
-  background: #0f492e;
-  transform: translateY(-1px);
+.btn-login:hover {
+  background: #218838;
+  filter: brightness(1.08);
+  box-shadow: 0 4px 16px rgba(44, 62, 80, 0.13);
 }
 .btn-login:disabled {
   opacity: 0.7;
@@ -220,13 +213,18 @@ h2 {
   }
 }
 .error-message {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #d32f2f;
-  font-size: 0.95rem;
+  color: #e74c3c;
+  background: #fbe9e7;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-top: 0.7rem;
+  font-size: 0.98rem;
   text-align: center;
+}
+@media (max-width: 600px) {
+  .login-card {
+    min-width: 90vw;
+    padding: 1.2rem 0.7rem 1rem 0.7rem;
+  }
 }
 </style> 

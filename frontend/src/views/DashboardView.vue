@@ -15,9 +15,24 @@ import WidgetCard from '../components/WidgetCard.vue'
 import PanelActividad from '../components/PanelActividad.vue'
 import PanelPendientes from '../components/PanelPendientes.vue'
 import { useAuthStore } from '../stores/auth'
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import axios from 'axios'
 
 const authStore = useAuthStore()
+const metrics = ref({ totalDocs: 0, pendientes: 0 })
+const loading = ref(true)
+const token = computed(() => authStore.token)
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/dashboard/metrics', {
+      headers: { Authorization: `Bearer ${token.value}` }
+    })
+    metrics.value = res.data
+  } finally {
+    loading.value = false
+  }
+})
 
 const widgets = computed(() => {
   if (!authStore.user) return []
@@ -25,20 +40,21 @@ const widgets = computed(() => {
   if (rol.includes('admin')) {
     return [
       { label: 'USUARIOS ACTIVOS', value: 0 },
-      { label: 'DOCUMENTOS PENDIENTES', value: 0 },
+      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
+      { label: 'DOCUMENTOS REGISTRADOS', value: metrics.value.totalDocs },
       { label: 'ÁREAS ACTIVAS', value: 0 },
     ]
   }
   if (rol.includes('mesa')) {
     return [
-      { label: 'DOCUMENTOS PENDIENTES', value: 0 },
+      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
       { label: 'DOCUMENTOS DERIVADOS', value: 0 },
     ]
   }
   if (rol.includes('responsable')) {
     return [
       { label: 'DOCUMENTOS DE MI ÁREA', value: 0 },
-      { label: 'DOCUMENTOS PENDIENTES', value: 0 },
+      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
     ]
   }
   return []
