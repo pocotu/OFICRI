@@ -1,7 +1,7 @@
 <template>
   <div class="usuarios-view">
     <h1 class="main-title"><i class="fa-solid fa-users"></i> Gestión de Usuarios</h1>
-    <p class="subtitle">Administra los usuarios del sistema de forma segura y eficiente.</p>
+    <p class="subtitle">Administra los usuarios del sistema.</p>
     <div v-if="!puedeVer">
       <div class="alert alert-danger">No tienes permisos para ver esta sección.</div>
     </div>

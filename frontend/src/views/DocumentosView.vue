@@ -226,9 +226,9 @@ async function guardarDocumento() {
     })
     
     await createDocumento(formData, token)
-    mostrarForm.value = false
+  mostrarForm.value = false
     archivosSeleccionados.value = []
-    cargarDocumentos()
+  cargarDocumentos()
   } catch (error) {
     alert('Error al guardar el documento: ' + (error.response?.data?.message || error.message))
   }

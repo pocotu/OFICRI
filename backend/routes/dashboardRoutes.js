@@ -15,18 +15,14 @@ class DashboardMetricsService {
 
   async getPendientes() {
     const [[{ pendientes }]] = await this.pool.query(
-      `SELECT COUNT(*) AS pendientes FROM Documento d
-       JOIN EstadoDocumento e ON d.IDEstado = e.IDEstado
-       WHERE e.NombreEstado = 'En trámite'`
+      `SELECT COUNT(*) AS pendientes FROM Documento WHERE Estado = 'En trámite'`
     );
     return pendientes;
   }
 
   async getDerivados() {
     const [[{ derivados }]] = await this.pool.query(
-      `SELECT COUNT(*) AS derivados FROM Documento d
-       JOIN EstadoDocumento e ON d.IDEstado = e.IDEstado
-       WHERE e.NombreEstado = 'Derivado'`
+      `SELECT COUNT(*) AS derivados FROM Documento WHERE Estado = 'Derivado'`
     );
     return derivados;
   }
