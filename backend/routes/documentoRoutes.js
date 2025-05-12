@@ -34,4 +34,20 @@ router.post('/', requireCrearDocumento, async (req, res) => {
   res.status(201).json(doc);
 });
 
+// GET /api/documentos/:id/trazabilidad
+router.get('/:id/trazabilidad', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ message: 'No token provided' });
+  const token = auth.split(' ')[1];
+  const user = await getUserFromToken(token);
+  if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+  // Aquí podrías agregar lógica de permisos si es necesario
+  try {
+    const eventos = await documentoService.getTrazabilidadById(req.params.id);
+    res.json(eventos);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener trazabilidad', error: err.message });
+  }
+});
+
 module.exports = router; 

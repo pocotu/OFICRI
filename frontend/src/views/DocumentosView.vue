@@ -89,15 +89,21 @@
     <div class="card docs-table-wrapper">
       <ResponsiveWrapper :documentos="documentos" :areas="areas" :estados="ESTADOS_DOCUMENTO" />
     </div>
+    <Modal v-if="mostrarTrazabilidad" @close="cerrarTrazabilidad">
+      <TrazabilidadView />
+    </Modal>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchDocumentos, createDocumento } from '../api/documentoApi'
 import { fetchAreasActivas } from '../api/areaApi'
 import ResponsiveWrapper from '../components/ResponsiveWrapper.vue'
+import { useRoute, useRouter } from 'vue-router'
+import Modal from '../components/Modal.vue'
+import TrazabilidadView from './documentos/TrazabilidadView.vue'
 
 const authStore = useAuthStore()
 const token = authStore.token
@@ -167,6 +173,14 @@ onMounted(() => {
   cargarDocumentos()
   cargarAreas()
 })
+
+const route = useRoute()
+const router = useRouter()
+const mostrarTrazabilidad = computed(() => route.name === 'documentos-trazabilidad')
+
+function cerrarTrazabilidad() {
+  router.push({ name: 'documentos' })
+}
 </script>
 
 <style scoped>

@@ -123,6 +123,9 @@
             <template v-else>
               <button class="action-btn" @click="$emit('show-details', doc)"><i class="fa-solid fa-eye"></i></button>
               <button class="action-btn edit" @click="startEdit(doc)"><i class="fa-solid fa-pen"></i></button>
+              <button class="action-btn trace" @click="verTrazabilidad(doc.IDDocumento)" :title="'Ver trazabilidad del documento #' + doc.NroRegistro">
+                <i class="fa-solid fa-route"></i>
+              </button>
             </template>
           </td>
         </tr>
@@ -135,6 +138,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { updateDocumento } from '../api/documentoApi'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   documentos: {
@@ -155,6 +159,7 @@ const props = defineProps({
 
 const authStore = useAuthStore()
 const token = authStore.token
+const router = useRouter()
 
 const editRowId = ref(null)
 const editRowData = ref({})
@@ -191,6 +196,17 @@ function fechaDesglosada(fecha) {
 
 const areaOptions = computed(() => props.areas || [])
 const estadoOptions = computed(() => props.estados || [])
+
+function verTrazabilidad(id) {
+  if (!id || isNaN(Number(id))) {
+    alert('ID de documento no válido para trazabilidad.')
+    return
+  }
+  router.push({ 
+    name: 'documentos-trazabilidad', 
+    query: { id: String(id) }
+  })
+}
 </script>
 
 <style scoped>
@@ -279,5 +295,11 @@ const estadoOptions = computed(() => props.estados || [])
 }
 .action-btn.cancel:hover {
   background: #c0392b;
+}
+.action-btn.trace {
+  background: #2dc76d;
+}
+.action-btn.trace:hover {
+  background: #22a55e;
 }
 </style> 
