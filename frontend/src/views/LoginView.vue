@@ -4,7 +4,7 @@
     <div class="login-wrapper">
       <div class="login-card">
         <div class="login-avatar">
-          <img src="../assets/img/logoOficri2x2.png" alt="OFICRI Logo" />
+          <img src="../assets/img/logoOficri2x2.png" alt="OFICRI Logo" style="width: 140px; height: 140px;" />
         </div>
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
@@ -36,6 +36,12 @@
                 @click="showPassword = !showPassword"
               ></i>
             </div>
+          </div>
+          <div class="form-group" style="margin-top: -0.8rem; margin-bottom: -0.5rem;">
+            <label style="display: flex; align-items: center; font-size: 0.98rem; cursor: pointer;">
+              <input type="checkbox" v-model="rememberMe" style="margin-right: 8px;" />
+              Recordar contraseña
+            </label>
           </div>
           <button 
             type="submit" 
@@ -126,16 +132,16 @@ const handleLogin = async () => {
   box-shadow: 0 8px 32px rgba(44, 62, 80, 0.18);
 }
 .login-avatar {
-  width: 110px;
-  height: 110px;
+  width: 150px;
+  height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 1.5rem;
 }
 .login-avatar img {
-  width: 100px;
-  height: 100px;
+  width: 140px;
+  height: 140px;
   object-fit: contain;
 }
 .login-form {

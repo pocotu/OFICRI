@@ -3,6 +3,7 @@
     <table class="table">
       <thead>
         <tr>
+          <th>Acciones</th>
           <th>Nro Registro</th>
           <th>Fecha Ingreso</th>
           <th class="hide-mobile">Tipo Doc</th>
@@ -15,11 +16,23 @@
           <th class="hide-mobile">Fecha Salida</th>
           <th class="hide-mobile">Observaciones</th>
           <th class="hide-mobile">Estado</th>
-          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="doc in documentosPaginados" :key="doc.IDDocumento">
+          <td>
+            <template v-if="editRowId === doc.IDDocumento">
+              <button class="action-btn save" @click="saveEdit(doc)"><i class="fa-solid fa-check"></i></button>
+              <button class="action-btn cancel" @click="cancelEdit"><i class="fa-solid fa-xmark"></i></button>
+            </template>
+            <template v-else>
+              <button class="action-btn" @click="$emit('show-details', doc)"><i class="fa-solid fa-eye"></i></button>
+              <button class="action-btn edit" @click="startEdit(doc)"><i class="fa-solid fa-pen"></i></button>
+              <button class="action-btn trace" @click="verTrazabilidad(doc.IDDocumento)" :title="'Ver trazabilidad del documento #' + doc.NroRegistro">
+                <i class="fa-solid fa-route"></i>
+              </button>
+            </template>
+          </td>
           <td>{{ doc.NroRegistro }}</td>
           <td>
             <template v-if="editRowId === doc.IDDocumento">
@@ -113,19 +126,6 @@
             </template>
             <template v-else>
               {{ doc.EstadoNombre || 'Desconocido' }}
-            </template>
-          </td>
-          <td>
-            <template v-if="editRowId === doc.IDDocumento">
-              <button class="action-btn save" @click="saveEdit(doc)"><i class="fa-solid fa-check"></i></button>
-              <button class="action-btn cancel" @click="cancelEdit"><i class="fa-solid fa-xmark"></i></button>
-            </template>
-            <template v-else>
-              <button class="action-btn" @click="$emit('show-details', doc)"><i class="fa-solid fa-eye"></i></button>
-              <button class="action-btn edit" @click="startEdit(doc)"><i class="fa-solid fa-pen"></i></button>
-              <button class="action-btn trace" @click="verTrazabilidad(doc.IDDocumento)" :title="'Ver trazabilidad del documento #' + doc.NroRegistro">
-                <i class="fa-solid fa-route"></i>
-              </button>
             </template>
           </td>
         </tr>
