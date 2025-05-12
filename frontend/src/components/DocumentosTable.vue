@@ -1,5 +1,5 @@
 <template>
-  <div class="table-responsive">
+  <div class="table-responsive table-scroll-vertical">
     <table class="table">
       <thead>
         <tr>
@@ -19,7 +19,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="doc in documentos" :key="doc.IDDocumento">
+        <tr v-for="doc in documentosPaginados" :key="doc.IDDocumento">
           <td>{{ doc.NroRegistro }}</td>
           <td>
             <template v-if="editRowId === doc.IDDocumento">
@@ -131,6 +131,11 @@
         </tr>
       </tbody>
     </table>
+    <div class="pagination-bar">
+      <button class="pagination-btn" :disabled="currentPage === 1" @click="prevPage">&lt;</button>
+      <button v-for="page in totalPages" :key="page" class="pagination-btn" :class="{ active: page === currentPage }" @click="goToPage(page)">{{ page }}</button>
+      <button class="pagination-btn" :disabled="currentPage === totalPages" @click="nextPage">&gt;</button>
+    </div>
   </div>
 </template>
 
@@ -163,6 +168,28 @@ const router = useRouter()
 
 const editRowId = ref(null)
 const editRowData = ref({})
+
+// PAGINACIÓN
+const pageSize = 10
+const currentPage = ref(1)
+const totalPages = computed(() => Math.ceil(props.documentos.length / pageSize))
+const documentosPaginados = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return props.documentos.slice(start, start + pageSize)
+})
+
+function goToPage(page) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--
+}
 
 function startEdit(doc) {
   editRowId.value = doc.IDDocumento
@@ -214,6 +241,11 @@ function verTrazabilidad(id) {
   width: 100%;
   overflow-x: auto;
   margin-bottom: 1rem;
+}
+
+.table-scroll-vertical {
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .table {
@@ -301,5 +333,52 @@ function verTrazabilidad(id) {
 }
 .action-btn.trace:hover {
   background: #22a55e;
+}
+
+/* Paginación */
+.pagination-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 1rem 0 0.5rem 0;
+}
+.pagination-btn {
+  background: #fff;
+  border: 1.5px solid #2dc76d;
+  color: #14532d;
+  border-radius: 6px;
+  padding: 0.3rem 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.pagination-btn.active, .pagination-btn:hover {
+  background: #2dc76d;
+  color: #fff;
+}
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .table {
+    min-width: 700px;
+    font-size: 0.95rem;
+  }
+  .table th, .table td {
+    padding: 0.5rem;
+  }
+}
+@media (max-width: 600px) {
+  .table {
+    min-width: 500px;
+    font-size: 0.9rem;
+  }
+  .table th, .table td {
+    padding: 0.35rem;
+  }
 }
 </style> 
