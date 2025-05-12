@@ -38,4 +38,7 @@ package-lock.json
 yarn.lock
 
 # Archivos de configuración local
-*.local 
+*.local
+
+# Editor
+.cursorignore

@@ -12,7 +12,10 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces"
+    "test": "npm run test --workspaces",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:frontend": "npm run preview --workspace=frontend",
+    "start:backend": "node backend/src/index.js"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0",
