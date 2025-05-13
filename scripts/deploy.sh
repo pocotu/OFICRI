@@ -6,6 +6,8 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+set -e
+
 echo -e "${GREEN}Iniciando proceso de despliegue...${NC}"
 
 # Verificar que las variables de entorno necesarias estén configuradas
@@ -20,22 +22,18 @@ fi
 # Verificar que el archivo .env existe
 if [ ! -f .env ]; then
     echo -e "${RED}Error: El archivo .env no existe${NC}"
-    echo -e "${YELLOW}Por favor, crea un archivo .env con las siguientes variables:${NC}"
-    echo -e "DB_HOST=tu_host_db"
-    echo -e "DB_USER=tu_usuario_db"
-    echo -e "DB_PASSWORD=tu_password_db"
-    echo -e "DB_NAME=tu_nombre_db"
-    echo -e "JWT_SECRET=tu_secret_jwt"
-    echo -e "CORS_ORIGIN=http://tu_dominio"
+    echo -e "${YELLOW}Por favor, crea un archivo .env con las variables correctas de producción.${NC}"
     exit 1
 fi
 
 # Construir el frontend
+cd $(dirname $0)/..
 echo -e "${GREEN}Construyendo el frontend...${NC}"
+npm install
 npm run build --workspace=frontend
 
 # Verificar que la build fue exitosa
-if [ $? -ne 0 ]; then
+if [ ! -d frontend/dist ]; then
     echo -e "${RED}Error: La build del frontend falló${NC}"
     exit 1
 fi
@@ -44,56 +42,54 @@ fi
 echo -e "${GREEN}Verificando acceso SSH a la droplet...${NC}"
 ssh -o BatchMode=yes -o ConnectTimeout=5 root@$DROPLET_IP echo "Conexión SSH exitosa" || {
     echo -e "${RED}Error: No se pudo conectar a la droplet${NC}"
-    echo -e "${YELLOW}Verifica que:${NC}"
-    echo -e "1. La IP de la droplet es correcta"
-    echo -e "2. Tienes acceso SSH configurado"
-    echo -e "3. El firewall permite conexiones SSH"
     exit 1
 }
 
-# Configurar el servidor
-echo -e "${GREEN}Configurando el servidor...${NC}"
-ssh root@$DROPLET_IP << 'EOF'
-    # Actualizar el sistema
-    apt-get update && apt-get upgrade -y
+# Subir archivos al servidor (sin node_modules ni dist locales)
+echo -e "${GREEN}Subiendo archivos al servidor...${NC}"
+rsync -avz --exclude 'node_modules' --exclude 'frontend/node_modules' --exclude 'backend/node_modules' --exclude '.env' --exclude '.git' ./ root@$DROPLET_IP:/var/www/OFICRI/
 
-    # Instalar Node.js y npm si no están instalados
-    if ! command -v node &> /dev/null; then
-        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-        apt-get install -y nodejs
+# Configurar y reiniciar servicios en la droplet
+ssh root@$DROPLET_IP << 'EOF'
+    set -e
+    cd /var/www/OFICRI
+
+    # Instalar dependencias
+    npm install
+
+    # Construir el frontend en la droplet (por si hay dependencias nativas)
+    npm run build --workspace=frontend
+
+    # Dar permisos correctos
+    chown -R www-data:www-data /var/www/OFICRI
+    chmod -R 755 /var/www/OFICRI
+
+    # Instalar PM2 globalmente si no está
+    if ! command -v pm2 &> /dev/null; then
+        npm install -g pm2
     fi
 
-    # Instalar PM2 globalmente
-    npm install -g pm2
-
-    # Crear directorio de la aplicación si no existe
-    mkdir -p /var/www/oficri
+    # Iniciar backend en modo fork (más seguro para MySQL)
+    pm2 delete oficri-backend || true
+    pm2 start backend/src/index.js --name oficri-backend
+    pm2 save
 
     # Configurar Nginx
-    apt-get install -y nginx
     cat > /etc/nginx/sites-available/oficri << 'NGINX'
 server {
     listen 80;
     server_name _;
 
-    # Configuración de seguridad básica
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
     add_header X-Content-Type-Options "nosniff";
 
-    # Configuración de logs
     access_log /var/log/nginx/oficri.access.log;
     error_log /var/log/nginx/oficri.error.log;
 
     location / {
-        root /var/www/oficri/frontend/dist;
+        root /var/www/OFICRI/frontend/dist;
         try_files $uri $uri/ /index.html;
-        
-        # Configuración de caché para archivos estáticos
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-            expires 30d;
-            add_header Cache-Control "public, no-transform";
-        }
     }
 
     location /api {
@@ -103,8 +99,6 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
-        
-        # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
@@ -112,7 +106,6 @@ server {
 }
 NGINX
 
-    # Habilitar el sitio
     ln -sf /etc/nginx/sites-available/oficri /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
     nginx -t && systemctl restart nginx
@@ -124,22 +117,11 @@ NGINX
 
     # Configurar logs de PM2
     mkdir -p /var/log/pm2
-    pm2 install pm2-logrotate
+    pm2 install pm2-logrotate || true
     pm2 set pm2-logrotate:max_size 10M
     pm2 set pm2-logrotate:retain 7
 EOF
 
-# Desplegar la aplicación
-echo -e "${GREEN}Desplegando la aplicación...${NC}"
-pm2 deploy ecosystem.config.js production
-
-# Verificar el estado del despliegue
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}¡Despliegue completado exitosamente!${NC}"
-    echo -e "${GREEN}La aplicación está disponible en: http://$DROPLET_IP${NC}"
-    echo -e "${YELLOW}Recuerda configurar un dominio y SSL para producción${NC}"
-else
-    echo -e "${RED}Error en el despliegue${NC}"
-    echo -e "${YELLOW}Revisa los logs de PM2 para más detalles:${NC}"
-    echo -e "pm2 logs"
-fi 
+echo -e "${GREEN}¡Despliegue completado exitosamente!${NC}"
+echo -e "${GREEN}La aplicación está disponible en: http://$DROPLET_IP${NC}"
+echo -e "${YELLOW}Recuerda configurar un dominio y SSL para producción${NC}" 
