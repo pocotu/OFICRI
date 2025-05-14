@@ -3,6 +3,7 @@ const router = express.Router();
 const userService = require('../services/userService');
 const auditService = require('../services/auditService');
 const axios = require('axios');
+const ClientIpExtractor = require('../utils/ClientIpExtractor');
 
 async function getIpInfo(ip) {
   try {
@@ -30,16 +31,6 @@ async function getIpInfo(ip) {
   } catch {
     return {};
   }
-}
-
-function getClientIp(req) {
-  const ip = req.ip || req.connection?.remoteAddress || '';
-  if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') {
-    // IP pública de ejemplo para desarrollo
-    return '8.8.8.8';
-  }
-  // Quitar prefijo IPv6 si existe
-  return ip.replace('::ffff:', '');
 }
 
 // GET /api/usuarios
@@ -74,12 +65,34 @@ router.post('/', async (req, res) => {
     const newUserId = await userService.createUser({ cip, nombres, apellidos, grado, password, idArea, idRol });
     // Log de auditoría enriquecido
     let ipInfo = {};
-    const clientIp = getClientIp(req);
-    ipInfo = await getIpInfo(clientIp);
+    const clientIp = ClientIpExtractor.getClientIp(req);
+    if (clientIp) {
+      ipInfo = await getIpInfo(clientIp);
+    } else {
+      ipInfo = {
+        IPCountry: 'Local/Desconocido',
+        IPCountryCode: 'XX',
+        IPRegion: 'Local',
+        IPRegionName: 'Local',
+        IPCity: 'Local',
+        IPZip: null,
+        IPLat: null,
+        IPLon: null,
+        IPTimezone: null,
+        IPISP: null,
+        IPOrg: null,
+        IPAs: null,
+        IPHostname: null,
+        IPIsProxy: null,
+        IPIsVPN: null,
+        IPIsTor: null,
+        DispositivoInfo: null
+      };
+    }
     await auditService.logUsuario({
       IDUsuario: user.IDUsuario,
       TipoEvento: 'CREAR_USUARIO',
-      IPOrigen: clientIp,
+      IPOrigen: clientIp || 'localhost',
       Exitoso: true,
       ipInfo
     });
@@ -126,12 +139,34 @@ router.patch('/:id/bloqueo', async (req, res) => {
     await userService.setBloqueoUsuario(id, bloquear);
     // Log de auditoría enriquecido
     let ipInfo = {};
-    const clientIp = getClientIp(req);
-    ipInfo = await getIpInfo(clientIp);
+    const clientIp = ClientIpExtractor.getClientIp(req);
+    if (clientIp) {
+      ipInfo = await getIpInfo(clientIp);
+    } else {
+      ipInfo = {
+        IPCountry: 'Local/Desconocido',
+        IPCountryCode: 'XX',
+        IPRegion: 'Local',
+        IPRegionName: 'Local',
+        IPCity: 'Local',
+        IPZip: null,
+        IPLat: null,
+        IPLon: null,
+        IPTimezone: null,
+        IPISP: null,
+        IPOrg: null,
+        IPAs: null,
+        IPHostname: null,
+        IPIsProxy: null,
+        IPIsVPN: null,
+        IPIsTor: null,
+        DispositivoInfo: null
+      };
+    }
     await auditService.logUsuario({
       IDUsuario: user.IDUsuario,
       TipoEvento: bloquear ? 'BLOQUEAR_USUARIO' : 'DESBLOQUEAR_USUARIO',
-      IPOrigen: clientIp,
+      IPOrigen: clientIp || 'localhost',
       Exitoso: true,
       ipInfo
     });
@@ -155,12 +190,34 @@ router.delete('/:id', async (req, res) => {
     await userService.deleteUser(id);
     // Log de auditoría enriquecido
     let ipInfo = {};
-    const clientIp = getClientIp(req);
-    ipInfo = await getIpInfo(clientIp);
+    const clientIp = ClientIpExtractor.getClientIp(req);
+    if (clientIp) {
+      ipInfo = await getIpInfo(clientIp);
+    } else {
+      ipInfo = {
+        IPCountry: 'Local/Desconocido',
+        IPCountryCode: 'XX',
+        IPRegion: 'Local',
+        IPRegionName: 'Local',
+        IPCity: 'Local',
+        IPZip: null,
+        IPLat: null,
+        IPLon: null,
+        IPTimezone: null,
+        IPISP: null,
+        IPOrg: null,
+        IPAs: null,
+        IPHostname: null,
+        IPIsProxy: null,
+        IPIsVPN: null,
+        IPIsTor: null,
+        DispositivoInfo: null
+      };
+    }
     await auditService.logUsuario({
       IDUsuario: user.IDUsuario,
       TipoEvento: 'ELIMINAR_USUARIO',
-      IPOrigen: clientIp,
+      IPOrigen: clientIp || 'localhost',
       Exitoso: true,
       ipInfo
     });

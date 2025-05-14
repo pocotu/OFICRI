@@ -13,6 +13,7 @@ const dashboardRoutes = require('../routes/dashboardRoutes');
 const app = express();
 
 // Middleware
+app.set('trust proxy', true);
 app.use(cors(config.cors));
 app.use(express.json());
 

@@ -4,6 +4,7 @@ const userService = require('../services/userService');
 const jwt = require('jsonwebtoken');
 const auditService = require('../services/auditService');
 const axios = require('axios');
+const ClientIpExtractor = require('../utils/ClientIpExtractor');
 
 async function getIpInfo(ip) {
   try {
@@ -37,16 +38,6 @@ async function getIpInfo(ip) {
   }
 }
 
-function getClientIp(req) {
-  const ip = req.ip || req.connection?.remoteAddress || '';
-  if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') {
-    // IP pública de ejemplo para desarrollo
-    return '8.8.8.8';
-  }
-  // Quitar prefijo IPv6 si existe
-  return ip.replace('::ffff:', '');
-}
-
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   const { cip, password } = req.body;
@@ -56,16 +47,37 @@ router.post('/login', async (req, res) => {
   
   // Obtener info enriquecida de IP
   let ipInfo = {};
-  const clientIp = getClientIp(req);
-  ipInfo = await getIpInfo(clientIp);
-  
+  const clientIp = ClientIpExtractor.getClientIp(req);
+  if (clientIp) {
+    ipInfo = await getIpInfo(clientIp);
+  } else {
+    ipInfo = {
+      IPCountry: 'Local/Desconocido',
+      IPCountryCode: 'XX',
+      IPRegion: 'Local',
+      IPRegionName: 'Local',
+      IPCity: 'Local',
+      IPZip: null,
+      IPLat: null,
+      IPLon: null,
+      IPTimezone: null,
+      IPISP: null,
+      IPOrg: null,
+      IPAs: null,
+      IPHostname: null,
+      IPIsProxy: null,
+      IPIsVPN: null,
+      IPIsTor: null,
+      DispositivoInfo: null
+    };
+  }
   // Solo registrar log si el login fue exitoso
   if (!result.error && user) {
     try {
       await auditService.logUsuario({
         IDUsuario: user.IDUsuario,
         TipoEvento: 'LOGIN',
-        IPOrigen: clientIp,
+        IPOrigen: clientIp || 'localhost',
         Exitoso: true,
         ipInfo
       });
@@ -120,12 +132,34 @@ router.post('/logout', async (req, res) => {
     const user = await userService.getUserFromToken(token);
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
     let ipInfo = {};
-    const clientIp = getClientIp(req);
-    ipInfo = await getIpInfo(clientIp);
+    const clientIp = ClientIpExtractor.getClientIp(req);
+    if (clientIp) {
+      ipInfo = await getIpInfo(clientIp);
+    } else {
+      ipInfo = {
+        IPCountry: 'Local/Desconocido',
+        IPCountryCode: 'XX',
+        IPRegion: 'Local',
+        IPRegionName: 'Local',
+        IPCity: 'Local',
+        IPZip: null,
+        IPLat: null,
+        IPLon: null,
+        IPTimezone: null,
+        IPISP: null,
+        IPOrg: null,
+        IPAs: null,
+        IPHostname: null,
+        IPIsProxy: null,
+        IPIsVPN: null,
+        IPIsTor: null,
+        DispositivoInfo: null
+      };
+    }
     await auditService.logUsuario({
       IDUsuario: user.IDUsuario,
       TipoEvento: 'LOGOUT',
-      IPOrigen: clientIp,
+      IPOrigen: clientIp || 'localhost',
       Exitoso: true,
       ipInfo
     });
