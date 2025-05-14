@@ -5,11 +5,22 @@ const areaModel = require('../models/areaModel');
 const UserModel = require('../models/userModel');
 const pool = require('../db');
 
+class RegistroNumberGenerator {
+  constructor() {
+    this.counter = 1000; // Empezamos desde 1000
+  }
+
+  getNextNumber() {
+    return (this.counter++).toString();
+  }
+}
+
 class DocumentoFactory {
   constructor(areaModel, userModel, pool) {
     this.areaModel = areaModel;
     this.userModel = userModel;
     this.pool = pool;
+    this.registroGenerator = new RegistroNumberGenerator();
   }
 
   async getRandomMesaPartesId() {
@@ -35,7 +46,7 @@ class DocumentoFactory {
       IDMesaPartes: await this.getRandomMesaPartesId(),
       IDAreaActual: await this.getRandomAreaId(),
       IDUsuarioCreador: await this.getRandomUsuarioId(),
-      NroRegistro: faker.number.int({ min: 1000, max: 9999 }).toString(),
+      NroRegistro: this.registroGenerator.getNextNumber(),
       NumeroOficioDocumento: `OF-${faker.number.int({ min: 100, max: 999 })}`,
       OrigenDocumento: faker.helpers.arrayElement(['OF', 'ME', 'IN']),
       Contenido: faker.lorem.sentence(),
