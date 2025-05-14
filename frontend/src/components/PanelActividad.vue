@@ -2,13 +2,25 @@
   <div class="panel">
     <div class="panel-title">Actividad Reciente</div>
     <div class="panel-content">
-      <slot> Cargando actividad reciente... </slot>
+      <ul v-if="actividad && actividad.length">
+        <li v-for="item in actividad" :key="item.IDLog">
+          <strong>{{ item.TipoEvento }}</strong> por {{ item.Usuario }} ({{ item.IPOrigen }}) - {{ new Date(item.FechaEvento).toLocaleString() }}
+        </li>
+      </ul>
+      <p v-else>No hay actividad reciente.</p>
     </div>
   </div>
 </template>
 
 <script setup>
-// Este componente puede recibir datos por slot o props
+import { defineProps } from 'vue';
+
+defineProps({
+  actividad: {
+    type: Array,
+    default: () => []
+  }
+});
 </script>
 
 <style scoped>
@@ -37,5 +49,14 @@
 .panel-content {
   color: #263238;
   font-size: 1rem;
+}
+.panel-content ul {
+  list-style: none;
+  padding: 0;
+}
+.panel-content li {
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
 }
 </style> 

@@ -4,8 +4,8 @@
       <WidgetCard v-for="widget in widgets" :key="widget.label" :value="widget.value" :label="widget.label" />
     </div>
     <div class="dashboard-panels">
-      <PanelActividad />
-      <PanelPendientes />
+      <PanelActividad :actividad="actividadReciente" />
+      <PanelPendientes :documentos="documentosPendientes" />
     </div>
   </div>
 </template>
@@ -16,7 +16,7 @@ import PanelActividad from '../components/PanelActividad.vue'
 import PanelPendientes from '../components/PanelPendientes.vue'
 import { useAuthStore } from '../stores/auth'
 import { computed, ref, onMounted } from 'vue'
-import axios from 'axios'
+import { fetchDashboardMetrics, fetchActividadReciente, fetchDocumentosPendientes } from '../api/dashboardApi';
 
 const authStore = useAuthStore()
 const metrics = ref({
@@ -26,15 +26,23 @@ const metrics = ref({
   usuariosActivos: 0,
   areasActivas: 0
 })
+const actividadReciente = ref([]);
+const documentosPendientes = ref([]);
 const loading = ref(true)
 const token = computed(() => authStore.token)
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/dashboard/metrics', {
-      headers: { Authorization: `Bearer ${token.value}` }
-    })
-    metrics.value = res.data
+    const [metricsRes, actividadRes, pendientesRes] = await Promise.all([
+      fetchDashboardMetrics(token.value),
+      fetchActividadReciente(token.value),
+      fetchDocumentosPendientes(token.value)
+    ]);
+    metrics.value = metricsRes.data;
+    actividadReciente.value = actividadRes.data;
+    documentosPendientes.value = pendientesRes.data;
+  } catch (error) {
+    console.error("Error al cargar datos del dashboard:", error);
   } finally {
     loading.value = false
   }
@@ -76,6 +84,12 @@ const widgets = computed(() => {
 .dashboard-panels {
   display: flex;
   gap: 2rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+.panel {
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 600px;
 }
 </style> 

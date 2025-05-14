@@ -40,6 +40,32 @@ class DashboardMetricsService {
     );
     return areasActivas;
   }
+
+  // Actividad reciente: últimos 10 logs de usuario
+  async getActividadReciente() {
+    const [rows] = await this.pool.query(
+      `SELECT l.IDLog, l.TipoEvento, l.FechaEvento, u.Nombres AS Usuario, l.IPOrigen
+       FROM UsuarioLog l
+       JOIN Usuario u ON l.IDUsuario = u.IDUsuario
+       ORDER BY l.FechaEvento DESC
+       LIMIT 10`
+    );
+    return rows;
+  }
+
+  // Documentos pendientes: últimos 10 documentos en trámite
+  async getDocumentosPendientes() {
+    const [rows] = await this.pool.query(
+      `SELECT d.IDDocumento, d.NroRegistro, d.FechaDocumento, d.Contenido, a.NombreArea, u.Nombres AS Usuario
+       FROM Documento d
+       JOIN AreaEspecializada a ON d.IDAreaActual = a.IDArea
+       JOIN Usuario u ON d.IDUsuarioCreador = u.IDUsuario
+       WHERE d.Estado = 'En trámite'
+       ORDER BY d.FechaDocumento DESC
+       LIMIT 10`
+    );
+    return rows;
+  }
 }
 
 const metricsService = new DashboardMetricsService(pool);
@@ -63,6 +89,26 @@ router.get('/metrics', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener métricas', error: err.message });
+  }
+});
+
+// GET /api/dashboard/actividad-reciente
+router.get('/actividad-reciente', async (req, res) => {
+  try {
+    const actividad = await metricsService.getActividadReciente();
+    res.json(actividad);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener actividad reciente', error: err.message });
+  }
+});
+
+// GET /api/dashboard/documentos-pendientes
+router.get('/documentos-pendientes', async (req, res) => {
+  try {
+    const docs = await metricsService.getDocumentosPendientes();
+    res.json(docs);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener documentos pendientes', error: err.message });
   }
 });
 

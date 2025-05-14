@@ -2,13 +2,25 @@
   <div class="panel">
     <div class="panel-title">Documentos Pendientes</div>
     <div class="panel-content">
-      <slot> Cargando documentos pendientes... </slot>
+      <ul v-if="documentos && documentos.length">
+        <li v-for="doc in documentos" :key="doc.IDDocumento">
+          <strong>{{ doc.NroRegistro }}</strong> ({{ doc.NombreArea }}) - {{ doc.Contenido.substring(0, 50) }}...
+        </li>
+      </ul>
+      <p v-else>No hay documentos pendientes.</p>
     </div>
   </div>
 </template>
 
 <script setup>
-// Este componente puede recibir datos por slot o props
+import { defineProps } from 'vue';
+
+defineProps({
+  documentos: {
+    type: Array,
+    default: () => []
+  }
+});
 </script>
 
 <style scoped>
@@ -37,5 +49,14 @@
 .panel-content {
   color: #263238;
   font-size: 1rem;
+}
+.panel-content ul {
+  list-style: none;
+  padding: 0;
+}
+.panel-content li {
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
 }
 </style> 
