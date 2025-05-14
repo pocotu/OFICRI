@@ -1,6 +1,9 @@
 const pool = require('../db');
 const bcrypt = require('bcryptjs');
 
+// Constants
+const ADMIN_USER_ID = 10000000; // Special ID for admin user
+
 async function crearBase() {
   console.log('\n=== INICIANDO SCRIPT DE CREACIÓN DE BASE ===\n');
 
@@ -152,7 +155,7 @@ async function crearBase() {
   const cip = '12345678';
   const nombres = 'Pedro';
   const apellidos = 'Perez';
-  const grado = 'Teninete';
+  const grado = 'Teniente';
   const password = 'admin123';
 
   const [areaRow] = await pool.query(
@@ -171,16 +174,16 @@ async function crearBase() {
   if (userExists.length === 0) {
     const hash = await bcrypt.hash(password, 10);
     await pool.query(
-      "INSERT INTO Usuario (CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [cip, nombres, apellidos, grado, hash, idArea, idRol]
+      "INSERT INTO Usuario (IDUsuario, CodigoCIP, Nombres, Apellidos, Grado, PasswordHash, IDArea, IDRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [ADMIN_USER_ID, cip, nombres, apellidos, grado, hash, idArea, idRol]
     );
-    const [userRow] = await pool.query('SELECT IDUsuario FROM Usuario WHERE CodigoCIP = ?', [cip]);
-    idUsuarioAdmin = userRow[0].IDUsuario;
+    idUsuarioAdmin = ADMIN_USER_ID;
     await pool.query(
       'INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, FechaEvento, Exitoso) VALUES (?, ?, ?, NOW(), 1)',
       [idUsuarioAdmin, 'CREACION', '127.0.0.1']
     );
     console.log(`   ✓ Usuario administrador creado:`);
+    console.log(`     - ID: ${ADMIN_USER_ID}`);
     console.log(`     - CIP: ${cip}`);
     console.log(`     - Contraseña: ${password}`);
     console.log(`     - Nombre: ${nombres} ${apellidos}`);
