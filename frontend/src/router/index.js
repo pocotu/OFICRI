@@ -77,6 +77,12 @@ const router = createRouter({
               name: 'documentos-trazabilidad',
               component: () => import('../views/documentos/TrazabilidadView.vue'),
               meta: { requiresAuth: true }
+            },
+            {
+              path: 'papelera',
+              name: 'documentos-papelera',
+              component: () => import('../views/documentos/PapeleraView.vue'),
+              meta: { requiresAuth: true }
             }
           ]
         },

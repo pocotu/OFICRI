@@ -1,60 +1,243 @@
 const express = require('express');
 const router = express.Router();
 const areaService = require('../services/areaService');
-const { getUserFromToken } = require('../services/userService');
+const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware');
+const { requireView, requireAdmin } = require('../middleware/permissionMiddleware');
+const permissionService = require('../services/permissionService');
 
-// GET /api/areas/activas
+// GET /api/areas/activas - Public endpoint, no auth required
 router.get('/activas', async (req, res) => {
   const areas = await areaService.getActiveAreas();
   res.json(areas);
 });
 
-// GET /api/areas
-router.get('/', async (req, res) => {
-  const areas = await areaService.getAllAreas();
-  res.json(areas);
+// GET /api/areas - Requires authentication and VIEW permission
+router.get('/', authMiddleware, requireView, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM AreaEspecializada WHERE IsActive = TRUE'
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener áreas:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
-// GET /api/areas/:id
-router.get('/:id', async (req, res) => {
-  const area = await areaService.getAreaById(req.params.id);
-  if (!area) return res.status(404).json({ message: 'Área no encontrada' });
-  res.json(area);
+// GET /api/areas/:id - Requires authentication and VIEW permission
+router.get('/:id', authMiddleware, requireView, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM AreaEspecializada WHERE IDArea = ? AND IsActive = TRUE',
+      [req.params.id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Área no encontrada' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error al obtener área:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
-function requireAdmin(req, res, next) {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-  const token = auth.split(' ')[1];
-  getUserFromToken(token).then(user => {
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if ((user.Permisos & 128) !== 128) return res.status(403).json({ message: 'No autorizado' });
-    req.user = user;
-    next();
-  });
+// POST /api/areas - Requires authentication and ADMIN permission
+router.post('/', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { 
+      NombreArea,
+      CodigoIdentificacion,
+      TipoArea,
+      Descripcion
+    } = req.body;
+    
+    // Validar campos obligatorios
+    if (!NombreArea) {
+      return res.status(400).json({ message: 'El nombre del área es obligatorio' });
+    }
+    
+    // Verificar si el área ya existe
+    const [existingArea] = await pool.query(
+      'SELECT 1 FROM AreaEspecializada WHERE NombreArea = ?',
+      [NombreArea]
+    );
+    
+    if (existingArea.length > 0) {
+      return res.status(400).json({ message: 'Ya existe un área con ese nombre' });
 }
 
-// POST /api/areas
-router.post('/', requireAdmin, async (req, res) => {
-  const { NombreArea, CodigoIdentificacion, TipoArea, Descripcion } = req.body;
-  if (!NombreArea || !CodigoIdentificacion || !TipoArea) {
-    return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    // Crear el área
+    const [result] = await pool.query(
+      `INSERT INTO AreaEspecializada (
+        NombreArea,
+        CodigoIdentificacion,
+        TipoArea,
+        Descripcion,
+        IsActive
+      ) VALUES (?, ?, ?, ?, TRUE)`,
+      [
+        NombreArea,
+        CodigoIdentificacion,
+        TipoArea,
+        Descripcion
+      ]
+    );
+    
+    // Registrar en el log de áreas
+    await pool.query(
+      `INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, FechaEvento, Detalles)
+       VALUES (?, ?, 'CREAR', NOW(), ?)`,
+      [
+        result.insertId,
+        req.user.IDUsuario,
+        `Área creada: ${NombreArea}`
+      ]
+    );
+    
+    res.status(201).json({ 
+      id: result.insertId,
+      message: 'Área creada con éxito' 
+    });
+  } catch (error) {
+    console.error('Error al crear área:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
-  const area = await areaService.createArea({ NombreArea, CodigoIdentificacion, TipoArea, Descripcion });
-  res.status(201).json(area);
 });
 
 // PUT /api/areas/:id
-router.put('/:id', requireAdmin, async (req, res) => {
-  const { NombreArea, CodigoIdentificacion, TipoArea, Descripcion, IsActive } = req.body;
-  const area = await areaService.updateArea(req.params.id, { NombreArea, CodigoIdentificacion, TipoArea, Descripcion, IsActive });
-  res.json(area);
+router.put('/:id', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const areaId = parseInt(req.params.id);
+    
+    const { 
+      NombreArea,
+      CodigoIdentificacion,
+      TipoArea,
+      Descripcion,
+      IsActive
+    } = req.body;
+    
+    // Validar campos obligatorios
+    if (!NombreArea) {
+      return res.status(400).json({ message: 'El nombre del área es obligatorio' });
+    }
+    
+    // Verificar que el área exista
+    const [areaExists] = await pool.query(
+      'SELECT 1 FROM AreaEspecializada WHERE IDArea = ?',
+      [areaId]
+    );
+    
+    if (areaExists.length === 0) {
+      return res.status(404).json({ message: 'Área no encontrada' });
+    }
+    
+    // Actualizar el área
+    await pool.query(
+      `UPDATE AreaEspecializada SET 
+        NombreArea = ?,
+        CodigoIdentificacion = ?,
+        TipoArea = ?,
+        Descripcion = ?,
+        IsActive = ?
+       WHERE IDArea = ?`,
+      [
+        NombreArea,
+        CodigoIdentificacion,
+        TipoArea,
+        Descripcion,
+        IsActive !== undefined ? IsActive : true,
+        areaId
+      ]
+    );
+    
+    // Registrar en el log de áreas
+    await pool.query(
+      `INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, FechaEvento, Detalles)
+       VALUES (?, ?, 'EDITAR', NOW(), ?)`,
+      [
+        areaId,
+        req.user.IDUsuario,
+        `Área actualizada: ${NombreArea}`
+      ]
+    );
+    
+    res.json({ message: 'Área actualizada con éxito' });
+  } catch (error) {
+    console.error('Error al actualizar área:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
 // DELETE /api/areas/:id
-router.delete('/:id', requireAdmin, async (req, res) => {
-  await areaService.deleteArea(req.params.id);
-  res.json({ message: 'Área eliminada correctamente.' });
+router.delete('/:id', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const areaId = parseInt(req.params.id);
+    
+    // Verificar que el área exista
+    const [rows] = await pool.query(
+      'SELECT NombreArea FROM AreaEspecializada WHERE IDArea = ?',
+      [areaId]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Área no encontrada' });
+    }
+    
+    const nombreArea = rows[0].NombreArea;
+    
+    // Verificar si hay usuarios asignados a esta área
+    const [usersInArea] = await pool.query(
+      'SELECT COUNT(*) as count FROM Usuario WHERE IDArea = ?',
+      [areaId]
+    );
+    
+    if (usersInArea[0].count > 0) {
+      return res.status(400).json({ 
+        message: 'No se puede eliminar el área porque tiene usuarios asignados',
+        details: 'Reasigne los usuarios a otra área antes de eliminar'
+      });
+    }
+    
+    // Verificar si hay documentos en esta área
+    const [docsInArea] = await pool.query(
+      'SELECT COUNT(*) as count FROM Documento WHERE IDAreaActual = ?',
+      [areaId]
+    );
+    
+    if (docsInArea[0].count > 0) {
+      return res.status(400).json({ 
+        message: 'No se puede eliminar el área porque tiene documentos asignados',
+        details: 'Derive los documentos a otra área antes de eliminar'
+      });
+    }
+    
+    // Registrar en el log de áreas antes de eliminar
+    await pool.query(
+      `INSERT INTO AreaLog (IDArea, IDUsuario, TipoEvento, FechaEvento, Detalles)
+       VALUES (?, ?, 'ELIMINAR', NOW(), ?)`,
+      [
+        areaId,
+        req.user.IDUsuario,
+        `Área eliminada: ${nombreArea}`
+      ]
+    );
+    
+    // Eliminar o desactivar el área (preferimos desactivar para mantener la integridad)
+    await pool.query(
+      'UPDATE AreaEspecializada SET IsActive = FALSE WHERE IDArea = ?',
+      [areaId]
+    );
+    
+    res.json({ message: 'Área eliminada con éxito' });
+  } catch (error) {
+    console.error('Error al eliminar área:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
 module.exports = router; 

@@ -4,6 +4,10 @@ const userService = require('../services/userService');
 const auditService = require('../services/auditService');
 const axios = require('axios');
 const ClientIpExtractor = require('../utils/ClientIpExtractor');
+const pool = require('../db');
+const bcrypt = require('bcryptjs');
+const authMiddleware = require('../middleware/authMiddleware');
+const permissionService = require('../services/permissionService');
 
 async function getIpInfo(ip) {
   try {
@@ -34,196 +38,440 @@ async function getIpInfo(ip) {
 }
 
 // GET /api/usuarios
-router.get('/', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-  const token = auth.split(' ')[1];
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const user = await userService.getUserFromToken(token);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if ((user.Permisos & 128) !== 128) return res.status(403).json({ message: 'No autorizado' });
-    const users = await userService.getAllUsers();
-    res.json(users);
-  } catch (err) {
-    res.status(401).json({ message: 'Token inválido' });
+    // Verificar si tiene permiso para ver usuarios
+    const hasPermission = await permissionService.hasPermission(
+      req.user.IDUsuario, 
+      permissionService.PERMISSION_BITS.VER
+    );
+    
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'No tiene permiso para ver usuarios' });
+    }
+    
+    const [rows] = await pool.query(
+      `SELECT u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado, 
+              u.IDArea, u.IDRol, u.UltimoAcceso, u.Bloqueado,
+              a.NombreArea, r.NombreRol, r.Permisos
+       FROM Usuario u
+       JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+       JOIN Rol r ON u.IDRol = r.IDRol`
+    );
+    
+    // Eliminar campos sensibles
+    const usuarios = rows.map(u => {
+      const { PasswordHash, ...rest } = u;
+      return rest;
+    });
+    
+    res.json(usuarios);
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// GET /api/usuarios/:id
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    // Verificar si tiene permiso para ver usuarios
+    const hasPermission = await permissionService.hasPermission(
+      req.user.IDUsuario, 
+      permissionService.PERMISSION_BITS.VER
+    );
+    
+    // El usuario siempre puede ver su propio perfil
+    const isSelf = parseInt(req.params.id) === req.user.IDUsuario;
+    
+    if (!hasPermission && !isSelf) {
+      return res.status(403).json({ message: 'No tiene permiso para ver este usuario' });
+    }
+    
+    const [rows] = await pool.query(
+      `SELECT u.IDUsuario, u.CodigoCIP, u.Nombres, u.Apellidos, u.Grado, 
+              u.IDArea, u.IDRol, u.UltimoAcceso, u.Bloqueado,
+              a.NombreArea, r.NombreRol
+       FROM Usuario u
+       JOIN AreaEspecializada a ON u.IDArea = a.IDArea
+       JOIN Rol r ON u.IDRol = r.IDRol
+       WHERE u.IDUsuario = ?`,
+      [req.params.id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    // Eliminar campos sensibles
+    const { PasswordHash, ...usuario } = rows[0];
+    
+    res.json(usuario);
+  } catch (error) {
+    console.error('Error al obtener usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
 // POST /api/usuarios
-router.post('/', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-  const token = auth.split(' ')[1];
+router.post('/', authMiddleware, async (req, res) => {
   try {
-    const user = await userService.getUserFromToken(token);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if ((user.Permisos & 128) !== 128) return res.status(403).json({ message: 'No autorizado' });
-    const { cip, nombres, apellidos, grado, idArea, idRol, password } = req.body;
-    if (!cip || !nombres || !apellidos || !grado || !idArea || !idRol || !password) {
-      return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    // Verificar si es administrador (bit 7)
+    const isAdmin = await permissionService.hasPermission(
+      req.user.IDUsuario, 
+      permissionService.PERMISSION_BITS.ADMIN
+    );
+    
+    if (!isAdmin) {
+      // Registrar intento no autorizado
+      await permissionService.logUnauthorizedAccess(
+        req.user.IDUsuario,
+        'USUARIO',
+        0,
+        'CREAR',
+        req.ip
+      );
+      
+      return res.status(403).json({ 
+        message: 'No tiene permiso para crear usuarios',
+        details: 'Esta acción está reservada para administradores' 
+      });
     }
-    const newUserId = await userService.createUser({ cip, nombres, apellidos, grado, password, idArea, idRol });
-    // Log de auditoría enriquecido
-    let ipInfo = {};
-    const clientIp = ClientIpExtractor.getClientIp(req);
-    if (clientIp) {
-      ipInfo = await getIpInfo(clientIp);
-    } else {
-      ipInfo = {
-        IPCountry: 'Local/Desconocido',
-        IPCountryCode: 'XX',
-        IPRegion: 'Local',
-        IPRegionName: 'Local',
-        IPCity: 'Local',
-        IPZip: null,
-        IPLat: null,
-        IPLon: null,
-        IPTimezone: null,
-        IPISP: null,
-        IPOrg: null,
-        IPAs: null,
-        IPHostname: null,
-        IPIsProxy: null,
-        IPIsVPN: null,
-        IPIsTor: null,
-        DispositivoInfo: null
-      };
+    
+    const { 
+      CodigoCIP, 
+      Nombres, 
+      Apellidos, 
+      Grado, 
+      Password, 
+      IDArea, 
+      IDRol 
+    } = req.body;
+    
+    // Validar campos obligatorios
+    if (!CodigoCIP || !Nombres || !Apellidos || !Grado || !Password || !IDArea || !IDRol) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
-    await auditService.logUsuario({
-      IDUsuario: user.IDUsuario,
-      TipoEvento: 'CREAR_USUARIO',
-      IPOrigen: clientIp || 'localhost',
-      Exitoso: true,
-      ipInfo
+    
+    // Verificar si el CIP ya existe
+    const [existingUser] = await pool.query(
+      'SELECT 1 FROM Usuario WHERE CodigoCIP = ?',
+      [CodigoCIP]
+    );
+    
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'El CIP ya está registrado' });
+    }
+    
+    // Generar hash de la contraseña
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(Password, salt);
+    
+    // Crear el usuario
+    const [result] = await pool.query(
+      `INSERT INTO Usuario (
+        CodigoCIP, 
+        Nombres, 
+        Apellidos, 
+        Grado, 
+        PasswordHash, 
+        IDArea, 
+        IDRol
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        CodigoCIP, 
+        Nombres, 
+        Apellidos, 
+        Grado, 
+        passwordHash, 
+        IDArea, 
+        IDRol
+      ]
+    );
+    
+    // Registrar en el log de usuarios
+    await pool.query(
+      `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+       VALUES (?, 'CREAR_USUARIO', ?, ?, TRUE)`,
+      [
+        req.user.IDUsuario,
+        req.ip,
+        req.headers['user-agent'] || 'Unknown'
+      ]
+    );
+    
+    res.status(201).json({ 
+      id: result.insertId,
+      message: 'Usuario creado con éxito' 
     });
-    res.status(201).json({ message: 'Usuario creado', id: newUserId });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al crear usuario', error: err.message });
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
-// POST /api/usuarios/:id/reset-password
-router.post('/:id/reset-password', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-  const token = auth.split(' ')[1];
+// PUT /api/usuarios/:id
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const user = await userService.getUserFromToken(token);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if ((user.Permisos & 128) !== 128) return res.status(403).json({ message: 'No autorizado' });
-
-    const { id } = req.params;
-    const { newPassword } = req.body;
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ message: 'La nueva contraseña es obligatoria y debe tener al menos 6 caracteres.' });
+    const userId = parseInt(req.params.id);
+    const isSelf = userId === req.user.IDUsuario;
+    
+    // Verificar si tiene permiso para editar usuarios
+    const hasEditPermission = await permissionService.hasPermission(
+      req.user.IDUsuario, 
+      permissionService.PERMISSION_BITS.EDITAR
+    );
+    
+    const isAdmin = await permissionService.hasPermission(
+      req.user.IDUsuario, 
+      permissionService.PERMISSION_BITS.ADMIN
+    );
+    
+    // Solo el propio usuario o alguien con permiso de editar puede actualizar
+    if (!hasEditPermission && !isSelf) {
+      // Registrar intento no autorizado
+      await permissionService.logUnauthorizedAccess(
+        req.user.IDUsuario,
+        'USUARIO',
+        userId,
+        'EDITAR',
+        req.ip
+      );
+      
+      return res.status(403).json({ message: 'No tiene permiso para editar este usuario' });
     }
-    await userService.setPassword(id, newPassword);
-    res.json({ message: 'Contraseña actualizada correctamente.' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al resetear contraseña', error: err.message });
-  }
-});
-
-// PATCH /api/usuarios/:id/bloqueo
-router.patch('/:id/bloqueo', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-  const token = auth.split(' ')[1];
-  try {
-    const user = await userService.getUserFromToken(token);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if ((user.Permisos & 128) !== 128) return res.status(403).json({ message: 'No autorizado' });
-    const id = req.params.id;
-    const { bloquear } = req.body;
-    if (user.IDUsuario == id) return res.status(400).json({ message: 'No puedes bloquearte a ti mismo.' });
-    await userService.setBloqueoUsuario(id, bloquear);
-    // Log de auditoría enriquecido
-    let ipInfo = {};
-    const clientIp = ClientIpExtractor.getClientIp(req);
-    if (clientIp) {
-      ipInfo = await getIpInfo(clientIp);
-    } else {
-      ipInfo = {
-        IPCountry: 'Local/Desconocido',
-        IPCountryCode: 'XX',
-        IPRegion: 'Local',
-        IPRegionName: 'Local',
-        IPCity: 'Local',
-        IPZip: null,
-        IPLat: null,
-        IPLon: null,
-        IPTimezone: null,
-        IPISP: null,
-        IPOrg: null,
-        IPAs: null,
-        IPHostname: null,
-        IPIsProxy: null,
-        IPIsVPN: null,
-        IPIsTor: null,
-        DispositivoInfo: null
-      };
+    
+    // Campos que solo el administrador puede actualizar
+    const adminOnlyFields = ['IDRol', 'Bloqueado'];
+    
+    // Verificar que no esté tratando de actualizar campos administrativos si no es admin
+    if (!isAdmin) {
+      for (const field of adminOnlyFields) {
+        if (req.body[field] !== undefined) {
+          return res.status(403).json({ 
+            message: `No tiene permiso para actualizar el campo ${field}`,
+            details: 'Este campo solo puede ser actualizado por administradores'
+          });
+        }
+      }
     }
-    await auditService.logUsuario({
-      IDUsuario: user.IDUsuario,
-      TipoEvento: bloquear ? 'BLOQUEAR_USUARIO' : 'DESBLOQUEAR_USUARIO',
-      IPOrigen: clientIp || 'localhost',
-      Exitoso: true,
-      ipInfo
-    });
-    res.json({ message: bloquear ? 'Usuario bloqueado' : 'Usuario habilitado' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al cambiar el estado de bloqueo', error: err.message });
+    
+    const { 
+      Nombres, 
+      Apellidos, 
+      Grado, 
+      Password, 
+      IDArea, 
+      IDRol, 
+      Bloqueado 
+    } = req.body;
+    
+    // Construir conjuntos de actualización y parámetros
+    let updateSets = [];
+    let params = [];
+    
+    if (Nombres) {
+      updateSets.push('Nombres = ?');
+      params.push(Nombres);
+    }
+    
+    if (Apellidos) {
+      updateSets.push('Apellidos = ?');
+      params.push(Apellidos);
+    }
+    
+    if (Grado) {
+      updateSets.push('Grado = ?');
+      params.push(Grado);
+    }
+    
+    if (Password) {
+      // Solo administradores pueden cambiar contraseñas ajenas
+      if (!isSelf && !isAdmin) {
+        return res.status(403).json({ 
+          message: 'No tiene permiso para cambiar la contraseña de otro usuario',
+          details: 'Esta acción está reservada para administradores o el propio usuario'
+        });
+      }
+      
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(Password, salt);
+      
+      updateSets.push('PasswordHash = ?');
+      params.push(passwordHash);
+    }
+    
+    if (IDArea && isAdmin) {
+      updateSets.push('IDArea = ?');
+      params.push(IDArea);
+    }
+    
+    if (IDRol && isAdmin) {
+      updateSets.push('IDRol = ?');
+      params.push(IDRol);
+    }
+    
+    if (Bloqueado !== undefined && isAdmin) {
+      updateSets.push('Bloqueado = ?');
+      params.push(Bloqueado);
+      
+      if (Bloqueado) {
+        updateSets.push('UltimoBloqueo = NOW()');
+      }
+    }
+    
+    if (updateSets.length === 0) {
+      return res.status(400).json({ message: 'No hay campos para actualizar' });
+    }
+    
+    // Añadir ID al final de los parámetros
+    params.push(userId);
+    
+    // Ejecutar la actualización
+    await pool.query(
+      `UPDATE Usuario SET ${updateSets.join(', ')} WHERE IDUsuario = ?`,
+      params
+    );
+    
+    // Registrar en el log de usuarios
+    await pool.query(
+      `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+       VALUES (?, 'ACTUALIZAR_USUARIO', ?, ?, TRUE)`,
+      [
+        req.user.IDUsuario,
+        req.ip,
+        req.headers['user-agent'] || 'Unknown'
+      ]
+    );
+    
+    res.json({ message: 'Usuario actualizado con éxito' });
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
 // DELETE /api/usuarios/:id
-router.delete('/:id', async (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-  const token = auth.split(' ')[1];
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const user = await userService.getUserFromToken(token);
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if ((user.Permisos & 128) !== 128) return res.status(403).json({ message: 'No autorizado' });
-    const id = req.params.id;
-    if (user.IDUsuario == id) return res.status(400).json({ message: 'No puedes eliminarte a ti mismo.' });
-    await userService.deleteUser(id);
-    // Log de auditoría enriquecido
-    let ipInfo = {};
-    const clientIp = ClientIpExtractor.getClientIp(req);
-    if (clientIp) {
-      ipInfo = await getIpInfo(clientIp);
-    } else {
-      ipInfo = {
-        IPCountry: 'Local/Desconocido',
-        IPCountryCode: 'XX',
-        IPRegion: 'Local',
-        IPRegionName: 'Local',
-        IPCity: 'Local',
-        IPZip: null,
-        IPLat: null,
-        IPLon: null,
-        IPTimezone: null,
-        IPISP: null,
-        IPOrg: null,
-        IPAs: null,
-        IPHostname: null,
-        IPIsProxy: null,
-        IPIsVPN: null,
-        IPIsTor: null,
-        DispositivoInfo: null
-      };
+    const userId = parseInt(req.params.id);
+    
+    // Verificar si puede eliminar usuarios (solo administradores)
+    const canDelete = await permissionService.canDeleteUser(req.user.IDUsuario);
+    
+    if (!canDelete) {
+      // Registrar intento no autorizado
+      await permissionService.logUnauthorizedAccess(
+        req.user.IDUsuario,
+        'USUARIO',
+        userId,
+        'ELIMINAR',
+        req.ip
+      );
+      
+      return res.status(403).json({ 
+        message: 'No tiene permiso para eliminar usuarios',
+        details: 'Esta acción está reservada para administradores' 
+      });
     }
-    await auditService.logUsuario({
-      IDUsuario: user.IDUsuario,
-      TipoEvento: 'ELIMINAR_USUARIO',
-      IPOrigen: clientIp || 'localhost',
-      Exitoso: true,
-      ipInfo
-    });
-    res.json({ message: 'Usuario eliminado correctamente.' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al eliminar usuario', error: err.message });
+    
+    // Verificar que no esté tratando de eliminarse a sí mismo
+    if (userId === req.user.IDUsuario) {
+      return res.status(400).json({ 
+        message: 'No puede eliminar su propio usuario',
+        details: 'Contacte a otro administrador para esta operación'
+      });
+    }
+    
+    // Verificar que el usuario exista
+    const [userExists] = await pool.query(
+      'SELECT 1 FROM Usuario WHERE IDUsuario = ?',
+      [userId]
+    );
+    
+    if (userExists.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    // Registrar en el log de usuarios antes de eliminar
+    await pool.query(
+      `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+       VALUES (?, 'ELIMINAR_USUARIO', ?, ?, TRUE)`,
+      [
+        req.user.IDUsuario,
+        req.ip,
+        req.headers['user-agent'] || 'Unknown'
+      ]
+    );
+    
+    // Eliminar el usuario
+    await pool.query('DELETE FROM Usuario WHERE IDUsuario = ?', [userId]);
+    
+    res.json({ message: 'Usuario eliminado con éxito' });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// POST /api/usuarios/:id/reset-password
+router.post('/:id/reset-password', authMiddleware, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    
+    // Verificar si es administrador
+    const isAdmin = await permissionService.hasPermission(
+      req.user.IDUsuario, 
+      permissionService.PERMISSION_BITS.ADMIN
+    );
+    
+    if (!isAdmin) {
+      // Registrar intento no autorizado
+      await permissionService.logUnauthorizedAccess(
+        req.user.IDUsuario,
+        'USUARIO',
+        userId,
+        'RESET_PASSWORD',
+        req.ip
+      );
+      
+      return res.status(403).json({ 
+        message: 'No tiene permiso para restablecer contraseñas',
+        details: 'Esta acción está reservada para administradores' 
+      });
+    }
+    
+    const { newPassword } = req.body;
+    
+    if (!newPassword) {
+      return res.status(400).json({ message: 'La nueva contraseña es requerida' });
+    }
+    
+    // Generar hash de la nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+    
+    // Actualizar la contraseña
+    await pool.query(
+      'UPDATE Usuario SET PasswordHash = ?, IntentosFallidos = 0, Bloqueado = FALSE WHERE IDUsuario = ?',
+      [passwordHash, userId]
+    );
+    
+    // Registrar en el log de usuarios
+    await pool.query(
+      `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+       VALUES (?, 'RESET_PASSWORD', ?, ?, TRUE)`,
+      [
+        req.user.IDUsuario,
+        req.ip,
+        req.headers['user-agent'] || 'Unknown'
+      ]
+    );
+    
+    res.json({ message: 'Contraseña restablecida con éxito' });
+  } catch (error) {
+    console.error('Error al restablecer contraseña:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 

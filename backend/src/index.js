@@ -9,6 +9,7 @@ const userRoutes = require('../routes/userRoutes');
 const auditRoutes = require('../routes/auditRoutes');
 const documentoRoutes = require('../routes/documentoRoutes');
 const dashboardRoutes = require('../routes/dashboardRoutes');
+const permissionRoutes = require('../routes/permissionRoutes');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/usuarios', userRoutes);
 app.use('/api/auditoria', auditRoutes); 
 app.use('/api/documentos', documentoRoutes); 
 app.use('/api/dashboard', dashboardRoutes); 
+app.use('/api/permisos', permissionRoutes);
 
 // Iniciar el servidor
 const PORT = config.server.port;
