@@ -7,7 +7,16 @@ export function fetchUsers(token) {
 }
 
 export function createUser(data, token) {
-  return axios.post('/api/usuarios', data, {
+  const payload = {
+    CodigoCIP: data.cip,
+    Nombres: data.nombres,
+    Apellidos: data.apellidos,
+    Grado: data.grado,
+    Password: data.password,
+    IDArea: data.idArea,
+    IDRol: data.idRol
+  };
+  return axios.post('/api/usuarios', payload, {
     headers: { Authorization: `Bearer ${token}` }
   })
 }
