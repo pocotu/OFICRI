@@ -37,12 +37,6 @@
               ></i>
             </div>
           </div>
-          <div class="form-group" style="margin-top: -0.8rem; margin-bottom: -0.5rem;">
-            <label style="display: flex; align-items: center; font-size: 0.98rem; cursor: pointer;">
-              <input type="checkbox" v-model="rememberMe" style="margin-right: 8px;" />
-              Recordar contraseña
-            </label>
-          </div>
           <button 
             type="submit" 
             class="btn-login" 
@@ -80,7 +74,6 @@ const credentials = ref({
 const loading = ref(false)
 const error = ref('')
 const showPassword = ref(false)
-const rememberMe = ref(false)
 
 const handleLogin = async () => {
   loading.value = true
