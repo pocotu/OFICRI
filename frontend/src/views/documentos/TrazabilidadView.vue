@@ -14,6 +14,8 @@ import { ref, onMounted, watch } from 'vue'
 import { fetchTrazabilidad, formatTrazabilidadEvento } from '../../api/trazabilidadApi'
 import Timeline from '../../components/Timeline.vue'
 import { useAuthStore } from '../../stores/auth'
+import { canViewTrazabilidad } from '../../services/permissionService'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   documentoId: {
@@ -26,6 +28,7 @@ const eventos = ref([])
 const loading = ref(true)
 const error = ref('')
 const authStore = useAuthStore()
+const router = useRouter()
 
 const cargarTrazabilidad = async (idDoc) => {
   loading.value = true
@@ -42,6 +45,11 @@ const cargarTrazabilidad = async (idDoc) => {
 }
 
 onMounted(() => {
+  if (!canViewTrazabilidad(authStore.user)) {
+    router.push({ name: 'documentos' })
+    return
+  }
+
   if (!props.documentoId) {
     error.value = 'No se ha seleccionado un documento.'
     loading.value = false

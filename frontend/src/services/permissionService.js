@@ -181,4 +181,22 @@ export function canDeriveDocumentLocal(user, doc) {
   const isOwner = doc.IDUsuarioCreador === user.IDUsuario;
   const isSameArea = doc.IDAreaActual === user.IDArea;
   return canDerive || isOwner || isSameArea;
+}
+
+/**
+ * Verifica si el usuario puede ver la trazabilidad de documentos
+ * @param {object} user - Usuario autenticado
+ * @returns {boolean}
+ */
+export function canViewTrazabilidad(user) {
+  if (!user) return false;
+  
+  // Admin siempre puede ver trazabilidad
+  if (user.NombreRol?.toLowerCase().includes('admin')) return true;
+  
+  // Mesa de partes puede ver trazabilidad
+  if (user.NombreRol?.toLowerCase().includes('mesa de partes')) return true;
+  
+  // Otros roles necesitan el permiso de auditoría
+  return (user.Permisos & PERMISSION_BITS.AUDITAR) > 0;
 } 

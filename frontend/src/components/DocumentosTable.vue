@@ -93,11 +93,14 @@
                   </button>
                 </PermissionGate>
               </template>
-              <PermissionGate :permission="PERMISSION_BITS.AUDITAR | PERMISSION_BITS.ADMINISTRAR">
-                <button @click="abrirTrazabilidad(documento)" class="btn-accion btn-trazabilidad" title="Trazabilidad">
-                  <i class="fas fa-route"></i>
-                </button>
-              </PermissionGate>
+              <button 
+                v-if="canViewTrazabilidad(authStore.user)"
+                @click="abrirTrazabilidad(documento)" 
+                class="btn-accion btn-trazabilidad" 
+                title="Trazabilidad"
+              >
+                <i class="fas fa-route"></i>
+              </button>
             </div>
           </td>
           <td>{{ documento.NroRegistro }}</td>
@@ -293,7 +296,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { formatearFecha } from '../utils/formatters'
 import PermissionGate from './PermissionGate.vue'
-import { PERMISSION_BITS } from '../services/permissionService'
+import { PERMISSION_BITS, canViewTrazabilidad } from '../services/permissionService'
 import { useAuthStore } from '../stores/auth'
 import { eliminarDocumento as apiEliminarDocumento, derivarDocumento as apiDerivarDocumento } from '../api/documentoApi'
 import { canDeleteDocument, canEditDocumentLocal, canDeriveDocumentLocal } from '../services/permissionService'

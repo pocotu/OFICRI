@@ -192,7 +192,16 @@ router.get('/:id/trazabilidad', async (req, res) => {
   const token = auth.split(' ')[1];
   const user = await getUserFromToken(token);
   if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-  // Aquí podrías agregar lógica de permisos si es necesario
+
+  // Verificar permisos
+  const isAdmin = user.NombreRol?.toLowerCase().includes('admin');
+  const isMesaPartes = user.NombreRol?.toLowerCase().includes('mesa de partes');
+  const hasAuditPermission = (user.Permisos & 32) > 0; // 32 = PERMISSION_BITS.AUDITAR
+
+  if (!isAdmin && !isMesaPartes && !hasAuditPermission) {
+    return res.status(403).json({ message: 'No tiene permisos para ver la trazabilidad' });
+  }
+
   try {
     const eventos = await documentoService.getTrazabilidadById(req.params.id);
     res.json(eventos);
