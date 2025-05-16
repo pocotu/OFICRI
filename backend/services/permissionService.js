@@ -50,7 +50,6 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
   try {
     // 1. Verificar si tiene el permiso por bits (prevalece sobre contextual)
     let bitPermission;
-    
     switch (accion) {
       case 'CREAR': bitPermission = PERMISSION_BITS.CREAR; break;
       case 'EDITAR': bitPermission = PERMISSION_BITS.EDITAR; break;
@@ -62,12 +61,9 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
       case 'ADMIN': bitPermission = PERMISSION_BITS.ADMIN; break;
       default: bitPermission = 0;
     }
-    
     const hasBitPermission = await hasPermission(idUsuario, bitPermission);
-    
-    // Si tiene permiso por bit, no es necesario verificar permiso contextual
     if (hasBitPermission) return true;
-    
+
     // 2. Verificar si es administrador (siempre tiene todos los permisos)
     const [adminRows] = await pool.query(
       `SELECT r.NombreRol 
@@ -76,22 +72,57 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
        WHERE u.IDUsuario = ? AND (r.Permisos & ?) = ?`,
       [idUsuario, PERMISSION_BITS.ADMIN, PERMISSION_BITS.ADMIN]
     );
-    
     if (adminRows.length > 0) return true;
-    
-    // 3. Si no es admin, verificar permisos contextuales
+
+    // 3. Lógica contextual extendida para Mesa de Partes
+    if (tipoRecurso === 'DOCUMENTO' && accion === 'ELIMINAR') {
+      // Obtener área y rol del usuario
+      const [userRows] = await pool.query(
+        'SELECT IDArea, IDRol FROM Usuario WHERE IDUsuario = ?',
+        [idUsuario]
+      );
+      if (userRows.length === 0) return false;
+      const idAreaUsuario = userRows[0].IDArea;
+      const idRolUsuario = userRows[0].IDRol;
+
+      // Obtener área actual y creador del documento
+      const [docRows] = await pool.query(
+        'SELECT IDAreaActual, IDUsuarioCreador FROM Documento WHERE IDDocumento = ?',
+        [idRecurso]
+      );
+      if (docRows.length === 0) return false;
+      const idAreaDoc = docRows[0].IDAreaActual;
+      const idCreadorDoc = docRows[0].IDUsuarioCreador;
+
+      // Permitir si es el creador (propiedad contextual)
+      if (idCreadorDoc === idUsuario) return true;
+
+      // Permitir si es de la misma área Y su rol es Mesa de Partes o Responsable de Área
+      const [rolRows] = await pool.query(
+        'SELECT NombreRol FROM Rol WHERE IDRol = ?',
+        [idRolUsuario]
+      );
+      if (rolRows.length > 0) {
+        const nombreRol = rolRows[0].NombreRol.toLowerCase();
+        if ((nombreRol.includes('mesa de partes') || nombreRol.includes('responsable de área') || nombreRol.includes('responsable de area')) && idAreaUsuario === idAreaDoc) {
+          return true;
+        }
+      }
+      // ...aquí puedes dejar la lógica para otros contextos o reglas explícitas en PermisoContextual si lo deseas...
+    }
+
+    // ...lógica existente para otros recursos/contextos...
+    // 4. Reglas explícitas en PermisoContextual (mantener para otros casos)
     if (tipoRecurso === 'DOCUMENTO') {
       // Obtener área del usuario
       const [userRows] = await pool.query(
         'SELECT IDArea, IDRol FROM Usuario WHERE IDUsuario = ?',
         [idUsuario]
       );
-      
       if (userRows.length === 0) return false;
-      
       const idAreaUsuario = userRows[0].IDArea;
       const idRolUsuario = userRows[0].IDRol;
-      
+
       // Verificar si es el creador del documento (PROPIEDAD)
       if (accion === 'ELIMINAR') {
         const [creadorRows] = await pool.query(
@@ -99,8 +130,6 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
            WHERE IDDocumento = ? AND IDUsuarioCreador = ?`,
           [idRecurso, idUsuario]
         );
-        
-        // Si es el creador, verificar si hay regla contextual que lo permita
         if (creadorRows.length > 0) {
           const [reglasRows] = await pool.query(
             `SELECT 1 FROM PermisoContextual 
@@ -111,17 +140,14 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
              AND ReglaContexto LIKE '%"condicion":"ES_CREADOR"%'`,
             [idRolUsuario]
           );
-          
           if (reglasRows.length > 0) return true;
         }
-        
         // Verificar si es del mismo área que el documento (AREA)
         const [areaRows] = await pool.query(
           `SELECT 1 FROM Documento 
            WHERE IDDocumento = ? AND IDAreaActual = ?`,
           [idRecurso, idAreaUsuario]
         );
-        
         if (areaRows.length > 0) {
           const [reglasRows] = await pool.query(
             `SELECT 1 FROM PermisoContextual 
@@ -132,7 +158,6 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
              AND ReglaContexto LIKE '%"condicion":"MISMA_AREA"%'`,
             [idRolUsuario]
           );
-          
           if (reglasRows.length > 0) return true;
         }
       }
@@ -141,7 +166,6 @@ async function hasContextualPermission(idUsuario, tipoRecurso, idRecurso, accion
       // Ya verificamos si es admin más arriba, así que retornamos false
       return false;
     }
-    
     return false;
   } catch (error) {
     console.error('Error verificando permiso contextual:', error);

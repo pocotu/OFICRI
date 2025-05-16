@@ -127,4 +127,40 @@ export function canDeleteUser() {
  */
 export function canDeleteArea() {
   return hasPermission(PERMISSION_BITS.ADMIN);
+}
+
+/**
+ * Verifica si el usuario puede eliminar un documento (bitwise/contextual, local)
+ * @param {object} user - Usuario autenticado
+ * @param {object} doc - Documento
+ * @returns {boolean}
+ */
+export function canDeleteDocumentLocal(user, doc) {
+  if (!user || !doc) return false;
+  // Admin
+  if (user.NombreRol?.toLowerCase().includes('admin')) return true;
+  // Bitwise
+  const canDelete = (user.Permisos & PERMISSION_BITS.ELIMINAR) > 0;
+  // Contextual: creador o área
+  const isOwner = doc.IDUsuarioCreador === user.IDUsuario;
+  const isArea = doc.IDAreaActual === user.IDArea;
+  return canDelete && (isOwner || isArea);
+}
+
+/**
+ * Verifica si el usuario puede editar un documento (bitwise/contextual, local)
+ * @param {object} user - Usuario autenticado
+ * @param {object} doc - Documento
+ * @returns {boolean}
+ */
+export function canEditDocumentLocal(user, doc) {
+  if (!user || !doc) return false;
+  // Admin
+  if (user.NombreRol?.toLowerCase().includes('admin')) return true;
+  // Bitwise
+  const canEdit = (user.Permisos & PERMISSION_BITS.EDITAR) > 0;
+  // Contextual: creador o área
+  const isOwner = doc.IDUsuarioCreador === user.IDUsuario;
+  const isSameArea = doc.IDAreaActual === user.IDArea;
+  return canEdit || isOwner || isSameArea;
 } 

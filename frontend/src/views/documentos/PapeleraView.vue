@@ -84,11 +84,11 @@
                       <i class="fas fa-undo"></i>
                     </button>
                   </PermissionGate>
-                  <PermissionGate :permission="PERMISSION_BITS.ADMIN">
+                  <template v-if="canDeleteDocumentLocal(authStore.user, documento) && documento.Estado === 'PAPELERA'">
                     <button @click="eliminarPermanente(documento)" class="btn-action btn-delete" title="Eliminar permanentemente">
                       <i class="fas fa-trash"></i>
                     </button>
-                  </PermissionGate>
+                  </template>
                 </div>
               </td>
             </tr>
@@ -245,7 +245,7 @@ import {
 import { fetchAreasActivas } from '../../api/areaApi'
 import { formatearFecha } from '../../utils/formatters'
 import PermissionGate from '../../components/PermissionGate.vue'
-import { PERMISSION_BITS } from '../../services/permissionService'
+import { PERMISSION_BITS, canDeleteDocumentLocal } from '../../services/permissionService'
 
 // Estado
 const authStore = useAuthStore()

@@ -1,12 +1,6 @@
 <template>
   <div class="documentos-view">
     <h1 class="main-title"><i class="fa-solid fa-file-alt"></i> Recepción de Documentos</h1>
-    <div class="acciones-bar">
-      <button v-if="puedeCrear" class="btn btn-primary" @click="mostrarFormulario">
-        <i :class="mostrarForm ? 'fa-solid fa-xmark' : 'fa-solid fa-plus'" style="margin-right: 6px;"></i>
-        {{ mostrarForm ? 'Cancelar' : 'Nuevo Documento' }}
-      </button>
-    </div>
 
     <div v-if="mostrarForm" class="formulario-centrado">
       <form @submit.prevent="guardarDocumento" class="formulario-documento-rediseñado card">
@@ -120,7 +114,13 @@
     </div>
 
     <div class="card docs-table-wrapper">
-      <ResponsiveWrapper :documentos="documentos" :areas="areas" :estados="ESTADOS_DOCUMENTO" />
+      <ResponsiveWrapper 
+        :documentos="documentos" 
+        :areas="areas" 
+        :estados="ESTADOS_DOCUMENTO" 
+        @nuevo-documento="mostrarFormulario" 
+        @editar="editarDocumento" 
+      />
     </div>
     <Modal v-if="mostrarTrazabilidad" @close="cerrarTrazabilidad">
       <TrazabilidadView />
@@ -252,6 +252,11 @@ const mostrarTrazabilidad = computed(() => route.name === 'documentos-trazabilid
 
 function cerrarTrazabilidad() {
   router.push({ name: 'documentos' })
+}
+
+function editarDocumento(documento) {
+  form.value = { ...documento };
+  mostrarForm.value = true;
 }
 </script>
 

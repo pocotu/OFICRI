@@ -1,6 +1,6 @@
 <template>
   <div class="responsive-wrapper">
-    <DocumentosTable v-if="!isMobile" :documentos="documentos" :areas="areas" :estados="estados" @show-details="showDetails" />
+    <DocumentosTable v-if="!isMobile" :documentos="documentos" :areas="areas" :estados="estados" @show-details="showDetails" @nuevo-documento="$emit('nuevo-documento')" @editar="$emit('editar', $event)" />
     <div v-else class="documentos-cards">
       <DocumentoCard
         v-for="doc in documentos"

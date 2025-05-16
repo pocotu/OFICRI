@@ -1,38 +1,38 @@
 <template>
   <div class="documentos-table-container">
-    <div class="table-filters">
-      <div class="search-filter">
-        <i class="fas fa-search"></i>
-        <input 
-          type="text" 
-          v-model="busqueda" 
-          placeholder="Buscar documento..." 
-          @input="filtrarDocumentos"
-        />
+    <!-- Filtros compactos y modernos -->
+    <div class="filtros-bar">
+      <div class="filtros-izq">
+        <div class="input-icon">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            v-model="busqueda"
+            placeholder="Buscar documento..."
+            @input="filtrarDocumentos"
+          />
+        </div>
+        <select v-model="filtroArea" @change="filtrarDocumentos">
+          <option value="">Todas las áreas</option>
+          <option v-for="area in areas" :key="area.IDArea" :value="area.IDArea">
+            {{ area.NombreArea }}
+          </option>
+        </select>
+        <select v-model="filtroEstado" @change="filtrarDocumentos">
+          <option value="">Todos los estados</option>
+          <option v-for="estado in estados" :key="estado" :value="estado">
+            {{ estado }}
+          </option>
+        </select>
+        <input type="date" v-model="filtroFecha" @change="filtrarDocumentos" />
       </div>
-      <div class="advanced-filters">
-        <div class="filter-group">
-          <label>Área:</label>
-          <select v-model="filtroArea" @change="filtrarDocumentos">
-            <option value="">Todas</option>
-            <option v-for="area in areas" :key="area.IDArea" :value="area.IDArea">
-              {{ area.NombreArea }}
-            </option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label>Estado:</label>
-          <select v-model="filtroEstado" @change="filtrarDocumentos">
-            <option value="">Todos</option>
-            <option v-for="estado in estados" :key="estado" :value="estado">
-              {{ estado }}
-            </option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label>Fecha:</label>
-          <input type="date" v-model="filtroFecha" @change="filtrarDocumentos" />
-        </div>
+      <div class="filtros-der">
+        <button class="btn-nuevo" @click="$emit('nuevo-documento')">
+          <i class="fas fa-plus"></i> Nuevo Documento
+        </button>
+        <button v-if="puedeVerPapelera" class="btn-papelera" @click="irAPapelera">
+          <i class="fas fa-trash"></i> Papelera
+        </button>
       </div>
     </div>
 
@@ -64,34 +64,35 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="documento in documentosFiltrados" :key="documento.IDDocumento">
+        <tr v-for="documento in documentosPaginados" :key="documento.IDDocumento">
           <td>
             <div class="acciones-grupo">
               <button @click="verDetalle(documento)" class="btn-accion" title="Ver detalle">
                 <i class="fas fa-eye"></i>
               </button>
-              <PermissionGate :permission="PERMISSION_BITS.EDITAR">
+              <template v-if="puedeEditarDocumento(documento)">
                 <button @click="editarDocumento(documento)" class="btn-accion btn-editar" title="Editar">
                   <i class="fas fa-edit"></i>
-                </button>
-              </PermissionGate>
+              </button>
+            </template>
               <PermissionGate :permission="PERMISSION_BITS.DERIVAR">
                 <button @click="derivarDocumento(documento)" class="btn-accion btn-derivar" title="Derivar">
                   <i class="fas fa-share"></i>
                 </button>
               </PermissionGate>
-              <PermissionGate :permission="PERMISSION_BITS.ELIMINAR">
+              <!-- Eliminar: solo mostrar si tiene permiso bitwise O contextual, nunca ambos -->
+              <template v-if="permisosContextuales[documento.IDDocumento]?.eliminar">
                 <button @click="eliminarDocumento(documento)" class="btn-accion btn-eliminar" title="Eliminar">
                   <i class="fas fa-trash"></i>
                 </button>
-              </PermissionGate>
-              <button 
-                v-if="permisosContextuales[documento.IDDocumento]?.eliminar" 
-                @click="eliminarDocumento(documento)" 
-                class="btn-accion btn-eliminar" 
-                title="Eliminar (permiso contextual)">
-                <i class="fas fa-trash"></i>
-              </button>
+            </template>
+            <template v-else>
+                <PermissionGate :permission="PERMISSION_BITS.ELIMINAR">
+                  <button @click="eliminarDocumento(documento)" class="btn-accion btn-eliminar" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </PermissionGate>
+            </template>
             </div>
           </td>
           <td>{{ documento.NroRegistro }}</td>
@@ -121,6 +122,12 @@
         </tr>
       </tbody>
     </table>
+    </div>
+
+    <div class="paginacion-bar" v-if="totalPaginas > 1">
+      <button class="btn-pag" :disabled="paginaActual === 1" @click="irPagina(paginaActual - 1)">&laquo;</button>
+      <button v-for="pag in totalPaginas" :key="pag" class="btn-pag" :class="{ activa: pag === paginaActual }" @click="irPagina(pag)">{{ pag }}</button>
+      <button class="btn-pag" :disabled="paginaActual === totalPaginas" @click="irPagina(paginaActual + 1)">&raquo;</button>
     </div>
 
     <!-- Modal para ver detalle -->
@@ -243,7 +250,8 @@ import PermissionGate from './PermissionGate.vue'
 import { PERMISSION_BITS } from '../services/permissionService'
 import { useAuthStore } from '../stores/auth'
 import { eliminarDocumento as apiEliminarDocumento } from '../api/documentoApi'
-import { canDeleteDocument } from '../services/permissionService'
+import { canDeleteDocument, canEditDocumentLocal } from '../services/permissionService'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   documentos: {
@@ -260,7 +268,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['ver-detalle', 'editar', 'derivar', 'eliminar', 'refresh'])
+const emit = defineEmits(['ver-detalle', 'editar', 'derivar', 'eliminar', 'refresh', 'nuevo-documento'])
 
 // Referencias
 const busqueda = ref('')
@@ -275,8 +283,17 @@ const mostrarDetalle = ref(false)
 const mostrarConfirmacion = ref(false)
 const documentoAEliminar = ref(null)
 const permisosContextuales = ref({})
+const router = useRouter()
 
 const authStore = useAuthStore()
+
+const documentosPorPagina = 10
+const paginaActual = ref(1)
+const totalPaginas = computed(() => Math.ceil(documentosFiltrados.value.length / documentosPorPagina))
+const documentosPaginados = computed(() => {
+  const inicio = (paginaActual.value - 1) * documentosPorPagina
+  return documentosFiltrados.value.slice(inicio, inicio + documentosPorPagina)
+})
 
 // Cargar permisos contextuales para documentos mostrados
 async function cargarPermisosContextuales() {
@@ -453,6 +470,32 @@ async function confirmarEliminacion() {
     alert(error.response?.data?.message || 'Error al eliminar el documento')
   }
 }
+
+function puedeEditarDocumento(doc) {
+  // Bitwise o contextual (creador o área, o admin)
+  return canEditDocumentLocal(authStore.user, doc)
+}
+
+function irAPapelera() {
+  router.push({ name: 'documentos-papelera' })
+}
+
+const puedeVerPapelera = computed(() => {
+  // Permiso bitwise o contextual (admin, eliminar, creador, área)
+  const user = authStore.user
+  if (!user) return false
+  if (user.NombreRol?.toLowerCase().includes('admin')) return true
+  if ((user.Permisos & PERMISSION_BITS.ELIMINAR) > 0) return true
+  // Si hay más lógica contextual, agregar aquí
+  return false
+})
+
+function irPagina(pag) {
+  if (pag < 1 || pag > totalPaginas.value) return
+  paginaActual.value = pag
+}
+
+watch(documentosFiltrados, () => { paginaActual.value = 1 })
 </script>
 
 <style scoped>
@@ -461,63 +504,101 @@ async function confirmarEliminacion() {
   width: 100%;
 }
 
-.table-filters {
+.filtros-bar {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #f6f8fa;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.search-filter {
+.filtros-izq {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filtros-der {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-left: auto;
+}
+
+.input-icon {
   position: relative;
-  flex: 1;
-  min-width: 250px;
+  display: flex;
+  align-items: center;
 }
 
-.search-filter i {
+.input-icon i {
   position: absolute;
   left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6c757d;
+  color: #b0b8c1;
+  font-size: 1rem;
 }
 
-.search-filter input {
-  width: 100%;
-  padding: 0.5rem 0.5rem 0.5rem 2rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.9rem;
+.input-icon input {
+  padding-left: 2rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  height: 2.2rem;
+  font-size: 1rem;
 }
 
-.advanced-filters {
+.filtros-bar select,
+.filtros-bar input[type='date'] {
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  height: 2.2rem;
+  font-size: 1rem;
+  padding: 0 0.75rem;
+}
+
+.btn-nuevo {
+  background: #16c784;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  font-size: 1rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(22,199,132,0.08);
+  transition: background 0.2s;
 }
 
-.filter-group {
+.btn-nuevo:hover {
+  background: #13a06b;
+}
+
+.btn-papelera {
+  background: #f87171;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  font-size: 1rem;
   display: flex;
-  flex-direction: column;
-  min-width: 150px;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(248,113,113,0.08);
+  transition: background 0.2s;
 }
 
-.filter-group label {
-  font-size: 0.8rem;
-  color: #495057;
-  margin-bottom: 0.25rem;
-}
-
-.filter-group select,
-.filter-group input {
-  padding: 0.4rem 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.9rem;
+.btn-papelera:hover {
+  background: #dc2626;
 }
 
 .table-responsive {
@@ -534,18 +615,17 @@ async function confirmarEliminacion() {
 
 .documentos-table th,
 .documentos-table td {
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .documentos-table th {
-  background-color: #f8f9fa;
+  background: #f6f8fa;
   font-weight: 600;
-  color: #495057;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
 }
 
 .documentos-table th.sortable {
@@ -557,7 +637,7 @@ async function confirmarEliminacion() {
 }
 
 .documentos-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background: #f0f4f8;
 }
 
 .documentos-table tr.highlighted {
@@ -835,37 +915,75 @@ async function confirmarEliminacion() {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
-  .detalle-grupo {
-    grid-template-columns: 1fr;
+@media (max-width: 900px) {
+  .filtros-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
-  
-  .documentos-table th:nth-child(4),
-  .documentos-table th:nth-child(5),
-  .documentos-table td:nth-child(4),
-  .documentos-table td:nth-child(5) {
-    display: none;
+  .filtros-izq {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .filtros-der {
+    margin-left: 0;
+    justify-content: flex-end;
+    gap: 0.7rem;
+    margin-top: 0.5rem;
   }
 }
 
 @media (max-width: 576px) {
-  .table-filters {
+  .filtros-bar {
     flex-direction: column;
     gap: 0.75rem;
   }
   
-  .advanced-filters {
+  .filtros-izq {
     flex-direction: column;
     gap: 0.75rem;
   }
   
-  .filter-group {
-    min-width: 100%;
+  .input-icon {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .input-icon input {
+    width: 100%;
   }
   
   .documentos-table th:nth-child(3),
   .documentos-table td:nth-child(3) {
     display: none;
   }
+}
+
+.paginacion-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 1rem 0 0.5rem 0;
+}
+.btn-pag {
+  background: #f6f8fa;
+  border: 1px solid #d1d5db;
+  color: #184d2b;
+  border-radius: 5px;
+  padding: 0.35rem 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-pag.activa, .btn-pag:hover:not(:disabled) {
+  background: #2dc76d;
+  color: #fff;
+  border-color: #2dc76d;
+}
+.btn-pag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style> 
