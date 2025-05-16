@@ -45,7 +45,7 @@ const router = createRouter({
         {
           path: 'areas',
           name: 'areas',
-          component: () => import('../views/AreasView.vue'),
+          component: () => import('../views/areas/AreasView.vue'),
           meta: { requiresAuth: true }
         },
         {
