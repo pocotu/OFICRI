@@ -11,7 +11,6 @@ export const sidebarOptions = {
   mesa: [
     { icon: 'fa-solid fa-gauge', label: 'Dashboard', route: '/dashboard' },
     { icon: 'fa-solid fa-file-circle-plus', label: 'Recepción de Documentos', route: '/documentos/recepcion' },
-    { icon: 'fa-solid fa-share-nodes', label: 'Derivación', route: '/documentos/derivacion' },
     { icon: 'fa-solid fa-magnifying-glass', label: 'Consulta', route: '/documentos/consulta' },
     { icon: 'fa-solid fa-chart-bar', label: 'Reportes', route: '/reportes' },
     { icon: 'fa-solid fa-file-export', label: 'Exportar', route: '/exportar' }
@@ -20,7 +19,6 @@ export const sidebarOptions = {
     { icon: 'fa-solid fa-gauge', label: 'Dashboard', route: '/dashboard' },
     { icon: 'fa-solid fa-file', label: 'Gestión Documental', route: '/documentos/gestion' },
     { icon: 'fa-solid fa-tasks', label: 'Procesamiento', route: '/documentos/procesamiento' },
-    { icon: 'fa-solid fa-share-nodes', label: 'Derivación', route: '/documentos/derivacion' },
     { icon: 'fa-solid fa-bell', label: 'Monitoreo', route: '/documentos/monitoreo' },
     { icon: 'fa-solid fa-chart-bar', label: 'Reportes', route: '/reportes' },
     { icon: 'fa-solid fa-file-export', label: 'Exportar', route: '/exportar' }

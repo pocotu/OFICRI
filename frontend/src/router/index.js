@@ -61,12 +61,6 @@ const router = createRouter({
               meta: { requiresAuth: true }
             },
             {
-              path: 'derivacion',
-              name: 'documentos-derivacion',
-              component: () => import('../views/documentos/DerivacionView.vue'),
-              meta: { requiresAuth: true }
-            },
-            {
               path: 'consulta',
               name: 'documentos-consulta',
               component: () => import('../views/documentos/ConsultaView.vue'),

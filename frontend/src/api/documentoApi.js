@@ -40,4 +40,10 @@ export function eliminarDocumentoPermanente(id, token) {
   return axios.delete(`/api/documentos/papelera/eliminar/${id}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
+}
+
+export function derivarDocumento(id, data, token) {
+  return axios.post(`/api/documentos/${id}/derivar`, data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 } 

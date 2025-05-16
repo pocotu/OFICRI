@@ -73,26 +73,26 @@
               <template v-if="puedeEditarDocumento(documento)">
                 <button @click="editarDocumento(documento)" class="btn-accion btn-editar" title="Editar">
                   <i class="fas fa-edit"></i>
-              </button>
-            </template>
-              <PermissionGate :permission="PERMISSION_BITS.DERIVAR">
+                </button>
+              </template>
+              <template v-if="puedeDerivarDocumento(documento)">
                 <button @click="derivarDocumento(documento)" class="btn-accion btn-derivar" title="Derivar">
                   <i class="fas fa-share"></i>
                 </button>
-              </PermissionGate>
+              </template>
               <!-- Eliminar: solo mostrar si tiene permiso bitwise O contextual, nunca ambos -->
               <template v-if="permisosContextuales[documento.IDDocumento]?.eliminar">
                 <button @click="eliminarDocumento(documento)" class="btn-accion btn-eliminar" title="Eliminar">
                   <i class="fas fa-trash"></i>
                 </button>
-            </template>
-            <template v-else>
+              </template>
+              <template v-else>
                 <PermissionGate :permission="PERMISSION_BITS.ELIMINAR">
                   <button @click="eliminarDocumento(documento)" class="btn-accion btn-eliminar" title="Eliminar">
                     <i class="fas fa-trash"></i>
                   </button>
                 </PermissionGate>
-            </template>
+              </template>
             </div>
           </td>
           <td>{{ documento.NroRegistro }}</td>
@@ -240,6 +240,43 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Derivación -->
+    <template v-if="mostrarDerivar">
+      <div class="modal-overlay" @click.self="mostrarDerivar = false">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>Derivar Documento</h3>
+              <button class="btn-cerrar" @click="mostrarDerivar = false">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Área destino</label>
+                <select v-model="areaDestino" required>
+                  <option value="" disabled>Seleccione un área</option>
+                  <option v-for="area in areas" :key="area.IDArea" :value="area.IDArea">
+                    {{ area.NombreArea }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Observación (opcional)</label>
+                <textarea v-model="observacionDerivar" rows="2" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" @click="mostrarDerivar = false">Cancelar</button>
+              <button class="btn btn-success" :disabled="!areaDestino || derivando" @click="confirmarDerivacion">
+                <i class="fas fa-share"></i> Derivar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -249,8 +286,8 @@ import { formatearFecha } from '../utils/formatters'
 import PermissionGate from './PermissionGate.vue'
 import { PERMISSION_BITS } from '../services/permissionService'
 import { useAuthStore } from '../stores/auth'
-import { eliminarDocumento as apiEliminarDocumento } from '../api/documentoApi'
-import { canDeleteDocument, canEditDocumentLocal } from '../services/permissionService'
+import { eliminarDocumento as apiEliminarDocumento, derivarDocumento as apiDerivarDocumento } from '../api/documentoApi'
+import { canDeleteDocument, canEditDocumentLocal, canDeriveDocumentLocal } from '../services/permissionService'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -284,7 +321,6 @@ const mostrarConfirmacion = ref(false)
 const documentoAEliminar = ref(null)
 const permisosContextuales = ref({})
 const router = useRouter()
-
 const authStore = useAuthStore()
 
 const documentosPorPagina = 10
@@ -437,9 +473,39 @@ function editarDocumento(documento) {
 }
 
 // Derivar documento
+const mostrarDerivar = ref(false)
+const documentoADerivar = ref(null)
+const areaDestino = ref('')
+const observacionDerivar = ref('')
+const derivando = ref(false)
+
 function derivarDocumento(documento) {
-  emit('derivar', documento)
-  cerrarDetalle()
+  documentoADerivar.value = documento
+  areaDestino.value = ''
+  observacionDerivar.value = ''
+  mostrarDerivar.value = true
+}
+
+async function confirmarDerivacion() {
+  if (!documentoADerivar.value || !areaDestino.value) return
+  derivando.value = true
+  try {
+    await apiDerivarDocumento(documentoADerivar.value.IDDocumento, {
+      IDAreaDestino: areaDestino.value,
+      Observacion: observacionDerivar.value
+    }, authStore.token)
+    mostrarDerivar.value = false
+    documentoADerivar.value = null
+    areaDestino.value = ''
+    observacionDerivar.value = ''
+    emit('refresh')
+    // Opcional: notificación de éxito
+    alert('Documento derivado con éxito')
+  } catch (e) {
+    alert(e.response?.data?.message || 'Error al derivar documento')
+  } finally {
+    derivando.value = false
+  }
 }
 
 // Eliminar documento (mostrar confirmación)
@@ -474,6 +540,10 @@ async function confirmarEliminacion() {
 function puedeEditarDocumento(doc) {
   // Bitwise o contextual (creador o área, o admin)
   return canEditDocumentLocal(authStore.user, doc)
+}
+
+function puedeDerivarDocumento(doc) {
+  return canDeriveDocumentLocal(authStore.user, doc)
 }
 
 function irAPapelera() {

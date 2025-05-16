@@ -163,4 +163,22 @@ export function canEditDocumentLocal(user, doc) {
   const isOwner = doc.IDUsuarioCreador === user.IDUsuario;
   const isSameArea = doc.IDAreaActual === user.IDArea;
   return canEdit || isOwner || isSameArea;
+}
+
+/**
+ * Verifica si el usuario puede derivar un documento (bitwise/contextual, local)
+ * @param {object} user - Usuario autenticado
+ * @param {object} doc - Documento
+ * @returns {boolean}
+ */
+export function canDeriveDocumentLocal(user, doc) {
+  if (!user || !doc) return false;
+  // Admin
+  if (user.NombreRol?.toLowerCase().includes('admin')) return true;
+  // Bitwise
+  const canDerive = (user.Permisos & PERMISSION_BITS.DERIVAR) > 0;
+  // Contextual: creador o área
+  const isOwner = doc.IDUsuarioCreador === user.IDUsuario;
+  const isSameArea = doc.IDAreaActual === user.IDArea;
+  return canDerive || isOwner || isSameArea;
 } 

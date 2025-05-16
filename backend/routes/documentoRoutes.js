@@ -374,4 +374,55 @@ router.delete('/papelera/eliminar/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// DERIVAR DOCUMENTO
+router.post('/:id/derivar', authMiddleware, async (req, res) => {
+  try {
+    const documentoId = parseInt(req.params.id)
+    const userId = req.user.IDUsuario
+    const { IDAreaDestino, Observacion } = req.body
+    if (!IDAreaDestino) return res.status(400).json({ message: 'Área destino requerida' })
+    // Verificar permisos (bitwise DERIVAR o contextual)
+    const canDerivar = await permissionService.hasPermission(userId, permissionService.PERMISSION_BITS.DERIVAR)
+    let canDerivarContextual = false
+    if (!canDerivar) {
+      canDerivarContextual = await permissionService.hasContextualPermission(userId, 'DOCUMENTO', documentoId, 'DERIVAR')
+      if (!canDerivarContextual) {
+        await permissionService.logUnauthorizedAccess(userId, 'DOCUMENTO', documentoId, 'DERIVAR', req.ip)
+        return res.status(403).json({ message: 'No tiene permiso para derivar este documento' })
+      }
+    }
+    // Obtener datos actuales del documento
+    const [[doc]] = await pool.query('SELECT * FROM Documento WHERE IDDocumento = ?', [documentoId])
+    if (!doc) return res.status(404).json({ message: 'Documento no encontrado' })
+    // Insertar en Derivacion
+    await pool.query(
+      `INSERT INTO Derivacion (IDDocumento, IDMesaPartes, IDAreaOrigen, IDAreaDestino, IDUsuarioDeriva, EstadoDerivacion, Observacion)
+       VALUES (?, ?, ?, ?, ?, 'PENDIENTE', ?)`,
+      [documentoId, doc.IDMesaPartes, doc.IDAreaActual, IDAreaDestino, userId, Observacion || '']
+    )
+    // Actualizar Documento (área actual y estado)
+    await pool.query(
+      `UPDATE Documento SET IDAreaActual = ?, Estado = 'DERIVADO' WHERE IDDocumento = ?`,
+      [IDAreaDestino, documentoId]
+    )
+    // Registrar en DocumentoLog
+    await pool.query(
+      `INSERT INTO DocumentoLog (IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen)
+       VALUES (?, ?, 'DERIVAR', ?, ?)`,
+      [documentoId, userId, `Derivado a área ID ${IDAreaDestino}. ${Observacion || ''}`, req.ip]
+    )
+    // Registrar en DerivacionLog
+    const [[{ IDDerivacion }]] = await pool.query('SELECT MAX(IDDerivacion) AS IDDerivacion FROM Derivacion WHERE IDDocumento = ?', [documentoId])
+    await pool.query(
+      `INSERT INTO DerivacionLog (IDDerivacion, IDUsuario, TipoEvento, Detalles, FechaEvento)
+       VALUES (?, ?, 'DERIVAR', ?, NOW())`,
+      [IDDerivacion, userId, Observacion || '']
+    )
+    res.json({ message: 'Documento derivado con éxito' })
+  } catch (error) {
+    console.error('Error al derivar documento:', error)
+    res.status(500).json({ message: 'Error interno al derivar documento' })
+  }
+})
+
 module.exports = router; 
