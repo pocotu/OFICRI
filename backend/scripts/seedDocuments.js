@@ -242,7 +242,7 @@ class DocumentoSeeder {
   try {
     const factory = new DocumentoFactory(areaModel, UserModel, pool);
     const seeder = new DocumentoSeeder(documentoModel, factory, traceService);
-    await seeder.seed(20, true);
+    await seeder.seed(100, true);
     console.log('Datos de prueba insertados correctamente.');
     process.exit(0);
   } catch (err) {
