@@ -40,8 +40,9 @@ const systemTitle = computed(() =>
 const showMenu = ref(false)
 function toggleMenu() { showMenu.value = !showMenu.value }
 function logout() {
-  authStore.logout()
-  router.push('/login')
+  authStore.logout().then(() => {
+    router.push('/login')
+  })
 }
 </script>
 
