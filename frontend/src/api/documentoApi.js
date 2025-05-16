@@ -46,4 +46,17 @@ export function derivarDocumento(id, data, token) {
   return axios.post(`/api/documentos/${id}/derivar`, data, {
     headers: { Authorization: `Bearer ${token}` }
   });
+}
+
+/**
+ * Búsqueda avanzada de documentos para la vista de Consulta
+ * @param {object} filtros - { area, estado, texto, tipo, fechaInicio, fechaFin, page, pageSize }
+ * @param {string} token
+ */
+export function fetchDocumentosConsulta(filtros, token) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([k, v]) => { if (v) params.append(k, v) })
+  return axios.get(`/api/documentos?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 } 

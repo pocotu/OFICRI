@@ -1,4 +1,4 @@
-# Sistema de Permisos OFICRI: Implementación y Configuración
+# Sistema de Permisos OFICRI: Implementación, UI/UX y Configuración (Actualizado)
 
 
 # ⚠️ RESTRICCIONES CRÍTICAS DE SEGURIDAD ⚠️
@@ -188,118 +188,88 @@ El **Responsable de Área** gestiona documentos específicos de su área:
    - Alertas de documentos pendientes
    - Estadísticas de rendimiento
 
-## **4. Implementación para Frontend**
+## **4. Funciones Clave y Flujos UI/UX**
 
-### 4.1 Verificación de Permisos en UI
+### 4.1 Tabla de Documentos (Recepción/Gestión)
+- Acciones por fila según permisos (bitwise/contextual):
+  - Ver detalle
+  - Editar
+  - Derivar (modal con selección de área destino y observación)
+  - Eliminar (mover a papelera)
+- Filtros avanzados: búsqueda, área, estado, fecha.
+- Paginación (10 documentos por página).
+- Botón de acceso a la Papelera en la barra de filtros.
 
-Utilizar componentes condicionales para mostrar u ocultar elementos según permisos:
+### 4.2 Derivación de Documentos
+- **Centralizada en la tabla de documentos**.
+- Modal accesible solo si el usuario tiene permiso (bitwise/contextual).
+- Registro de derivaciones en la tabla `Derivacion` y logs.
+- No existe menú ni vista separada de "Derivación".
 
+### 4.3 Papelera de Reciclaje
+- Acceso desde botón en la tabla de documentos.
+- Permisos:
+  - Ver: bit 3 (Ver)
+  - Restaurar: bit 1 (Editar)
+  - Eliminar permanente: bits 2 (Eliminar) y 7 (Admin)
+- Restricciones contextuales:
+  - Admin: acceso total
+  - Usuarios: solo documentos propios o de su área
+
+### 4.4 Consulta y Reportes
+- Consulta: vista de solo lectura, búsqueda avanzada.
+- Reportes: generación y exportación según permisos.
+
+### 4.5 Auditoría
+- Acceso solo para administradores.
+- Registro de cambios y accesos en tablas de log.
+
+## **5. Propuestas de Mejora y Escalabilidad**
+
+- **Centralizar todas las acciones sobre documentos en la tabla principal** (evitar menús redundantes).
+- **Componentes reutilizables**: PermissionGate, modales, paginación.
+- **Validación de permisos en frontend y backend** (ver ejemplos en este documento y en el código).
+- **Feedback claro al usuario**: notificaciones visuales (toasts) para éxito/error.
+- **Escalabilidad**: la base de datos soporta nuevos tipos de documentos y áreas especializadas (ver tablas Dosaje, ForenseDigital, QuimicaToxicologiaForense en @db.sql).
+- **Auditoría exhaustiva**: todos los cambios y accesos relevantes quedan registrados.
+
+## **6. Ejemplos de Implementación (Frontend)**
+
+### 6.1 Componente PermissionGate
 ```jsx
-// Componente PermissionGate
-function PermissionGate({ permission, children, fallback = null }) {
-  const hasPermission = permissionService.hasPermission(permission);
-  return hasPermission ? children : fallback;
-}
-
-// Ejemplo de uso
-<PermissionGate permission={PERMISSION_BITS.ELIMINAR}>
-  <button className="btn-delete">Eliminar</button>
+<PermissionGate :permission="PERMISSION_BITS.ELIMINAR">
+  <button class="btn-delete">Eliminar</button>
 </PermissionGate>
 ```
 
-### 4.2 Protección de Rutas
-
-Implementar HOC (High Order Component) para proteger rutas según permisos:
-
-```jsx
-// Componente ProtectedRoute
-function ProtectedRoute({ requiredPermission, children }) {
-  const hasPermission = permissionService.hasPermission(requiredPermission);
-  return hasPermission ? children : <Navigate to="/acceso-denegado" />;
-}
-
-// Ejemplo de uso en React Router
-<Route 
-  path="/documentos/crear" 
-  element={
-    <ProtectedRoute requiredPermission={PERMISSION_BITS.CREAR}>
-      <CrearDocumento />
-    </ProtectedRoute>
-  } 
-/>
-```
-
-### 4.3 Servicio de Verificación de Permisos
-
-```javascript
-// servicio para verificar permisos
+### 6.2 Servicio de Permisos
+```js
 const hasPermission = (permissionBit) => {
   const user = getUserFromLocalStorage();
   if (!user || !user.Permisos) return false;
   return (user.Permisos & permissionBit) === permissionBit;
 };
+```
 
-// verificación de permisos contextuales
+### 6.3 Verificación Contextual
+```js
 const checkContextualPermission = async (resourceId, resourceType, action) => {
-  try {
-    const response = await apiClient.post('/permisos/verificar', {
-      idRecurso: resourceId,
-      tipoRecurso: resourceType,
-      accion: action
-    });
-    return response.data.tienePermiso;
-  } catch (error) {
-    console.error('Error verificando permiso contextual', error);
-    return false;
-  }
+  // Llama a la API para verificar permisos contextuales
 };
 ```
 
-## **5. Papelera de Reciclaje**
+## **7. Recomendaciones y Buenas Prácticas**
 
-La funcionalidad de papelera permite la recuperación de documentos eliminados:
+- Validar permisos en ambas capas (frontend y backend)
+- No exponer lógica sensible en el cliente
+- Refrescar permisos dinámicamente
+- Proveer mensajes claros de acceso denegado
+- Implementar tests automatizados de permisos
 
-### 5.1 Acceso según Permisos
+## **8. Notas sobre la Base de Datos**
 
-- **Ver papelera**: Requiere bit 3 (Ver)
-- **Restaurar documentos**: Requiere bit 1 (Editar)
-- **Eliminar permanentemente**: Requiere bit 2 (Eliminar) y bit 7 (Administrar)
+- El modelo soporta escalabilidad para nuevos tipos de documentos y áreas.
+- Las tablas de log y auditoría permiten trazabilidad completa.
+- Los procedimientos almacenados y triggers aseguran integridad y seguridad.
 
-### 5.2 Implementación
-
-- Los documentos "eliminados" se marcan con `IsActive = FALSE`
-- La papelera muestra estos documentos filtrados
-- La restauración actualiza `IsActive = TRUE`
-- La eliminación permanente remueve el registro de la base de datos
-
-### 5.3 Restricciones Contextuales
-
-- Administradores pueden ver y restaurar cualquier documento
-- Usuarios regulares solo pueden ver/restaurar documentos de su área o que crearon
-- Eliminación permanente restringida a administradores
-
-## **6. Auditoría de Permisos**
-
-### 6.1 Registro de Cambios
-
-Cada cambio en permisos se registra en la tabla `UsuarioLog`:
-
-```sql
-INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso) 
-VALUES (?, 'CAMBIO_PERMISOS', ?, ?, TRUE);
-```
-
-### 6.2 Reportes de Auditoría
-
-- Historial de cambios de permisos por usuario
-- Registro de intentos de acceso no autorizado
-- Análisis de uso de permisos por rol
-
-## **7. Recomendaciones para Implementación**
-
-1. **Validación en Ambas Capas**: Verificar permisos tanto en frontend (UI) como en backend (API)
-2. **Caché de Permisos**: Almacenar permisos en localStorage para consultas rápidas, pero validar en backend
-3. **Mensajes Claros**: Proporcionar feedback útil cuando se deniegue un acceso
-4. **Actualización Dinámica**: Refrescar permisos al cambiar de rol o recibir actualizaciones
-5. **Seguridad**: Evitar exponer lógica de permisos en el código cliente
-6. **Pruebas**: Implementar tests automatizados para verificar correcta aplicación de permisos
+**Este documento refleja la arquitectura, permisos y experiencia de usuario real del sistema OFICRI, alineado con la base de datos y el código actual.**

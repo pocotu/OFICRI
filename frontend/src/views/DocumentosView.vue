@@ -126,6 +126,7 @@
       <TrazabilidadView />
     </Modal>
   </div>
+  <router-view />
 </template>
 
 <script setup>

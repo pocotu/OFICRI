@@ -19,11 +19,59 @@ function requireCrearDocumento(req, res, next) {
   });
 }
 
-// GET /api/documentos
+// GET /api/documentos (con filtros avanzados y compatibilidad total)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM Documento WHERE Estado != "PAPELERA"');
-    res.json(rows);
+    const { area, estado, texto, tipo, fechaInicio, fechaFin, page, pageSize } = req.query;
+    let sql = 'SELECT * FROM Documento WHERE Estado != "PAPELERA"';
+    const params = [];
+    if (area) { sql += ' AND IDAreaActual = ?'; params.push(area); }
+    if (estado) { sql += ' AND Estado = ?'; params.push(estado); }
+    if (tipo) { sql += ' AND OrigenDocumento = ?'; params.push(tipo); }
+    if (fechaInicio) { sql += ' AND FechaDocumento >= ?'; params.push(fechaInicio); }
+    if (fechaFin) { sql += ' AND FechaDocumento <= ?'; params.push(fechaFin); }
+    if (texto) {
+      sql += ' AND (' +
+        'NroRegistro LIKE ? OR ' +
+        'NumeroOficioDocumento LIKE ? OR ' +
+        'Procedencia LIKE ? OR ' +
+        'Contenido LIKE ?' +
+      ')';
+      const like = `%${texto}%`;
+      params.push(like, like, like, like);
+    }
+    // Si se envía paginación, aplicar paginación y devolver total
+    if (page && pageSize) {
+      const offset = (parseInt(page) - 1) * parseInt(pageSize);
+      sql += ' ORDER BY FechaDocumento DESC LIMIT ? OFFSET ?';
+      params.push(parseInt(pageSize), offset);
+      const [rows] = await pool.query(sql, params);
+      // Total para paginación
+      let countSql = 'SELECT COUNT(*) as total FROM Documento WHERE Estado != "PAPELERA"';
+      const countParams = [];
+      if (area) { countSql += ' AND IDAreaActual = ?'; countParams.push(area); }
+      if (estado) { countSql += ' AND Estado = ?'; countParams.push(estado); }
+      if (tipo) { countSql += ' AND OrigenDocumento = ?'; countParams.push(tipo); }
+      if (fechaInicio) { countSql += ' AND FechaDocumento >= ?'; countParams.push(fechaInicio); }
+      if (fechaFin) { countSql += ' AND FechaDocumento <= ?'; countParams.push(fechaFin); }
+      if (texto) {
+        countSql += ' AND (' +
+          'NroRegistro LIKE ? OR ' +
+          'NumeroOficioDocumento LIKE ? OR ' +
+          'Procedencia LIKE ? OR ' +
+          'Contenido LIKE ?' +
+        ')';
+        const like = `%${texto}%`;
+        countParams.push(like, like, like, like);
+      }
+      const [[{ total }]] = await pool.query(countSql, countParams);
+      res.json({ data: rows, total });
+    } else {
+      // Sin paginación: devolver todos los documentos activos
+      sql += ' ORDER BY FechaDocumento DESC';
+      const [rows] = await pool.query(sql, params);
+      res.json(rows);
+    }
   } catch (error) {
     console.error('Error al obtener documentos:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
