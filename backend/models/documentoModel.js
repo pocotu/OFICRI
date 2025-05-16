@@ -48,8 +48,17 @@ async function getTrazabilidadById(id) {
   return rows;
 }
 
+async function addDocumentoArchivo(IDDocumento, file) {
+  const { originalname, filename, mimetype, size } = file;
+  await pool.query(
+    `INSERT INTO DocumentoArchivo (IDDocumento, NombreArchivo, RutaArchivo, MimeType, Tamano) VALUES (?, ?, ?, ?, ?)`,
+    [IDDocumento, originalname, filename, mimetype, size]
+  );
+}
+
 module.exports = {
   getAllDocumentos,
   createDocumento,
   getTrazabilidadById,
+  addDocumentoArchivo,
 }; 

@@ -5,6 +5,8 @@ const { getUserFromToken } = require('../services/userService');
 const pool = require('../db');
 const authMiddleware = require('../middleware/authMiddleware');
 const permissionService = require('../services/permissionService');
+const multer = require('multer');
+const path = require('path');
 
 // Middleware para validar permisos (bit 0 = crear)
 function requireCrearDocumento(req, res, next) {
@@ -18,6 +20,18 @@ function requireCrearDocumento(req, res, next) {
     next();
   });
 }
+
+// Configuración de almacenamiento para archivos adjuntos
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
 
 // GET /api/documentos (con filtros avanzados y compatibilidad total)
 router.get('/', authMiddleware, async (req, res) => {
@@ -79,16 +93,14 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // POST /api/documentos
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, upload.array('archivos'), async (req, res) => {
   try {
     // Verificar si tiene permiso para crear documentos
     const hasPermission = await permissionService.hasPermission(
       req.user.IDUsuario, 
       permissionService.PERMISSION_BITS.CREAR
     );
-    
     if (!hasPermission) {
-      // Registrar intento no autorizado
       await permissionService.logUnauthorizedAccess(
         req.user.IDUsuario,
         'DOCUMENTO',
@@ -96,22 +108,27 @@ router.post('/', authMiddleware, async (req, res) => {
         'CREAR',
         req.ip
       );
-      
       return res.status(403).json({ message: 'No tiene permiso para crear documentos' });
     }
-    
-    const { 
-      IDMesaPartes, 
-      IDAreaActual, 
-      NroRegistro, 
-      NumeroOficioDocumento, 
-      OrigenDocumento, 
+    // Extraer campos del formulario (FormData)
+    const {
+      IDMesaPartes,
+      IDAreaActual,
+      NroRegistro,
+      NumeroOficioDocumento,
+      OrigenDocumento,
       Contenido,
+      Estado,
+      Procedencia,
+      Observaciones,
       TipoDocumentoSalida,
       FechaDocumentoSalida
     } = req.body;
-    
-    // Ejecutar la inserción
+    // Validación básica
+    if (!IDMesaPartes || !IDAreaActual || !NroRegistro || !NumeroOficioDocumento || !OrigenDocumento || !Contenido) {
+      return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    }
+    // Insertar documento
     const [result] = await pool.query(
       `INSERT INTO Documento (
         IDMesaPartes, 
@@ -123,9 +140,11 @@ router.post('/', authMiddleware, async (req, res) => {
         OrigenDocumento, 
         Estado, 
         Contenido,
+        Procedencia,
+        Observaciones,
         TipoDocumentoSalida,
         FechaDocumentoSalida
-      ) VALUES (?, ?, ?, ?, ?, CURDATE(), ?, 'RECIBIDO', ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?)`,
       [
         IDMesaPartes, 
         IDAreaActual, 
@@ -133,19 +152,29 @@ router.post('/', authMiddleware, async (req, res) => {
         NroRegistro, 
         NumeroOficioDocumento, 
         OrigenDocumento, 
+        Estado || 'RECIBIDO',
         Contenido,
-        TipoDocumentoSalida,
-        FechaDocumentoSalida
+        Procedencia || '',
+        Observaciones || '',
+        TipoDocumentoSalida || '',
+        FechaDocumentoSalida || null
       ]
     );
-    
+    // Guardar archivos adjuntos si existen
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        await pool.query(
+          `INSERT INTO DocumentoArchivo (IDDocumento, NombreArchivo, RutaArchivo, MimeType, Tamano) VALUES (?, ?, ?, ?, ?)`,
+          [result.insertId, file.originalname, file.filename, file.mimetype, file.size]
+        );
+      }
+    }
     // Registrar en el log de documentos
     await pool.query(
       `INSERT INTO DocumentoLog (IDDocumento, IDUsuario, TipoAccion, DetallesAccion, IPOrigen)
        VALUES (?, ?, 'CREAR', 'Documento creado', ?)`,
       [result.insertId, req.user.IDUsuario, req.ip]
     );
-    
     res.status(201).json({ 
       id: result.insertId,
       message: 'Documento creado con éxito' 

@@ -3,11 +3,9 @@
     <div class="dashboard-header">
       <h1>
         <i class="fa fa-shield-alt"></i>
-        Sistema de Gestión OFICRI <span>- ADMINISTRACIÓN</span>
+        Sistema de Gestión OFICRI
+        <span v-if="dashboardSubtitle">- {{ dashboardSubtitle }}</span>
       </h1>
-      <div class="user-info">
-        <i class="fa fa-user-circle"></i> {{ userName }}
-      </div>
     </div>
     <div class="dashboard-metrics">
       <WidgetCard v-for="widget in widgets" :key="widget.label" :value="widget.value" :label="widget.label" :icon="widget.icon" :color="widget.color" />
@@ -41,6 +39,14 @@ const loading = ref(true)
 const token = computed(() => authStore.token)
 
 const userName = computed(() => authStore.user?.Nombres + ' ' + authStore.user?.Apellidos || '')
+
+const dashboardSubtitle = computed(() => {
+  const rol = authStore.user?.NombreRol?.toLowerCase() || '';
+  if (rol.includes('admin')) return 'ADMINISTRACIÓN';
+  if (rol.includes('mesa')) return 'MESA DE PARTES';
+  if (rol.includes('responsable')) return 'RESPONSABLE DE ÁREA';
+  return '';
+});
 
 onMounted(async () => {
   try {
@@ -117,13 +123,6 @@ const esAdmin = computed(() => {
   font-size: 1.1rem;
   color: #4b5563;
   font-weight: 400;
-}
-.user-info {
-  font-size: 1.1rem;
-  color: #14532d;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 .dashboard-metrics {
   display: flex;
