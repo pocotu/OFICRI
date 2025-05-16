@@ -475,4 +475,51 @@ router.post('/:id/reset-password', authMiddleware, async (req, res) => {
   }
 });
 
+// PATCH /api/usuarios/:id/bloqueo
+router.patch('/:id/bloqueo', authMiddleware, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { bloquear } = req.body;
+    // Validación de entrada
+    if (typeof bloquear !== 'boolean') {
+      return res.status(400).json({ message: 'El campo "bloquear" debe ser booleano.' });
+    }
+    // Solo administradores pueden bloquear/desbloquear usuarios
+    const isAdmin = await permissionService.hasPermission(
+      req.user.IDUsuario,
+      permissionService.PERMISSION_BITS.ADMIN
+    );
+    if (!isAdmin) {
+      await permissionService.logUnauthorizedAccess(
+        req.user.IDUsuario,
+        'USUARIO',
+        userId,
+        'BLOQUEAR',
+        req.ip
+      );
+      return res.status(403).json({ message: 'No tiene permiso para bloquear o desbloquear usuarios.' });
+    }
+    // No permitir que un usuario se bloquee a sí mismo
+    if (userId === req.user.IDUsuario) {
+      return res.status(400).json({ message: 'No puede bloquearse a sí mismo.' });
+    }
+    await userService.setBloqueoUsuario(userId, bloquear);
+    // Registrar en el log de usuarios
+    await pool.query(
+      `INSERT INTO UsuarioLog (IDUsuario, TipoEvento, IPOrigen, DispositivoInfo, Exitoso)
+       VALUES (?, ?, ?, ?, TRUE)`,
+      [
+        req.user.IDUsuario,
+        bloquear ? 'BLOQUEAR_USUARIO' : 'DESBLOQUEAR_USUARIO',
+        req.ip,
+        req.headers['user-agent'] || 'Unknown'
+      ]
+    );
+    res.json({ message: bloquear ? 'Usuario bloqueado correctamente.' : 'Usuario desbloqueado correctamente.' });
+  } catch (error) {
+    console.error('Error al cambiar el estado de bloqueo:', error);
+    res.status(500).json({ message: 'Error al cambiar el estado de bloqueo.' });
+  }
+});
+
 module.exports = router; 
