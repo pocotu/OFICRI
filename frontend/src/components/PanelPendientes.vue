@@ -1,10 +1,12 @@
 <template>
-  <div class="panel">
-    <div class="panel-title">Documentos Pendientes</div>
-    <div class="panel-content">
+  <div class="pending-docs">
+    <h2><i class="fa fa-clock"></i> Documentos Pendientes</h2>
+    <div class="pending-scroll">
       <ul v-if="documentos && documentos.length">
         <li v-for="doc in documentos" :key="doc.IDDocumento">
-          <strong>{{ doc.NroRegistro }}</strong> ({{ doc.NombreArea }}) - {{ doc.Contenido.substring(0, 50) }}...
+          <span class="doc-id">{{ doc.NroRegistro }}</span>
+          <span class="doc-title">{{ doc.Contenido.substring(0, 50) }}...</span>
+          <span class="doc-area">({{ doc.NombreArea }})</span>
         </li>
       </ul>
       <p v-else>No hay documentos pendientes.</p>
@@ -24,39 +26,51 @@ defineProps({
 </script>
 
 <style scoped>
-.panel {
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+.pending-docs {
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(44, 62, 80, 0.07);
-  padding: 1.5rem 1.2rem;
-  min-width: 320px;
-  min-height: 100px;
-  margin: 0.5rem;
-  transition: box-shadow 0.2s, transform 0.2s;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.08);
+  padding: 1.2rem 1rem;
+  flex: 1 1 250px;
+  display: flex;
+  flex-direction: column;
 }
-.panel:hover {
-  box-shadow: 0 6px 24px rgba(44, 62, 80, 0.13);
-  transform: translateY(-2px) scale(1.02);
-}
-.panel-title {
-  font-weight: bold;
+.pending-docs h2 {
+  font-size: 1.2rem;
   color: #14532d;
   margin-bottom: 1rem;
-  font-size: 1.1rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-.panel-content {
-  color: #263238;
-  font-size: 1rem;
+.pending-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
-.panel-content ul {
+.pending-docs ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
-.panel-content li {
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
+.pending-docs li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f1f1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.doc-id {
+  font-weight: 700;
+  color: #14532d;
+}
+.doc-title {
+  flex: 1;
+  color: #333;
+}
+.doc-area {
+  color: #888;
+  font-size: 0.95em;
 }
 </style> 

@@ -1,5 +1,6 @@
 <template>
-  <div class="widget-card">
+  <div :class="['widget-card', color]">
+    <i v-if="icon" :class="['fa', icon]"></i>
     <div class="widget-value">{{ value }}</div>
     <div class="widget-label">{{ label }}</div>
   </div>
@@ -14,42 +15,51 @@ defineProps({
   label: {
     type: String,
     required: true
+  },
+  icon: {
+    type: String,
+    default: ''
+  },
+  color: {
+    type: String,
+    default: ''
   }
 })
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 .widget-card {
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(44, 62, 80, 0.07);
-  padding: 1.5rem 1.2rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.08);
+  padding: 1.5rem 1rem;
   text-align: center;
-  min-width: 220px;
-  min-height: 110px;
+  flex: 1 1 180px;
+  margin: 0 0.5rem;
+  min-width: 160px;
+  transition: box-shadow 0.2s;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  margin: 0.5rem;
-  transition: box-shadow 0.2s, transform 0.2s;
+  justify-content: center;
 }
-.widget-card:hover {
-  box-shadow: 0 6px 24px rgba(44, 62, 80, 0.13);
-  transform: translateY(-2px) scale(1.02);
+.widget-card i {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
 }
 .widget-value {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: 2.1rem;
+  font-weight: 700;
   color: #14532d;
-  margin-bottom: 0.3rem;
 }
 .widget-label {
   font-size: 1.1rem;
-  color: #263238;
-  margin-top: 0.5rem;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-weight: 600;
+  color: #4b5563;
+  margin-top: 0.2rem;
 }
+.widget-card.primary { border-top: 4px solid #14532d; }
+.widget-card.warning { border-top: 4px solid #ffc107; }
+.widget-card.success { border-top: 4px solid #28a745; }
+.widget-card.info { border-top: 4px solid #17a2b8; }
 </style> 

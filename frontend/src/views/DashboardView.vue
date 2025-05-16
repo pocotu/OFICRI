@@ -1,9 +1,18 @@
 <template>
-  <div>
-    <div class="dashboard-widgets">
-      <WidgetCard v-for="widget in widgets" :key="widget.label" :value="widget.value" :label="widget.label" />
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1>
+        <i class="fa fa-shield-alt"></i>
+        Sistema de Gestión OFICRI <span>- ADMINISTRACIÓN</span>
+      </h1>
+      <div class="user-info">
+        <i class="fa fa-user-circle"></i> {{ userName }}
+      </div>
     </div>
-    <div class="dashboard-panels">
+    <div class="dashboard-metrics">
+      <WidgetCard v-for="widget in widgets" :key="widget.label" :value="widget.value" :label="widget.label" :icon="widget.icon" :color="widget.color" />
+    </div>
+    <div class="dashboard-content">
       <PanelActividad v-if="esAdmin" :actividad="actividadReciente" />
       <PanelPendientes :documentos="documentosPendientes" />
     </div>
@@ -31,6 +40,8 @@ const documentosPendientes = ref([]);
 const loading = ref(true)
 const token = computed(() => authStore.token)
 
+const userName = computed(() => authStore.user?.Nombres + ' ' + authStore.user?.Apellidos || '')
+
 onMounted(async () => {
   try {
     const [metricsRes, actividadRes, pendientesRes] = await Promise.all([
@@ -53,22 +64,22 @@ const widgets = computed(() => {
   const rol = authStore.user?.NombreRol?.toLowerCase() || ''
   if (rol.includes('admin')) {
     return [
-      { label: 'USUARIOS ACTIVOS', value: metrics.value.usuariosActivos },
-      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
-      { label: 'DOCUMENTOS REGISTRADOS', value: metrics.value.totalDocs },
-      { label: 'ÁREAS ACTIVAS', value: metrics.value.areasActivas },
+      { label: 'USUARIOS ACTIVOS', value: metrics.value.usuariosActivos, icon: 'fa-users', color: 'primary' },
+      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes, icon: 'fa-file-alt', color: 'warning' },
+      { label: 'DOCUMENTOS REGISTRADOS', value: metrics.value.totalDocs, icon: 'fa-archive', color: 'success' },
+      { label: 'ÁREAS ACTIVAS', value: metrics.value.areasActivas, icon: 'fa-sitemap', color: 'info' },
     ]
   }
   if (rol.includes('mesa')) {
     return [
-      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
-      { label: 'DOCUMENTOS DERIVADOS', value: metrics.value.derivados },
+      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes, icon: 'fa-file-alt', color: 'warning' },
+      { label: 'DOCUMENTOS DERIVADOS', value: metrics.value.derivados, icon: 'fa-share-square', color: 'info' },
     ]
   }
   if (rol.includes('responsable')) {
     return [
-      { label: 'DOCUMENTOS DE MI ÁREA', value: 0 },
-      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes },
+      { label: 'DOCUMENTOS DE MI ÁREA', value: 0, icon: 'fa-folder-open', color: 'primary' },
+      { label: 'DOCUMENTOS PENDIENTES', value: metrics.value.pendientes, icon: 'fa-file-alt', color: 'warning' },
     ]
   }
   return []
@@ -81,20 +92,53 @@ const esAdmin = computed(() => {
 </script>
 
 <style scoped>
-.dashboard-widgets {
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family: 'Roboto', Arial, sans-serif;
+}
+.dashboard-header {
   display: flex;
-  gap: 2rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.dashboard-header h1 {
+  font-size: 2rem;
+  color: #14532d;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.dashboard-header span {
+  font-size: 1.1rem;
+  color: #4b5563;
+  font-weight: 400;
+}
+.user-info {
+  font-size: 1.1rem;
+  color: #14532d;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dashboard-metrics {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
-.dashboard-panels {
+.dashboard-content {
   display: flex;
-  gap: 2rem;
-  flex-wrap: nowrap;
-  width: 100%;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
-.panel {
-  flex: 1 1 0;
-  min-width: 320px;
-  max-width: 600px;
+@media (max-width: 900px) {
+  .dashboard-metrics, .dashboard-content {
+    flex-direction: column;
+  }
 }
 </style> 

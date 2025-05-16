@@ -1,10 +1,12 @@
 <template>
-  <div class="panel">
-    <div class="panel-title">Actividad Reciente</div>
-    <div class="panel-content">
+  <div class="activity-feed">
+    <h2><i class="fa fa-history"></i> Actividad Reciente</h2>
+    <div class="activity-scroll">
       <ul v-if="actividad && actividad.length">
         <li v-for="item in actividad" :key="item.IDLog">
-          <strong>{{ item.TipoEvento }}</strong> por {{ item.Usuario }} ({{ item.IPOrigen }}) - {{ new Date(item.FechaEvento).toLocaleString() }}
+          <span :class="['event-type', item.TipoEvento?.toLowerCase()]">{{ item.TipoEvento }}</span>
+          <span class="event-desc">por {{ item.Usuario }}</span>
+          <span class="event-meta">{{ new Date(item.FechaEvento).toLocaleString() }}</span>
         </li>
       </ul>
       <p v-else>No hay actividad reciente.</p>
@@ -24,39 +26,50 @@ defineProps({
 </script>
 
 <style scoped>
-.panel {
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+.activity-feed {
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(44, 62, 80, 0.07);
-  padding: 1.5rem 1.2rem;
-  min-width: 320px;
-  min-height: 100px;
-  margin: 0.5rem;
-  transition: box-shadow 0.2s, transform 0.2s;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.08);
+  padding: 1.2rem 1rem;
+  flex: 2 1 350px;
+  margin-right: 1rem;
+  display: flex;
+  flex-direction: column;
 }
-.panel:hover {
-  box-shadow: 0 6px 24px rgba(44, 62, 80, 0.13);
-  transform: translateY(-2px) scale(1.02);
-}
-.panel-title {
-  font-weight: bold;
+.activity-feed h2 {
+  font-size: 1.2rem;
   color: #14532d;
   margin-bottom: 1rem;
-  font-size: 1.1rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-.panel-content {
-  color: #263238;
-  font-size: 1rem;
+.activity-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
-.panel-content ul {
+.activity-feed ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
-.panel-content li {
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
+.activity-feed li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f1f1;
+  display: flex;
+  flex-direction: column;
 }
+.event-type {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  text-transform: uppercase;
+}
+.event-type.bloquear_usuario { color: #dc3545; }
+.event-type.desbloquear_usuario { color: #28a745; }
+.event-type.login { color: #14532d; }
+.event-type.logout { color: #6c757d; }
+.event-desc { margin-left: 0.2rem; }
+.event-meta { font-size: 0.9em; color: #888; }
 </style> 
