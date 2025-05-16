@@ -53,26 +53,10 @@ const router = createRouter({
           name: 'documentos',
           component: () => import('../views/DocumentosView.vue'),
           meta: { requiresAuth: true },
-          children: [
-            {
-              path: 'recepcion',
-              name: 'documentos-recepcion',
-              component: () => import('../views/documentos/RecepcionView.vue'),
-              meta: { requiresAuth: true }
-            },
-            {
-              path: 'trazabilidad',
-              name: 'documentos-trazabilidad',
-              component: () => import('../views/documentos/TrazabilidadView.vue'),
-              meta: { requiresAuth: true }
-            },
-            {
-              path: 'papelera',
-              name: 'documentos-papelera',
-              component: () => import('../views/documentos/PapeleraView.vue'),
-              meta: { requiresAuth: true }
-            }
-          ]
+        },
+        {
+          path: 'documentos/recepcion',
+          redirect: { name: 'documentos' }
         },
         {
           path: 'consulta-documentos',
