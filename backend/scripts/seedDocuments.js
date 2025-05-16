@@ -4,10 +4,11 @@ const documentoModel = require('../models/documentoModel');
 const areaModel = require('../models/areaModel');
 const UserModel = require('../models/userModel');
 const pool = require('../db');
+const traceService = require('../services/traceService');
 
 class RegistroNumberGenerator {
   constructor() {
-    this.counter = 1000; // Empezamos desde 1000
+    this.counter = 1000;
   }
 
   getNextNumber() {
@@ -50,7 +51,7 @@ class DocumentoFactory {
       NumeroOficioDocumento: `OF-${faker.number.int({ min: 100, max: 999 })}`,
       OrigenDocumento: faker.helpers.arrayElement(['OF', 'ME', 'IN']),
       Contenido: faker.lorem.sentence(),
-      Estado: faker.helpers.arrayElement(['En trámite', 'Finalizado', 'Observado', 'Archivado']),
+      Estado: 'En trámite', // Iniciamos todos en trámite
       FechaDocumento: faker.date.recent({ days: 30 }).toISOString().split('T')[0],
       Procedencia: faker.company.name(),
       TipoDocumentoSalida: `OFC-${faker.number.int({ min: 1, max: 100 })}-DE`,
@@ -61,9 +62,147 @@ class DocumentoFactory {
 }
 
 class DocumentoSeeder {
-  constructor(documentoModel, factory) {
+  constructor(documentoModel, factory, traceService) {
     this.documentoModel = documentoModel;
     this.factory = factory;
+    this.traceService = traceService;
+  }
+
+  async registrarCambioEstado(documentoId, usuarioId, nuevoEstado, observacion = '') {
+    // Actualiza el estado en la tabla Documento
+    await pool.query(
+      'UPDATE Documento SET Estado = ? WHERE IDDocumento = ?',
+      [nuevoEstado, documentoId]
+    );
+    // Registra el evento en la trazabilidad
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: null,
+      areaDestinoId: null,
+      usuarioId,
+      accion: 'Cambio de Estado',
+      observacion: `Estado cambiado a ${nuevoEstado}. ${observacion}`
+    });
+  }
+
+  async simularFlujoCompleto(documentoId, usuarioCreador, mesaPartesId) {
+    const areas = await this.factory.areaModel.getActiveAreas();
+    const numAreas = faker.number.int({ min: 1, max: Math.min(3, areas.length) });
+    const areasDestino = faker.helpers.arrayElements(areas, numAreas);
+    // 1. Recepción en Mesa de Partes
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: null,
+      areaDestinoId: mesaPartesId,
+      usuarioId: usuarioCreador,
+      accion: 'Recepción',
+      observacion: 'Documento recibido en Mesa de Partes'
+    });
+    // 2. Derivación a áreas especializadas
+    for (const area of areasDestino) {
+      await this.traceService.registrarMovimiento({
+        documentoId,
+        areaOrigenId: mesaPartesId,
+        areaDestinoId: area.IDArea,
+        usuarioId: usuarioCreador,
+        accion: 'Derivación',
+        observacion: `Derivado a área ${area.NombreArea}`
+      });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.traceService.registrarMovimiento({
+        documentoId,
+        areaOrigenId: area.IDArea,
+        areaDestinoId: mesaPartesId,
+        usuarioId: usuarioCreador,
+        accion: 'Retorno',
+        observacion: `Retornado a Mesa de Partes desde ${area.NombreArea}`
+      });
+    }
+    // 3. Entrega final
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: mesaPartesId,
+      areaDestinoId: null,
+      usuarioId: usuarioCreador,
+      accion: 'Entrega final',
+      observacion: 'Documento entregado al solicitante'
+    });
+    // 4. Estado finalizado
+    await this.registrarCambioEstado(documentoId, usuarioCreador, 'Finalizado');
+  }
+
+  async simularFlujoArchivado(documentoId, usuarioCreador, mesaPartesId) {
+    const areas = await this.factory.areaModel.getActiveAreas();
+    const areaDestino = faker.helpers.arrayElement(areas);
+    // 1. Recepción en Mesa de Partes
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: null,
+      areaDestinoId: mesaPartesId,
+      usuarioId: usuarioCreador,
+      accion: 'Recepción',
+      observacion: 'Documento recibido en Mesa de Partes'
+    });
+    // 2. Derivación a una sola área
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: mesaPartesId,
+      areaDestinoId: areaDestino.IDArea,
+      usuarioId: usuarioCreador,
+      accion: 'Derivación',
+      observacion: `Derivado a área ${areaDestino.NombreArea}`
+    });
+    // 3. Estado archivado
+    await this.registrarCambioEstado(documentoId, usuarioCreador, 'Archivado', 'Documento archivado por falta de acción.');
+  }
+
+  async simularFlujoObservado(documentoId, usuarioCreador, mesaPartesId) {
+    const areas = await this.factory.areaModel.getActiveAreas();
+    const areaDestino = faker.helpers.arrayElement(areas);
+    // 1. Recepción en Mesa de Partes
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: null,
+      areaDestinoId: mesaPartesId,
+      usuarioId: usuarioCreador,
+      accion: 'Recepción',
+      observacion: 'Documento recibido en Mesa de Partes'
+    });
+    // 2. Derivación a una sola área
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: mesaPartesId,
+      areaDestinoId: areaDestino.IDArea,
+      usuarioId: usuarioCreador,
+      accion: 'Derivación',
+      observacion: `Derivado a área ${areaDestino.NombreArea}`
+    });
+    // 3. Estado observado
+    await this.registrarCambioEstado(documentoId, usuarioCreador, 'Observado', 'Documento observado por inconsistencias.');
+  }
+
+  async simularFlujoParcial(documentoId, usuarioCreador, mesaPartesId) {
+    const areas = await this.factory.areaModel.getActiveAreas();
+    const areaDestino = faker.helpers.arrayElement(areas);
+    // 1. Recepción en Mesa de Partes
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: null,
+      areaDestinoId: mesaPartesId,
+      usuarioId: usuarioCreador,
+      accion: 'Recepción',
+      observacion: 'Documento recibido en Mesa de Partes'
+    });
+    // 2. Derivación a una sola área
+    await this.traceService.registrarMovimiento({
+      documentoId,
+      areaOrigenId: mesaPartesId,
+      areaDestinoId: areaDestino.IDArea,
+      usuarioId: usuarioCreador,
+      accion: 'Derivación',
+      observacion: `Derivado a área ${areaDestino.NombreArea}`
+    });
+    // Estado queda en trámite
   }
 
   async seed(n = 10, mostrarDatos = true) {
@@ -76,8 +215,25 @@ class DocumentoSeeder {
       }
     }
     for (let i = 0; i < documentos.length; i++) {
-      await this.documentoModel.createDocumento(documentos[i]);
-      console.log(`✓ Documento insertado (${i + 1}/${n})`);
+      const doc = documentos[i];
+      const created = await this.documentoModel.createDocumento(doc);
+      const documentoId = created.IDDocumento;
+      const usuarioCreador = doc.IDUsuarioCreador;
+      const mesaPartesId = doc.IDMesaPartes;
+      // Distribución de estados: 50% finalizado, 20% archivado, 15% observado, 15% en trámite
+      if (i < Math.floor(n * 0.5)) {
+        await this.simularFlujoCompleto(documentoId, usuarioCreador, mesaPartesId);
+        console.log(`✓ Documento #${i + 1} completó flujo completo (Finalizado)`);
+      } else if (i < Math.floor(n * 0.7)) {
+        await this.simularFlujoArchivado(documentoId, usuarioCreador, mesaPartesId);
+        console.log(`✓ Documento #${i + 1} archivado`);
+      } else if (i < Math.floor(n * 0.85)) {
+        await this.simularFlujoObservado(documentoId, usuarioCreador, mesaPartesId);
+        console.log(`✓ Documento #${i + 1} observado`);
+      } else {
+        await this.simularFlujoParcial(documentoId, usuarioCreador, mesaPartesId);
+        console.log(`✓ Documento #${i + 1} en trámite (flujo parcial)`);
+      }
     }
   }
 }
@@ -85,8 +241,8 @@ class DocumentoSeeder {
 (async () => {
   try {
     const factory = new DocumentoFactory(areaModel, UserModel, pool);
-    const seeder = new DocumentoSeeder(documentoModel, factory);
-    await seeder.seed(50, true); // Cambia a false si no quieres mostrar los datos generados
+    const seeder = new DocumentoSeeder(documentoModel, factory, traceService);
+    await seeder.seed(20, true);
     console.log('Datos de prueba insertados correctamente.');
     process.exit(0);
   } catch (err) {

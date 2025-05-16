@@ -7,29 +7,34 @@
       <span v-if="!collapsed" class="sidebar-title">Menú Principal</span>
     </div>
     <ul class="sidebar-menu">
-      <li v-for="item in menu" :key="item.route" :class="{ active: $route.path === item.route }">
-        <router-link :to="item.route">
-          <i :class="item.icon"></i>
-          <span v-if="!collapsed">{{ item.label }}</span>
-        </router-link>
+      <li v-for="item in menu" :key="item.label" :class="{ active: $route.path === item.route }">
+        <template v-if="!item.logout">
+          <router-link :to="item.route">
+            <i :class="item.icon"></i>
+            <span v-if="!collapsed">{{ item.label }}</span>
+          </router-link>
+        </template>
+        <template v-else>
+          <a href="#" @click.prevent="handleLogout" class="logout-link">
+            <i :class="item.icon"></i>
+            <span v-if="!collapsed">{{ item.label }}</span>
+          </a>
+        </template>
       </li>
     </ul>
-    <div class="sidebar-footer" v-if="!collapsed">
-      <router-link to="/logout" class="logout-link">
-        <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
-      </router-link>
-    </div>
   </nav>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { sidebarOptions } from './sidebarConfig'
 
 const authStore = useAuthStore()
 const collapsed = ref(false)
 const user = computed(() => authStore.user || {})
+const router = useRouter()
 
 const menu = computed(() => {
   if (!authStore.user) return []
@@ -39,6 +44,12 @@ const menu = computed(() => {
   if (rol.includes('responsable')) return sidebarOptions.responsable
   return sidebarOptions.mesa // fallback
 })
+
+function handleLogout() {
+  authStore.logout().then(() => {
+    router.push('/login')
+  })
+}
 </script>
 
 <style scoped>

@@ -483,6 +483,34 @@ CREATE TABLE DerivacionLog (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- ---------------- TRAZABILIDAD DE DOCUMENTOS ----------------
+CREATE TABLE TrazabilidadDocumento (
+    IDTrazabilidad INT AUTO_INCREMENT PRIMARY KEY,
+    IDDocumento INT NOT NULL,
+    IDAreaOrigen INT NULL,
+    IDAreaDestino INT NULL,
+    IDUsuario INT NOT NULL,
+    Accion VARCHAR(50) NOT NULL,
+    Observacion VARCHAR(255),
+    Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_trazabilidad_documento
+        FOREIGN KEY (IDDocumento) REFERENCES Documento(IDDocumento)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_trazabilidad_areaorigen
+        FOREIGN KEY (IDAreaOrigen) REFERENCES AreaEspecializada(IDArea)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_trazabilidad_areadestino
+        FOREIGN KEY (IDAreaDestino) REFERENCES AreaEspecializada(IDArea)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_trazabilidad_usuario
+        FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- ########################################################
 -- 4. TABLA PARA ARCHIVOS ESCANEADOS (PDF, IMAGEN)
 -- ########################################################
@@ -713,6 +741,13 @@ BEGIN
 
     SET v_IDDocumento = LAST_INSERT_ID();
 
+    -- Registrar trazabilidad: Recepción en Mesa de Partes
+    INSERT INTO TrazabilidadDocumento (
+        IDDocumento, IDAreaOrigen, IDAreaDestino, IDUsuario, Accion, Observacion
+    ) VALUES (
+        v_IDDocumento, NULL, p_IDMesaPartes, p_IDUsuarioCreador, 'Recepción', 'Documento recibido en Mesa de Partes'
+    );
+
     INSERT INTO Derivacion (
         IDDocumento,
         IDMesaPartes,
@@ -729,7 +764,64 @@ BEGIN
         'PENDIENTE'
     );
 
+    -- Registrar trazabilidad: Derivación a área especializada
+    INSERT INTO TrazabilidadDocumento (
+        IDDocumento, IDAreaOrigen, IDAreaDestino, IDUsuario, Accion, Observacion
+    ) VALUES (
+        v_IDDocumento, p_IDAreaActual, p_IDAreaDestino, p_IDUsuarioDeriva, 'Derivación', 
+        CONCAT('Derivado a área ', (SELECT NombreArea FROM AreaEspecializada WHERE IDArea = p_IDAreaDestino))
+    );
+
     COMMIT;
+END$$
+
+-- Trigger para registrar trazabilidad en cambios de estado
+CREATE TRIGGER trg_documento_estado_trazabilidad
+AFTER INSERT ON DocumentoEstado
+FOR EACH ROW
+BEGIN
+    INSERT INTO TrazabilidadDocumento (
+        IDDocumento, IDAreaOrigen, IDAreaDestino, IDUsuario, Accion, Observacion
+    ) VALUES (
+        NEW.IDDocumento, NULL, NULL, NEW.IDUsuario, 'Cambio de Estado',
+        CONCAT('De ', NEW.EstadoAnterior, ' a ', NEW.EstadoNuevo, IFNULL(CONCAT('. ', NEW.Observaciones), ''))
+    );
+END$$
+
+-- Trigger para registrar trazabilidad en derivaciones
+CREATE TRIGGER trg_derivacion_trazabilidad
+AFTER INSERT ON Derivacion
+FOR EACH ROW
+BEGIN
+    INSERT INTO TrazabilidadDocumento (
+        IDDocumento, IDAreaOrigen, IDAreaDestino, IDUsuario, Accion, Observacion
+    ) VALUES (
+        NEW.IDDocumento, NEW.IDAreaOrigen, NEW.IDAreaDestino, NEW.IDUsuarioDeriva, 'Derivación',
+        CONCAT('Derivado de área ', 
+            (SELECT NombreArea FROM AreaEspecializada WHERE IDArea = NEW.IDAreaOrigen),
+            ' a área ',
+            (SELECT NombreArea FROM AreaEspecializada WHERE IDArea = NEW.IDAreaDestino),
+            IFNULL(CONCAT('. ', NEW.Observacion), '')
+        )
+    );
+END$$
+
+-- Trigger para registrar trazabilidad en recepción de derivaciones
+CREATE TRIGGER trg_derivacion_recepcion_trazabilidad
+AFTER UPDATE ON Derivacion
+FOR EACH ROW
+BEGIN
+    IF NEW.FechaRecepcion IS NOT NULL AND OLD.FechaRecepcion IS NULL THEN
+        INSERT INTO TrazabilidadDocumento (
+            IDDocumento, IDAreaOrigen, IDAreaDestino, IDUsuario, Accion, Observacion
+        ) VALUES (
+            NEW.IDDocumento, NEW.IDAreaOrigen, NEW.IDAreaDestino, NEW.IDUsuarioRecibe, 'Recepción en Área',
+            CONCAT('Documento recibido en área ', 
+                (SELECT NombreArea FROM AreaEspecializada WHERE IDArea = NEW.IDAreaDestino),
+                IFNULL(CONCAT('. ', NEW.Observacion), '')
+            )
+        );
+    END IF;
 END$$
 
 -- Subir archivo escaneado (PDF, imagen) para un documento

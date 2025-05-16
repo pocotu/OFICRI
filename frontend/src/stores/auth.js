@@ -45,6 +45,8 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.token = null
       localStorage.removeItem('token')
+      // Esperar a que Pinia reactive el cambio
+      await new Promise(resolve => setTimeout(resolve, 0))
     },
 
     async checkAuth() {

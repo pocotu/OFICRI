@@ -1,13 +1,14 @@
 <template>
   <div class="timeline">
     <div v-for="(evento, idx) in eventos" :key="idx" class="timeline-event">
-      <div class="timeline-dot" :class="evento.tipo"></div>
+      <div class="timeline-dot"></div>
       <div class="timeline-content">
-        <div class="evento-titulo">{{ evento.titulo }}</div>
-        <div class="evento-detalle">{{ evento.detalle }}</div>
+        <div class="evento-titulo">{{ evento.accion }}</div>
+        <div class="evento-detalle">{{ evento.observacion }}</div>
         <div class="evento-meta">
-          <span><i class="fa-solid fa-calendar"></i> {{ evento.fecha }}</span>
-          <span v-if="evento.area"><i class="fa-solid fa-building"></i> {{ evento.area }}</span>
+          <span><i class="fa-solid fa-calendar"></i> {{ evento.fecha ? new Date(evento.fecha).toLocaleString() : '' }}</span>
+          <span v-if="evento.areaOrigen"><i class="fa-solid fa-arrow-left"></i> Origen: {{ evento.areaOrigen }}</span>
+          <span v-if="evento.areaDestino"><i class="fa-solid fa-arrow-right"></i> Destino: {{ evento.areaDestino }}</span>
           <span v-if="evento.usuario"><i class="fa-solid fa-user"></i> {{ evento.usuario }}</span>
         </div>
       </div>

@@ -15,11 +15,11 @@ export const fetchTrazabilidad = async (documentoId, token) => {
 
 export const formatTrazabilidadEvento = (evento) => {
   return {
-    tipo: evento.tipo || 'log',
-    titulo: evento.titulo || 'Evento sin título',
-    detalle: evento.detalle || '',
-    fecha: new Date(evento.fecha).toLocaleString(),
-    area: evento.area || null,
-    usuario: evento.usuario || null
+    accion: evento.Accion || evento.accion || 'Evento',
+    observacion: evento.Observacion || evento.observacion || '',
+    fecha: evento.Fecha || evento.fecha || '',
+    areaOrigen: evento.AreaOrigen || evento.areaOrigen || null,
+    areaDestino: evento.AreaDestino || evento.areaDestino || null,
+    usuario: evento.Usuario || evento.usuario || null
   }
 } 
