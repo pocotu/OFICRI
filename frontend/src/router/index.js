@@ -61,12 +61,6 @@ const router = createRouter({
               meta: { requiresAuth: true }
             },
             {
-              path: 'consulta',
-              name: 'documentos-consulta',
-              component: () => import('../views/documentos/ConsultaView.vue'),
-              meta: { requiresAuth: true }
-            },
-            {
               path: 'trazabilidad',
               name: 'documentos-trazabilidad',
               component: () => import('../views/documentos/TrazabilidadView.vue'),
@@ -79,6 +73,12 @@ const router = createRouter({
               meta: { requiresAuth: true }
             }
           ]
+        },
+        {
+          path: 'consulta-documentos',
+          name: 'consulta-documentos',
+          component: () => import('../views/documentos/ConsultaView.vue'),
+          meta: { requiresAuth: true }
         },
         {
           path: 'auditoria',

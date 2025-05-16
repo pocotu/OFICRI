@@ -1,12 +1,11 @@
 <template>
   <div class="recepcion-view">
-    <h1>Recepción de Documentos</h1>
-    <p>Vista en construcción</p>
+    <!-- Aquí irá el contenido real de la recepción de documentos -->
   </div>
 </template>
 
 <script setup>
-// Componente temporal para evitar errores de ruta
+// Componente temporal para evitar errores de ruta o para lógica futura
 </script>
 
 <style scoped>
