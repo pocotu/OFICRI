@@ -4,7 +4,7 @@
       <WidgetCard v-for="widget in widgets" :key="widget.label" :value="widget.value" :label="widget.label" />
     </div>
     <div class="dashboard-panels">
-      <PanelActividad :actividad="actividadReciente" />
+      <PanelActividad v-if="esAdmin" :actividad="actividadReciente" />
       <PanelPendientes :documentos="documentosPendientes" />
     </div>
   </div>
@@ -72,6 +72,11 @@ const widgets = computed(() => {
     ]
   }
   return []
+})
+
+const esAdmin = computed(() => {
+  const user = authStore.user
+  return user && user.Permisos && (user.Permisos & 128) === 128
 })
 </script>
 

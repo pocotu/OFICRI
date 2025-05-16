@@ -86,7 +86,7 @@ class DocumentoSeeder {
   try {
     const factory = new DocumentoFactory(areaModel, UserModel, pool);
     const seeder = new DocumentoSeeder(documentoModel, factory);
-    await seeder.seed(20, true); // Cambia a false si no quieres mostrar los datos generados
+    await seeder.seed(50, true); // Cambia a false si no quieres mostrar los datos generados
     console.log('Datos de prueba insertados correctamente.');
     process.exit(0);
   } catch (err) {

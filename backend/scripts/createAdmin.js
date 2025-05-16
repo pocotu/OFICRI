@@ -10,7 +10,7 @@ async function crearBase() {
   // 0. Crear mesas de partes base si no existen
   console.log('0. Creando mesas de partes base...');
   const mesasBase = [
-    { descripcion: 'Mesa Principal', codigo: 'MESA-001' }
+    { descripcion: 'Mesa Principal', codigo: 'MP' }
   ];
   for (const mesa of mesasBase) {
     await pool.query(
@@ -23,11 +23,10 @@ async function crearBase() {
   // 1. Crear áreas base si no existen (sin loguear aún)
   console.log('1. Creando áreas base...');
   const areasBase = [
-    { nombre: 'ADMINISTRACIÓN', codigo: 'ADM-001', tipo: 'ESPECIALIZADA', descripcion: 'Área de administración' },
-    { nombre: 'MESA DE PARTES', codigo: 'MESA-001', tipo: 'GENERAL', descripcion: 'Recepción y distribución de documentos' },
-    { nombre: 'ÁREA TÉCNICA', codigo: 'TEC-001', tipo: 'ESPECIALIZADA', descripcion: 'Área técnica' },
-    { nombre: 'DOSAGE', codigo: 'DOS-001', tipo: 'ESPECIALIZADA', descripcion: 'Área de dosaje' },
-    { nombre: 'FORENSEDIGITAL', codigo: 'FOR-001', tipo: 'ESPECIALIZADA', descripcion: 'Área de forense digital' }
+    { nombre: 'ADMINISTRACIÓN', codigo: 'AD', tipo: 'ESPECIALIZADA', descripcion: 'Área de administración' },
+    { nombre: 'MESA DE PARTES', codigo: 'MP', tipo: 'GENERAL', descripcion: 'Recepción y distribución de documentos' },
+    { nombre: 'DOSAGE', codigo: 'DO', tipo: 'ESPECIALIZADA', descripcion: 'Área de dosaje' },
+    { nombre: 'FORENSEDIGITAL', codigo: 'FD', tipo: 'ESPECIALIZADA', descripcion: 'Área de forense digital' }
     // Agrega aquí más áreas base según tu sistema
   ];
   for (const area of areasBase) {
@@ -120,16 +119,6 @@ async function crearBase() {
       reglaContexto: JSON.stringify({
         tipo: 'AREA',
         accion: 'VER',
-        condicion: 'MISMA_AREA'
-      })
-    },
-    {
-      rol: 'Responsable de Área',
-      area: 'ÁREA TÉCNICA',
-      tipoRecurso: 'DOCUMENTO',
-      reglaContexto: JSON.stringify({
-        tipo: 'AREA',
-        accion: 'DERIVAR',
         condicion: 'MISMA_AREA'
       })
     }
