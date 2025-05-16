@@ -5,6 +5,7 @@ export const sidebarOptions = {
     { icon: 'fa-solid fa-user-shield', label: 'Gestión de Roles y Permisos', route: '/roles' },
     { icon: 'fa-solid fa-building', label: 'Gestión de Áreas', route: '/areas' },
     { icon: 'fa-solid fa-file', label: 'Gestión de Documentos', route: '/documentos' },
+    { icon: 'fa-solid fa-magnifying-glass', label: 'Consulta de Documentos', route: '/consulta-documentos' },
     { icon: 'fa-solid fa-clipboard-list', label: 'Auditoría', route: '/auditoria' },
     { icon: 'fa-solid fa-chart-bar', label: 'Reportes y Exportación', route: '/reportes' }
   ],

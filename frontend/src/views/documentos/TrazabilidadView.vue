@@ -11,12 +11,17 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
 import { fetchTrazabilidad, formatTrazabilidadEvento } from '../../api/trazabilidadApi'
 import Timeline from '../../components/Timeline.vue'
+import { useAuthStore } from '../../stores/auth'
 
-const route = useRoute()
+const props = defineProps({
+  documentoId: {
+    type: [String, Number],
+    required: true
+  }
+})
+
 const eventos = ref([])
 const loading = ref(true)
 const error = ref('')
@@ -37,16 +42,15 @@ const cargarTrazabilidad = async (idDoc) => {
 }
 
 onMounted(() => {
-  const idDoc = route.query.id
-  if (!idDoc) {
+  if (!props.documentoId) {
     error.value = 'No se ha seleccionado un documento.'
     loading.value = false
     return
   }
-  cargarTrazabilidad(idDoc)
+  cargarTrazabilidad(props.documentoId)
 })
 
-watch(() => route.query.id, (newId, oldId) => {
+watch(() => props.documentoId, (newId, oldId) => {
   if (newId && newId !== oldId) {
     cargarTrazabilidad(newId)
   }

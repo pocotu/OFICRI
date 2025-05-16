@@ -93,6 +93,11 @@
                   </button>
                 </PermissionGate>
               </template>
+              <PermissionGate :permission="PERMISSION_BITS.AUDITAR | PERMISSION_BITS.ADMINISTRAR">
+                <button @click="abrirTrazabilidad(documento)" class="btn-accion btn-trazabilidad" title="Trazabilidad">
+                  <i class="fas fa-route"></i>
+                </button>
+              </PermissionGate>
             </div>
           </td>
           <td>{{ documento.NroRegistro }}</td>
@@ -277,6 +282,10 @@
         </div>
       </div>
     </template>
+
+    <Modal v-if="mostrarTrazabilidad" @close="cerrarTrazabilidad">
+      <TrazabilidadView :documento-id="documentoTrazabilidad?.IDDocumento" />
+    </Modal>
   </div>
 </template>
 
@@ -289,6 +298,8 @@ import { useAuthStore } from '../stores/auth'
 import { eliminarDocumento as apiEliminarDocumento, derivarDocumento as apiDerivarDocumento } from '../api/documentoApi'
 import { canDeleteDocument, canEditDocumentLocal, canDeriveDocumentLocal } from '../services/permissionService'
 import { useRouter } from 'vue-router'
+import Modal from './Modal.vue'
+import TrazabilidadView from '../views/documentos/TrazabilidadView.vue'
 
 const props = defineProps({
   documentos: {
@@ -322,6 +333,8 @@ const documentoAEliminar = ref(null)
 const permisosContextuales = ref({})
 const router = useRouter()
 const authStore = useAuthStore()
+const mostrarTrazabilidad = ref(false)
+const documentoTrazabilidad = ref(null)
 
 const documentosPorPagina = 10
 const paginaActual = ref(1)
@@ -566,6 +579,16 @@ function irPagina(pag) {
 }
 
 watch(documentosFiltrados, () => { paginaActual.value = 1 })
+
+function abrirTrazabilidad(documento) {
+  documentoTrazabilidad.value = documento
+  mostrarTrazabilidad.value = true
+}
+
+function cerrarTrazabilidad() {
+  mostrarTrazabilidad.value = false
+  documentoTrazabilidad.value = null
+}
 </script>
 
 <style scoped>

@@ -80,9 +80,11 @@
                   <button @click="verDetalle(doc)" class="btn-icon" title="Ver detalle">
                     <i class="fa-solid fa-eye"></i>
                   </button>
-                  <button @click="verTrazabilidad(doc)" class="btn-icon" title="Ver trazabilidad">
-                    <i class="fa-solid fa-history"></i>
-                  </button>
+                  <PermissionGate :permission="32 | 128">
+                    <button @click="abrirTrazabilidad(doc)" class="btn-icon" title="Trazabilidad">
+                      <i class="fa-solid fa-route"></i>
+                    </button>
+                  </PermissionGate>
                 </div>
               </td>
             </tr>
@@ -136,6 +138,11 @@
         </div>
       </div>
     </Modal>
+
+    <!-- Modal de Trazabilidad -->
+    <Modal v-if="mostrarTrazabilidad" @close="cerrarTrazabilidad">
+      <TrazabilidadView :documento-id="documentoTrazabilidad?.IDDocumento" />
+    </Modal>
   </div>
 </template>
 
@@ -145,6 +152,8 @@ import { useAuthStore } from '../../stores/auth'
 import { fetchDocumentos } from '../../api/documentoApi'
 import { fetchAreasActivas } from '../../api/areaApi'
 import Modal from '../../components/Modal.vue'
+import PermissionGate from '../../components/PermissionGate.vue'
+import TrazabilidadView from './TrazabilidadView.vue'
 
 const authStore = useAuthStore()
 const token = authStore.token
@@ -153,6 +162,8 @@ const documentos = ref([])
 const areas = ref([])
 const mostrarDetalle = ref(false)
 const documentoSeleccionado = ref(null)
+const mostrarTrazabilidad = ref(false)
+const documentoTrazabilidad = ref(null)
 
 const ESTADOS_DOCUMENTO = [
   'En trámite',
@@ -244,8 +255,14 @@ function cerrarDetalle() {
   documentoSeleccionado.value = null
 }
 
-function verTrazabilidad(doc) {
-  // Implementar lógica de trazabilidad
+function abrirTrazabilidad(doc) {
+  documentoTrazabilidad.value = doc
+  mostrarTrazabilidad.value = true
+}
+
+function cerrarTrazabilidad() {
+  mostrarTrazabilidad.value = false
+  documentoTrazabilidad.value = null
 }
 
 function formatearFecha(fecha) {

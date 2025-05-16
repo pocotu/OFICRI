@@ -75,7 +75,7 @@ const router = createRouter({
           name: 'reportes',
           component: () => import('../views/ReportesView.vue'),
           meta: { requiresAuth: true }
-        }
+        },
         // ... otras rutas protegidas
       ]
     },
@@ -99,6 +99,7 @@ router.beforeEach(async (to, from, next) => {
   await authStore.initialize()
 
   const isAuthenticated = authStore.isAuthenticated
+  const user = authStore.user
 
   // Si la ruta requiere autenticación y el usuario no está autenticado
   if (to.meta.requiresAuth && !isAuthenticated) {
@@ -107,6 +108,15 @@ router.beforeEach(async (to, from, next) => {
   // Si la ruta es para invitados (login) y el usuario está autenticado
   else if (to.meta.requiresGuest && isAuthenticated) {
     next('/dashboard')
+  }
+  // Si la ruta requiere permisos de auditoría/admin
+  else if (to.meta.requiresAudit) {
+    if (!user || !user.Permisos || ((user.Permisos & 32) !== 32 && (user.Permisos & 128) !== 128)) {
+      // No tiene bit de AUDITAR (32) ni ADMIN (128)
+      next('/dashboard')
+      return
+    }
+    next()
   }
   else {
     next()
