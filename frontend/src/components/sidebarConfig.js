@@ -14,8 +14,7 @@ export const sidebarOptions = {
     { icon: 'fa-solid fa-gauge', label: 'Dashboard', route: '/dashboard' },
     { icon: 'fa-solid fa-file-circle-plus', label: 'Recepción de Documentos', route: '/documentos/recepcion' },
     { icon: 'fa-solid fa-magnifying-glass', label: 'Consulta de Documentos', route: '/consulta-documentos' },
-    { icon: 'fa-solid fa-chart-bar', label: 'Reportes', route: '/reportes' },
-    { icon: 'fa-solid fa-file-export', label: 'Exportar', route: '/exportar' },
+    { icon: 'fa-solid fa-chart-bar', label: 'Reportes y Exportación', route: '/reportes' },
     { icon: 'fa-solid fa-right-from-bracket', label: 'Cerrar Sesión', logout: true }
   ],
   responsable: [
