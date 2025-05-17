@@ -11,6 +11,7 @@ const documentoRoutes = require('../routes/documentoRoutes');
 const dashboardRoutes = require('../routes/dashboardRoutes');
 const permissionRoutes = require('../routes/permissionRoutes');
 const dosajeRoutes = require('../routes/dosajeRoutes');
+const reportesRoutes = require('../routes/reportesRoutes');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/documentos', documentoRoutes);
 app.use('/api/dashboard', dashboardRoutes); 
 app.use('/api/permisos', permissionRoutes);
 app.use('/api/dosaje', dosajeRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 // Iniciar el servidor
 const PORT = config.server.port;

@@ -226,6 +226,26 @@ async function logUnauthorizedAccess(idUsuario, tipoRecurso, idRecurso, accion, 
   }
 }
 
+/**
+ * Verifica si el usuario puede exportar el tipo de reporte solicitado
+ * @param {object} user - Usuario autenticado
+ * @param {string} tipo - Tipo de reporte ('usuarios', 'documentos', 'logs')
+ * @param {object} filtros - Filtros aplicados
+ * @returns {boolean|Promise<boolean>}
+ */
+async function canExport(user, tipo, filtros) {
+  // Bit 6 = 64 (Exportar)
+  if (user?.Permisos && (user.Permisos & 64) === 64) return true;
+  // Admin siempre puede
+  if (user?.Permisos && (user.Permisos & 128) === 128) return true;
+  // Permisos contextuales (ejemplo: solo documentos de su área)
+  // Aquí puedes agregar lógica contextual según el tipo
+  if (tipo === 'documentos' && filtros?.IDAreaActual && user.IDArea === filtros.IDAreaActual) return true;
+  if (tipo === 'logs' && filtros?.usuarioId && user.IDUsuario === filtros.usuarioId) return true;
+  // Por defecto, no tiene permiso
+  return false;
+}
+
 module.exports = {
   PERMISSION_BITS,
   hasPermission,
@@ -233,5 +253,6 @@ module.exports = {
   canDeleteDocument,
   canDeleteUser,
   canDeleteArea,
-  logUnauthorizedAccess
+  logUnauthorizedAccess,
+  canExport
 }; 

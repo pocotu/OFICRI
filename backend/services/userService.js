@@ -99,6 +99,30 @@ async function deleteUser(id) {
   await userModel.deleteUser(id);
 }
 
+/**
+ * Devuelve los usuarios exportables según filtros y contexto del usuario
+ */
+async function getUsersForExport(filtros = {}, user = null) {
+  let sql = `SELECT u.*, a.NombreArea, r.NombreRol, r.Permisos FROM Usuario u JOIN AreaEspecializada a ON u.IDArea = a.IDArea JOIN Rol r ON u.IDRol = r.IDRol WHERE 1=1`;
+  const params = [];
+  if (filtros.IDArea) {
+    sql += ' AND u.IDArea = ?';
+    params.push(filtros.IDArea);
+  }
+  if (filtros.IDRol) {
+    sql += ' AND u.IDRol = ?';
+    params.push(filtros.IDRol);
+  }
+  // Permiso contextual: si no es admin ni tiene bit de exportar, solo su área
+  if (user && user.Permisos && (user.Permisos & 64) !== 64 && (user.Permisos & 128) !== 128) {
+    sql += ' AND u.IDArea = ?';
+    params.push(user.IDArea);
+  }
+  sql += ' ORDER BY u.Nombres ASC';
+  const [rows] = await pool.query(sql, params);
+  return rows;
+}
+
 module.exports = {
   loginUser,
   getUserFromToken,
@@ -107,5 +131,6 @@ module.exports = {
   resetPassword,
   setPassword,
   setBloqueoUsuario,
-  deleteUser
+  deleteUser,
+  getUsersForExport
 }; 

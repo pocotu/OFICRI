@@ -1,10 +1,32 @@
 const pool = require('../db');
 
-async function getAllDocumentos() {
-  const [rows] = await pool.query(`
-    SELECT d.*, d.Estado AS EstadoNombre
-    FROM Documento d
-  `);
+async function getAllDocumentos(filtros = {}, user = null) {
+  let sql = `SELECT d.*, d.Estado AS EstadoNombre FROM Documento d WHERE 1=1`;
+  const params = [];
+  // Filtros básicos
+  if (filtros.IDAreaActual) {
+    sql += ' AND d.IDAreaActual = ?';
+    params.push(filtros.IDAreaActual);
+  }
+  if (filtros.Estado) {
+    sql += ' AND d.Estado = ?';
+    params.push(filtros.Estado);
+  }
+  if (filtros.FechaInicio) {
+    sql += ' AND d.FechaDocumento >= ?';
+    params.push(filtros.FechaInicio);
+  }
+  if (filtros.FechaFin) {
+    sql += ' AND d.FechaDocumento <= ?';
+    params.push(filtros.FechaFin);
+  }
+  // Permiso contextual: si no es admin ni tiene bit de exportar, solo su área
+  if (user && user.Permisos && (user.Permisos & 64) !== 64 && (user.Permisos & 128) !== 128) {
+    sql += ' AND d.IDAreaActual = ?';
+    params.push(user.IDArea);
+  }
+  sql += ' ORDER BY d.FechaDocumento DESC';
+  const [rows] = await pool.query(sql, params);
   return rows;
 }
 
