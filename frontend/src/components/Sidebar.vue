@@ -1,6 +1,6 @@
 <template>
   <nav :class="['sidebar', { collapsed }]">
-    <div class="sidebar-header">
+    <div :class="['sidebar-header', { 'header-collapsed': collapsed }]">
       <button class="toggle-btn" @click="collapsed = !collapsed">
         <i :class="collapsed ? 'fa-solid fa-bars' : 'fa-solid fa-angle-left'"></i>
       </button>
@@ -71,6 +71,12 @@ function handleLogout() {
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid #1a2327;
+  min-height: 56px;
+}
+.header-collapsed {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 .toggle-btn {
   background: none;
@@ -79,6 +85,14 @@ function handleLogout() {
   font-size: 1.2rem;
   cursor: pointer;
   margin-right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+}
+.sidebar.collapsed .toggle-btn {
+  margin-right: 0;
 }
 .sidebar-title {
   font-weight: bold;
