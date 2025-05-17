@@ -19,7 +19,7 @@ export const sidebarOptions = {
   ],
   responsable: [
     { icon: 'fa-solid fa-gauge', label: 'Dashboard', route: '/dashboard' },
-    { icon: 'fa-solid fa-file', label: 'Gestión Documental', route: '/documentos/gestion' },
+    { icon: 'fa-solid fa-file', label: 'Gestión Documental', route: '/dosaje/gestion' },
     { icon: 'fa-solid fa-tasks', label: 'Procesamiento', route: '/documentos/procesamiento' },
     { icon: 'fa-solid fa-bell', label: 'Monitoreo', route: '/documentos/monitoreo' },
     { icon: 'fa-solid fa-chart-bar', label: 'Reportes', route: '/reportes' },

@@ -76,6 +76,11 @@ const router = createRouter({
           component: () => import('../views/ReportesView.vue'),
           meta: { requiresAuth: true }
         },
+        {
+          path: '/dosaje/gestion',
+          name: 'DosajeGestion',
+          component: () => import('../views/dosaje/DosajeGestionView.vue')
+        },
         // ... otras rutas protegidas
       ]
     },

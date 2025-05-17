@@ -10,6 +10,7 @@ const auditRoutes = require('../routes/auditRoutes');
 const documentoRoutes = require('../routes/documentoRoutes');
 const dashboardRoutes = require('../routes/dashboardRoutes');
 const permissionRoutes = require('../routes/permissionRoutes');
+const dosajeRoutes = require('../routes/dosajeRoutes');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/auditoria', auditRoutes);
 app.use('/api/documentos', documentoRoutes); 
 app.use('/api/dashboard', dashboardRoutes); 
 app.use('/api/permisos', permissionRoutes);
+app.use('/api/dosaje', dosajeRoutes);
 
 // Iniciar el servidor
 const PORT = config.server.port;

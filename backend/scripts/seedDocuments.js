@@ -5,6 +5,7 @@ const areaModel = require('../models/areaModel');
 const UserModel = require('../models/userModel');
 const pool = require('../db');
 const traceService = require('../services/traceService');
+const dosajeModel = require('../models/dosajeModel');
 
 class RegistroNumberGenerator {
   constructor() {
@@ -238,11 +239,77 @@ class DocumentoSeeder {
   }
 }
 
+class DosajeFactory {
+  constructor(areaModel, userModel, pool) {
+    this.areaModel = areaModel;
+    this.userModel = userModel;
+    this.pool = pool;
+    this.registroGenerator = new RegistroNumberGenerator();
+  }
+
+  async getRandomAreaId() {
+    const areas = await this.areaModel.getActiveAreas();
+    if (!areas.length) throw new Error('No hay áreas activas disponibles');
+    return faker.helpers.arrayElement(areas).IDArea;
+  }
+
+  async getRandomUsuario() {
+    const users = await this.userModel.getAllUsers();
+    if (!users.length) throw new Error('No hay usuarios disponibles');
+    return faker.helpers.arrayElement(users);
+  }
+
+  async createFakeDosaje() {
+    const areaId = await this.getRandomAreaId();
+    const usuario = await this.getRandomUsuario();
+    const tipoDosaje = faker.helpers.arrayElement(['TOXICOLÓGICO', 'ALCOHOL', 'DROGAS']);
+    return {
+      IDArea: areaId,
+      NumeroRegistro: this.registroGenerator.getNextNumber(),
+      FechaIngreso: faker.date.recent({ days: 30 }).toISOString().split('T')[0],
+      OficioDoc: `OF-${faker.number.int({ min: 100, max: 999 })}`,
+      NumeroOficio: faker.number.int({ min: 1, max: 20 }),
+      TipoDosaje: tipoDosaje,
+      Examen: tipoDosaje,
+      Nombres: usuario.Nombres,
+      Apellidos: usuario.Apellidos,
+      DocumentoIdentidad: faker.string.numeric(8),
+      Procedencia: faker.company.name(),
+      DelitoInfraccion: faker.helpers.arrayElement(['DCLLS.', 'SUSTANCIA TOXICA', 'AGRAVIADA', 'CONSUMO', 'POSESIÓN']),
+      Como: faker.helpers.arrayElement(['CADÁVER', 'VIVO', 'AGRAVIADO', 'INCONSCIENTE', 'OTRO']),
+      ResultadoCualitativo: faker.helpers.arrayElement(['POSITIVO', 'NEGATIVO']),
+      ResultadoCuantitativo: faker.number.float({ min: 0, max: 5, precision: 0.01 }),
+      UnidadMedida: 'mg/L',
+      MetodoAnalisis: faker.helpers.arrayElement(['GC-MS', 'Inmunoensayo', 'Cromatografía']),
+      DocSalidaNroInforme: `INF-${faker.number.int({ min: 100, max: 999 })}`,
+      DocSalidaDFG: `DFG-${faker.number.int({ min: 100, max: 999 })}`,
+      DocSalidaFecha: faker.date.soon({ days: 10 }).toISOString().split('T')[0],
+      Responsable: usuario.Apellidos.split(' ')[0].toUpperCase(),
+      Observaciones: faker.lorem.words(5)
+    };
+  }
+}
+
+async function seedDosaje(n = 20, mostrarDatos = true) {
+  const factory = new DosajeFactory(areaModel, UserModel, pool);
+  for (let i = 0; i < n; i++) {
+    const dosaje = await factory.createFakeDosaje();
+    await dosajeModel.createDosaje(dosaje);
+    if (mostrarDatos) {
+      console.log(`Dosaje de prueba #${i + 1}:`, dosaje);
+    }
+    // Simulación de trazabilidad: recepción y procesamiento en área
+    // (Opcional: puedes registrar en TrazabilidadDocumento si lo deseas)
+  }
+}
+
 (async () => {
   try {
     const factory = new DocumentoFactory(areaModel, UserModel, pool);
     const seeder = new DocumentoSeeder(documentoModel, factory, traceService);
     await seeder.seed(100, true);
+    // Agregar seed de dosaje
+    await seedDosaje(30, true);
     console.log('Datos de prueba insertados correctamente.');
     process.exit(0);
   } catch (err) {
