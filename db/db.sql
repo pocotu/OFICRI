@@ -557,6 +557,7 @@ CREATE TABLE Dosaje (
     DocSalidaFecha DATE,
     Responsable VARCHAR(100),
     Observaciones TEXT,
+    Estado VARCHAR(50) DEFAULT 'En trámite',
 
     CONSTRAINT fk_dosaje_area
         FOREIGN KEY (IDArea) REFERENCES AreaEspecializada(IDArea)
@@ -867,7 +868,8 @@ CREATE PROCEDURE sp_insertar_dosaje(
     IN p_Nombres VARCHAR(100),
     IN p_Apellidos VARCHAR(100),
     IN p_Procedencia VARCHAR(255),
-    IN p_Responsable VARCHAR(100)
+    IN p_Responsable VARCHAR(100),
+    IN p_Estado VARCHAR(50)
 )
 BEGIN
     INSERT INTO Dosaje (
@@ -880,7 +882,8 @@ BEGIN
         Nombres,
         Apellidos,
         Procedencia,
-        Responsable
+        Responsable,
+        Estado
     ) VALUES (
         p_IDArea,
         p_NumeroRegistro,
@@ -891,7 +894,8 @@ BEGIN
         p_Nombres,
         p_Apellidos,
         p_Procedencia,
-        p_Responsable
+        p_Responsable,
+        IFNULL(p_Estado, 'En trámite')
     );
 END$$
 

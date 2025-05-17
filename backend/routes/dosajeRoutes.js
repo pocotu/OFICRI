@@ -22,4 +22,16 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/dosaje/pendientes?area=ID - listar dosajes pendientes de procesamiento por área
+router.get('/pendientes', async (req, res) => {
+  try {
+    const areaId = req.query.area;
+    if (!areaId) return res.status(400).json({ message: 'Falta parámetro area' });
+    const dosajes = await dosajeModel.getDosajesPendientesByArea(areaId);
+    res.json(dosajes);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener dosajes pendientes', error: err.message });
+  }
+});
+
 module.exports = router; 

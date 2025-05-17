@@ -81,6 +81,12 @@ const router = createRouter({
           name: 'DosajeGestion',
           component: () => import('../views/dosaje/DosajeGestionView.vue')
         },
+        {
+          path: 'documentos/procesamiento',
+          name: 'procesamiento-dosaje',
+          component: () => import('../views/dosaje/DosajeProcesamientoView.vue'),
+          meta: { requiresAuth: true }
+        },
         // ... otras rutas protegidas
       ]
     },

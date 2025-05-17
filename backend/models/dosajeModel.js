@@ -23,7 +23,16 @@ async function getAllDosajes() {
   return rows;
 }
 
+async function getDosajesPendientesByArea(areaId) {
+  const [rows] = await pool.query(
+    'SELECT * FROM Dosaje WHERE IDArea = ? AND (Estado = ? OR Estado IS NULL)',
+    [areaId, 'En trámite']
+  );
+  return rows;
+}
+
 module.exports = {
   createDosaje,
   getAllDosajes,
+  getDosajesPendientesByArea,
 }; 
