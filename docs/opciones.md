@@ -183,11 +183,6 @@ El **Responsable de Área** gestiona documentos específicos de su área:
    - Devolver documentos a Mesa de Partes
    - Finalizar trámites
 
-4. **Monitoreo**
-   - Seguimiento de documentos de su área
-   - Alertas de documentos pendientes
-   - Estadísticas de rendimiento
-
 ## **4. Funciones Clave y Flujos UI/UX**
 
 ### 4.1 Tabla de Documentos (Recepción/Gestión)

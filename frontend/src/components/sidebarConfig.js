@@ -21,9 +21,7 @@ export const sidebarOptions = {
     { icon: 'fa-solid fa-gauge', label: 'Dashboard', route: '/dashboard' },
     { icon: 'fa-solid fa-file', label: 'Gestión Documental', route: '/dosaje/gestion' },
     { icon: 'fa-solid fa-tasks', label: 'Procesamiento', route: '/documentos/procesamiento' },
-    { icon: 'fa-solid fa-bell', label: 'Monitoreo', route: '/documentos/monitoreo' },
-    { icon: 'fa-solid fa-chart-bar', label: 'Reportes', route: '/reportes' },
-    { icon: 'fa-solid fa-file-export', label: 'Exportar', route: '/exportar' },
+    { icon: 'fa-solid fa-chart-bar', label: 'Reportes y Exportación', route: '/reportes' },
     { icon: 'fa-solid fa-right-from-bracket', label: 'Cerrar Sesión', logout: true }
   ]
 } 
