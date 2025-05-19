@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const documentoService = require('../services/documentoService');
-const { getUserFromToken } = require('../services/userService');
-const pool = require('../db');
-const authMiddleware = require('../middleware/authMiddleware');
-const permissionService = require('../services/permissionService');
+const documentoService = require('../../backend/services/documentoService');
+const { getUserFromToken } = require('../../backend/services/userService');
+const pool = require('../../backend/db');
+const authMiddleware = require('../../backend/middleware/authMiddleware');
+const permissionService = require('../../backend/services/permissionService');
 const multer = require('multer');
 const path = require('path');
 
