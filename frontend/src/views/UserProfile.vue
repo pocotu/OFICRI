@@ -1,24 +1,18 @@
 <template>
-  <div class="profile-rect-wide">
-    <div class="profile-col profile-col-info">
-      <div class="profile-avatar-rect">
-        <i class="fa-solid fa-user"></i>
+  <div class="profile-container">
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <i class="fa fa-user-circle"></i>
       </div>
-      <h2>Perfil de Usuario</h2>
       <div class="profile-info">
-        <div><strong>Nombre:</strong> {{ user.Nombres }} {{ user.Apellidos }}</div>
-        <div><strong>CIP:</strong> {{ user.CodigoCIP }}</div>
-        <div><strong>Grado:</strong> {{ user.Grado }}</div>
-        <div><strong>Rol:</strong> {{ user.NombreRol }}</div>
-        <div><strong>Área:</strong> {{ user.NombreArea }}</div>
-      </div>
-    </div>
-    <div class="profile-col profile-col-permisos">
-      <h3><i class="fa-solid fa-key"></i> Permisos</h3>
-      <div class="permisos-chips-rect">
-        <span v-for="permiso in permisosActivos" :key="permiso.label" class="permiso-chip-rect">
-          <i class="fa-solid fa-check-circle"></i> {{ permiso.label }}
-        </span>
+        <h2>Perfil de Usuario</h2>
+        <ul>
+          <li><span>Nombre:</span> {{ user.Nombres }} {{ user.Apellidos }}</li>
+          <li><span>CIP:</span> {{ user.CodigoCIP }}</li>
+          <li><span>Grado:</span> {{ user.Grado }}</li>
+          <li><span>Rol:</span> {{ user.NombreRol }}</li>
+          <li><span>Área:</span> {{ user.NombreArea }}</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -30,110 +24,84 @@ import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
 const user = computed(() => authStore.user || {})
-
-const PERMISOS = [
-  { bit: 0, label: 'Crear/Registrar' },
-  { bit: 1, label: 'Editar/Modificar' },
-  { bit: 2, label: 'Eliminar' },
-  { bit: 3, label: 'Ver/Listar/Consultar' },
-  { bit: 4, label: 'Derivar' },
-  { bit: 5, label: 'Auditar' },
-  { bit: 6, label: 'Exportar' },
-  { bit: 7, label: 'Administrar' },
-]
-
-const permisosActivos = computed(() => {
-  const bits = user.value.Permisos || 0
-  return PERMISOS.filter(p => (bits & (1 << p.bit)) !== 0)
-})
 </script>
 
 <style scoped>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
-.profile-rect-wide {
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  background: #f7f9fb;
+}
+.profile-card {
   background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(44, 62, 80, 0.09);
-  padding: 2.2rem 2.5rem 2rem 2.5rem;
-  max-width: 820px;
-  margin: 0 auto;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.08);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   gap: 2.5rem;
+  transition: box-shadow 0.2s;
 }
-.profile-col {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+.profile-card:hover {
+  box-shadow: 0 4px 24px rgba(44,62,80,0.13);
 }
-.profile-col-info {
-  flex: 1.2;
-  min-width: 220px;
-}
-.profile-col-permisos {
-  flex: 1;
-  min-width: 180px;
-  align-items: flex-start;
-}
-.profile-avatar-rect {
-  width: 70px;
-  height: 70px;
-  background: #e8f5e9;
-  border-radius: 16px;
+.profile-avatar {
+  font-size: 4.5rem;
+  color: #2d3e50;
+  background: #e9ecef;
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.3rem;
-  color: #0f492e;
-  margin-bottom: 1.1rem;
 }
-.profile-info > div {
-  margin-bottom: 0.4rem;
-  font-size: 1.08rem;
+.profile-info h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  color: #1a3c2b;
 }
-.profile-col-permisos h3 {
-  margin-bottom: 0.7rem;
-  color: #184d2b;
-  font-size: 1.13rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.profile-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
 }
-.permisos-chips-rect {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.profile-info li {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
 }
-.permiso-chip-rect {
-  display: inline-flex;
-  align-items: center;
-  background: #e8f5e9;
-  color: #2dc76d;
-  border-radius: 10px;
-  padding: 4px 16px 4px 10px;
-  font-size: 1em;
+.profile-info span {
   font-weight: 600;
-  gap: 7px;
-  box-shadow: 0 1px 2px rgba(44, 62, 80, 0.04);
+  color: #2d3e50;
+  margin-right: 0.5rem;
 }
-.permiso-chip-rect i {
-  font-size: 1em;
+.edit-btn {
+  background: #e9ecef;
+  color: #2d3e50;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.edit-btn:hover {
+  background: #d1d5db;
 }
 @media (max-width: 700px) {
-  .profile-rect-wide {
+  .profile-card {
     flex-direction: column;
     gap: 1.2rem;
     padding: 1.2rem 0.5rem 1rem 0.5rem;
     max-width: 98vw;
-  }
-  .profile-col-permisos {
-    margin-top: 1.2rem;
-  }
-  .permisos-chips-rect {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
   }
 }
 </style> 
