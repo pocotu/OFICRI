@@ -8,7 +8,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="nro-registro">Nro Registro</label>
-            <input id="nro-registro" v-model="form.NroRegistro" required />
+            <input id="nro-registro" v-model="form.NroRegistro" required readonly />
           </div>
           <div class="form-group">
             <label for="area-derivado">Área Derivado</label>
@@ -160,6 +160,10 @@ const form = ref({
 })
 
 const archivosSeleccionados = ref([])
+
+const nroRegistroDuplicado = computed(() => {
+  return false;
+})
 
 function cargarDocumentos() {
   fetchDocumentos(token).then(res => {
