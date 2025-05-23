@@ -82,9 +82,34 @@ const router = createRouter({
           component: () => import('../views/dosaje/DosajeGestionView.vue')
         },
         {
+          path: '/forensedigital/gestion',
+          name: 'ForenseDigitalGestion',
+          component: () => import('../views/forensedigital/ForenseDigitalGestionView.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'procesamiento-forensedigital',
+          name: 'procesamiento-forensedigital',
+          component: () => import('../views/forensedigital/ForenseDigitalProcesamientoView.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
           path: 'documentos/procesamiento',
           name: 'procesamiento-dosaje',
           component: () => import('../views/dosaje/DosajeProcesamientoView.vue'),
+          meta: { requiresAuth: true }
+        },
+        // General routes for responsible users
+        {
+          path: 'gestion-documental',
+          name: 'gestion-documental',
+          component: () => import('../views/GestionDocumentalView.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'procesamiento',
+          name: 'procesamiento',
+          component: () => import('../views/ProcesamientoView.vue'),
           meta: { requiresAuth: true }
         },
         // ... otras rutas protegidas

@@ -157,6 +157,7 @@ onMounted(async () => {
   if (authStore.token) {
     const res = await fetchDosajes(authStore.token)
     dosajes.value = res.data
+    console.log('Fetched dosajes:', res.data);
   }
 })
 

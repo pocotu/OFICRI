@@ -598,6 +598,7 @@ CREATE TABLE ForenseDigital (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+/*
 CREATE TABLE QuimicaToxicologiaForense (
     IDQuimicaToxForense INT AUTO_INCREMENT PRIMARY KEY,
     IDArea INT NOT NULL,
@@ -625,6 +626,7 @@ CREATE TABLE QuimicaToxicologiaForense (
         ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+*/
 
 ###################################################################
 ###################################################################

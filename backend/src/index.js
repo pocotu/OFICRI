@@ -12,6 +12,7 @@ const dashboardRoutes = require('../routes/dashboardRoutes');
 const permissionRoutes = require('../routes/permissionRoutes');
 const dosajeRoutes = require('../routes/dosajeRoutes');
 const reportesRoutes = require('../routes/reportesRoutes');
+const forenseDigitalRoutes = require('../routes/forenseDigitalRoutes');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/permisos', permissionRoutes);
 app.use('/api/dosaje', dosajeRoutes);
 app.use('/api/reportes', reportesRoutes);
+app.use('/api/forensedigital', forenseDigitalRoutes);
 
 // Iniciar el servidor
 const PORT = config.server.port;
