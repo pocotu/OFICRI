@@ -1,4 +1,5 @@
 const pool = require('../db');
+const fileService = require('../services/fileService');
 
 async function getAllDocumentos(filtros = {}, user = null) {
   let sql = `SELECT d.*, d.Estado AS EstadoNombre FROM Documento d WHERE 1=1`;
@@ -78,9 +79,32 @@ async function addDocumentoArchivo(IDDocumento, file) {
   );
 }
 
+async function getDocumentoById(id) {
+  const [rows] = await pool.query(
+    `SELECT d.*, da.RutaArchivo
+     FROM Documento d
+     LEFT JOIN DocumentoArchivo da ON d.IDDocumento = da.IDDocumento
+     WHERE d.IDDocumento = ?`,
+    [id]
+  );
+  
+  if (rows[0]?.RutaArchivo) {
+    const fileMetadata = await fileService.getFileMetadata(rows[0].RutaArchivo);
+    if (fileMetadata) {
+      rows[0] = {
+        ...rows[0],
+        ...fileMetadata
+      };
+    }
+  }
+  
+  return rows[0];
+}
+
 module.exports = {
   getAllDocumentos,
   createDocumento,
   getTrazabilidadById,
   addDocumentoArchivo,
+  getDocumentoById,
 }; 

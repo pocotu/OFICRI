@@ -13,13 +13,26 @@ const permissionRoutes = require('../routes/permissionRoutes');
 const dosajeRoutes = require('../routes/dosajeRoutes');
 const reportesRoutes = require('../routes/reportesRoutes');
 const forenseDigitalRoutes = require('../routes/forenseDigitalRoutes');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+console.log('Configured uploads directory:', uploadsDir);
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+  console.log(`Created uploads directory at ${uploadsDir}`);
+}
 
 // Middleware
 app.set('trust proxy', true);
 app.use(cors(config.cors));
 app.use(express.json());
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(uploadsDir));
 
 // Configuración de la base de datos
 const pool = mysql.createPool(config.database);

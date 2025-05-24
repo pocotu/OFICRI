@@ -138,89 +138,6 @@
       <button class="btn-pag" :disabled="paginaActual === totalPaginas" @click="irPagina(paginaActual + 1)">&raquo;</button>
     </div>
 
-    <!-- Modal para ver detalle -->
-    <div v-if="mostrarDetalle" class="modal-overlay" @click.self="cerrarDetalle">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Detalle de Documento</h3>
-            <button class="btn-cerrar" @click="cerrarDetalle">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div v-if="documentoActual" class="detalle-documento">
-              <div class="detalle-grupo">
-                <div class="detalle-item">
-                  <label>Nro Registro:</label>
-                  <span>{{ documentoActual.NroRegistro }}</span>
-                </div>
-                <div class="detalle-item">
-                  <label>Fecha:</label>
-                  <span>{{ formatearFecha(documentoActual.FechaDocumento) }}</span>
-                </div>
-              </div>
-              <div class="detalle-grupo">
-                <div class="detalle-item">
-                  <label>Tipo:</label>
-                  <span>{{ documentoActual.OrigenDocumento }}</span>
-                </div>
-                <div class="detalle-item">
-                  <label>Nro Documento:</label>
-                  <span>{{ documentoActual.NumeroOficioDocumento }}</span>
-                </div>
-              </div>
-              <div class="detalle-grupo">
-                <div class="detalle-item">
-                  <label>Procedencia:</label>
-                  <span>{{ documentoActual.Procedencia }}</span>
-                </div>
-                <div class="detalle-item">
-                  <label>Área Actual:</label>
-                  <span>{{ getNombreArea(documentoActual.IDAreaActual) }}</span>
-                </div>
-              </div>
-              <div class="detalle-item full-width">
-                <label>Contenido:</label>
-                <p>{{ documentoActual.Contenido }}</p>
-              </div>
-              <div class="detalle-item full-width" v-if="documentoActual.Observaciones">
-                <label>Observaciones:</label>
-                <p>{{ documentoActual.Observaciones }}</p>
-              </div>
-              <div class="detalle-grupo">
-                <div class="detalle-item">
-                  <label>Estado:</label>
-                  <span class="estado-badge" :class="'estado-' + documentoActual.Estado?.toLowerCase().replace(/\s+/g, '-')">
-                    {{ documentoActual.Estado }}
-                  </span>
-                </div>
-              </div>
-              <div class="detalle-grupo" v-if="documentoActual.TipoDocumentoSalida">
-                <div class="detalle-item">
-                  <label>Tipo Doc. Salida:</label>
-                  <span>{{ documentoActual.TipoDocumentoSalida }}</span>
-                </div>
-                <div class="detalle-item" v-if="documentoActual.FechaDocumentoSalida">
-                  <label>Fecha Doc. Salida:</label>
-                  <span>{{ formatearFecha(documentoActual.FechaDocumentoSalida) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" @click="cerrarDetalle">Cerrar</button>
-            <PermissionGate :permission="PERMISSION_BITS.EDITAR">
-              <button v-if="documentoActual" class="btn btn-primary" @click="editarDocumento(documentoActual)">Editar</button>
-            </PermissionGate>
-            <PermissionGate :permission="PERMISSION_BITS.DERIVAR">
-              <button v-if="documentoActual" class="btn btn-success" @click="derivarDocumento(documentoActual)">Derivar</button>
-            </PermissionGate>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Modal para confirmar eliminación -->
     <div v-if="mostrarConfirmacion" class="modal-overlay" @click.self="mostrarConfirmacion = false">
       <div class="modal-dialog modal-sm">
@@ -319,7 +236,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['ver-detalle', 'editar', 'derivar', 'eliminar', 'refresh', 'nuevo-documento'])
+const emit = defineEmits(['show-details', 'editar', 'derivar', 'eliminar', 'refresh', 'nuevo-documento'])
 
 // Referencias
 const busqueda = ref('')
@@ -329,8 +246,6 @@ const filtroFecha = ref('')
 const ordenPor = ref('NroRegistro')
 const ordenAsc = ref(false)
 const documentoSeleccionado = ref(null)
-const documentoActual = ref(null)
-const mostrarDetalle = ref(false)
 const mostrarConfirmacion = ref(false)
 const documentoAEliminar = ref(null)
 const permisosContextuales = ref({})
@@ -471,21 +386,12 @@ function filtrarDocumentos() {
 // Ver detalle del documento
 function verDetalle(documento) {
   documentoSeleccionado.value = documento.IDDocumento
-  documentoActual.value = documento
-  mostrarDetalle.value = true
-  emit('ver-detalle', documento)
-}
-
-// Cerrar detalle
-function cerrarDetalle() {
-  mostrarDetalle.value = false
-  documentoActual.value = null
+  emit('show-details', documento)
 }
 
 // Editar documento
 function editarDocumento(documento) {
   emit('editar', documento)
-  cerrarDetalle()
 }
 
 // Derivar documento

@@ -19,6 +19,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import DocumentosTable from './DocumentosTable.vue'
 import DocumentoCard from './DocumentoCard.vue'
 import DocumentoModal from './DocumentoModal.vue'
+import { getDocumentoById } from '../api/documentoApi'
+import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
   documentos: {
@@ -39,13 +41,19 @@ const props = defineProps({
 
 const isMobile = ref(window.innerWidth < 768)
 const selectedDoc = ref(null)
+const authStore = useAuthStore()
 
 function handleResize() {
   isMobile.value = window.innerWidth < 768
 }
 
-function showDetails(doc) {
-  selectedDoc.value = doc
+async function showDetails(doc) {
+  try {
+    const response = await getDocumentoById(doc.IDDocumento, authStore.token);
+    selectedDoc.value = response.data;
+  } catch (error) {
+    console.error('Error fetching document details:', error);
+  }
 }
 
 onMounted(() => {

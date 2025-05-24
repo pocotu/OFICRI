@@ -16,9 +16,14 @@ async function addDocumentoArchivo(IDDocumento, file) {
   return await documentoModel.addDocumentoArchivo(IDDocumento, file);
 }
 
+async function getDocumentoById(id) {
+  return await documentoModel.getDocumentoById(id);
+}
+
 module.exports = {
   getAllDocumentos,
   createDocumento,
   getTrazabilidadById,
   addDocumentoArchivo,
+  getDocumentoById,
 }; 

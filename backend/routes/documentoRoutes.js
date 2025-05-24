@@ -7,6 +7,8 @@ const authMiddleware = require('../../backend/middleware/authMiddleware');
 const permissionService = require('../../backend/services/permissionService');
 const multer = require('multer');
 const path = require('path');
+const documentoController = require('../controllers/documentoController');
+const fileService = require('../services/fileService');
 
 // Middleware para validar permisos (bit 0 = crear)
 function requireCrearDocumento(req, res, next) {
@@ -92,6 +94,22 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// GET a single document by ID
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const documentoId = req.params.id;
+    const documento = await documentoService.getDocumentoById(documentoId);
+    if (!documento) {
+      return res.status(404).json({ message: 'Documento no encontrado' });
+    }
+    console.log('Fetched document details:', documento);
+    res.json(documento);
+  } catch (error) {
+    console.error('Error al obtener documento por ID:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 // POST /api/documentos
 router.post('/', authMiddleware, upload.array('archivos'), async (req, res) => {
   try {
@@ -164,8 +182,8 @@ router.post('/', authMiddleware, upload.array('archivos'), async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         await pool.query(
-          `INSERT INTO DocumentoArchivo (IDDocumento, NombreArchivo, RutaArchivo, MimeType, Tamano) VALUES (?, ?, ?, ?, ?)`,
-          [result.insertId, file.originalname, file.filename, file.mimetype, file.size]
+          `INSERT INTO DocumentoArchivo (IDDocumento, TipoArchivo, RutaArchivo, FechaSubida, Observaciones) VALUES (?, ?, ?, NOW(), '')`,
+          [result.insertId, file.mimetype, file.filename]
         );
       }
     }
@@ -510,5 +528,27 @@ router.post('/:id/derivar', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Error interno al derivar documento' })
   }
 })
+
+// Nuevo endpoint para descargas
+router.get('/download/:documentoId', authMiddleware, async (req, res) => {
+  try {
+    const { documentoId } = req.params;
+    const { data, metadata } = await documentoController.downloadDocumento(documentoId);
+    
+    // Configurar headers para forzar la descarga
+    res.setHeader('Content-Disposition', `attachment; filename="${metadata.name}"`);
+    res.setHeader('Content-Type', metadata.type || 'application/octet-stream');
+    res.setHeader('Content-Length', metadata.size);
+    
+    // Enviar el archivo
+    res.send(data);
+  } catch (error) {
+    console.error('Error en descarga:', error);
+    if (error.message === 'Archivo no encontrado') {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+    res.status(500).json({ error: 'Error al procesar la descarga' });
+  }
+});
 
 module.exports = router; 

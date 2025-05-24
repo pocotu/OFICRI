@@ -48,6 +48,12 @@ export function derivarDocumento(id, data, token) {
   });
 }
 
+export function getDocumentoById(id, token) {
+  return axios.get(`/api/documentos/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
 /**
  * Búsqueda avanzada de documentos para la vista de Consulta
  * @param {object} filtros - { area, estado, texto, tipo, fechaInicio, fechaFin, page, pageSize }
