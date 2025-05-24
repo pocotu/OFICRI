@@ -28,7 +28,10 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.set('trust proxy', true);
+
+// Restore CORS configuration from config.js
 app.use(cors(config.cors));
+
 app.use(express.json());
 
 // Serve static files from the uploads directory

@@ -7,33 +7,35 @@ const { getUserFromToken } = require('../services/userService');
  * Follows Single Responsibility Principle - only handles authentication
  */
 const authMiddleware = async (req, res, next) => {
+  console.log('Auth Middleware: received request'); // Log start
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader) {
+    console.log('Auth Middleware: No Authorization header'); // Log missing header
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  
+  if (!token) {
+    console.log('Auth Middleware: Token missing after split'); // Log missing token
+    return res.status(401).json({ message: 'Invalid token format' });
+  }
+
   try {
-    // Check if Authorization header exists
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    // Extract token from header
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'Invalid token format' });
-    }
-
-    // Get user data from token
     const user = await getUserFromToken(token);
-    if (!user) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
-    }
-
-    // Attach user to request object for use in route handlers
-    req.user = user;
     
-    // Continue to the next middleware/route handler
+    if (!user) {
+      console.log('Auth Middleware: User not found for token'); // Log user not found
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
+    req.user = user; // Attach user to request
+    console.log('Auth Middleware: User authenticated', user.IDUsuario); // Log success
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
-    return res.status(401).json({ message: 'Authentication failed' });
+    console.error('Auth Middleware Error:', error);
+    res.status(500).json({ message: 'Internal server error during authentication' });
   }
 };
 

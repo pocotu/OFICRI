@@ -108,6 +108,10 @@ import { ref, computed } from 'vue'
 import 'viewerjs/dist/viewer.css'
 import { component as Viewer } from "v-viewer"
 import axios from 'axios'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
+const isDownloading = ref(false)
 
 const props = defineProps({
   documento: {
@@ -115,8 +119,6 @@ const props = defineProps({
     required: true
   }
 })
-
-const isDownloading = ref(false)
 
 const fullImageUrl = computed(() => {
   return props.documento.RutaArchivo ? `http://localhost:3000/uploads/${props.documento.RutaArchivo}` : '';
@@ -136,10 +138,20 @@ async function handleDownload() {
   try {
     isDownloading.value = true;
     
+    // Obtener el token del localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No hay sesión activa');
+    }
+
     const response = await axios({
       url: `http://localhost:3000/api/documentos/download/${props.documento.IDDocumento}`,
       method: 'GET',
       responseType: 'blob',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      withCredentials: true
     });
 
     // Crear URL del blob
@@ -156,9 +168,28 @@ async function handleDownload() {
     // Limpiar
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+    
+    toast.success('Descarga completada con éxito');
   } catch (error) {
     console.error('Error al descargar:', error);
-    // Aquí podrías mostrar un mensaje de error al usuario
+    
+    if (error.response) {
+      switch (error.response.status) {
+        case 401:
+          toast.error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+          // Aquí podrías redirigir al login si es necesario
+          break;
+        case 404:
+          toast.error('El archivo no fue encontrado');
+          break;
+        default:
+          toast.error('Error al descargar el archivo');
+      }
+    } else if (error.message === 'No hay sesión activa') {
+      toast.error('Por favor, inicie sesión para descargar archivos');
+    } else {
+      toast.error('Error de conexión. Por favor, intente nuevamente');
+    }
   } finally {
     isDownloading.value = false;
   }
@@ -326,11 +357,19 @@ function fechaDesglosada(fecha) {
   transition: all 0.2s ease;
   border: none;
   cursor: pointer;
+  background-color: #4a90e2;
+  color: white;
+}
+
+.action-button:hover {
+  background-color: #357abd;
+  transform: translateY(-1px);
 }
 
 .action-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
 .download-button {
