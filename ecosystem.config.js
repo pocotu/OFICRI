@@ -11,7 +11,8 @@ module.exports = {
       NODE_ENV: 'development'
     },
     env_production: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      BACKEND_BASE_URL: 'http://[YOUR_BACKEND_PUBLIC_IP_OR_DOMAIN]:3000'
     }
   }],
   deploy: {
