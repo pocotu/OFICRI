@@ -102,7 +102,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     if (!documento) {
       return res.status(404).json({ message: 'Documento no encontrado' });
     }
-    console.log('Fetched document details:', documento);
+    console.log('Fetched document details with file URL:', documento);
     res.json(documento);
   } catch (error) {
     console.error('Error al obtener documento por ID:', error);

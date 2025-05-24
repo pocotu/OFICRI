@@ -93,7 +93,8 @@ async function getDocumentoById(id) {
     if (fileMetadata) {
       rows[0] = {
         ...rows[0],
-        ...fileMetadata
+        ...fileMetadata,
+        fullFileUrl: fileService.getFileUrl(rows[0].RutaArchivo)
       };
     }
   }

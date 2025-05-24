@@ -58,8 +58,8 @@
             <div class="file-preview-container">
               <!-- Vista previa de imagen -->
               <div v-if="isImage" class="image-preview">
-                <viewer :images="[fullImageUrl]" class="attached-image-thumbnail">
-                  <img :src="fullImageUrl" :alt="documento.name || 'Archivo Adjunto'"/>
+                <viewer :images="[fullFileUrl]" class="attached-image-thumbnail">
+                  <img :src="fullFileUrl" :alt="documento.name || 'Archivo Adjunto'"/>
                 </viewer>
               </div>
               
@@ -87,7 +87,7 @@
                 </button>
                 
                 <a v-if="isPdf" 
-                   :href="fullImageUrl" 
+                   :href="fullFileUrl" 
                    target="_blank"
                    class="action-button view-button"
                    title="Ver en nueva pestaña">
@@ -120,8 +120,9 @@ const props = defineProps({
   }
 })
 
-const fullImageUrl = computed(() => {
-  return props.documento.RutaArchivo ? `http://localhost:3000/uploads/${props.documento.RutaArchivo}` : '';
+const fullFileUrl = computed(() => {
+  // Use the fullFileUrl provided by the backend
+  return props.documento.fullFileUrl || '';
 });
 
 const isImage = computed(() => {

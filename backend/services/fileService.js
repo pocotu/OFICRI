@@ -4,6 +4,8 @@ const path = require('path');
 class FileService {
   constructor() {
     this.uploadsDir = path.join(__dirname, '../uploads');
+    // Read the backend base URL from environment variables
+    this.backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:3000'; // Default for development
   }
 
   async getFileMetadata(filePath) {
@@ -46,6 +48,15 @@ class FileService {
       console.error('Error reading file:', error);
       return null;
     }
+  }
+
+  // New method to generate the full file URL
+  getFileUrl(filePath) {
+    if (!filePath) return null;
+    // Construct the full URL using the base URL and the file path
+    // Ensure consistent path separators for URLs
+    const urlPath = filePath.replace(/\\/g, '/'); // Replace backslashes with forward slashes for URL
+    return `${this.backendBaseUrl}/uploads/${urlPath}`;
   }
 }
 
