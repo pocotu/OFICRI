@@ -14,4 +14,3 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// ... resto del código existente ... 
