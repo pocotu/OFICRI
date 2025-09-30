@@ -11,9 +11,14 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "nodemon backend/src/index.js",
-    "build": "echo \"No compilation needed for backend\" && exit 0",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm install && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node backend/src/index.js"
+    "start": "node backend/src/index.js",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:stop": "pm2 stop oficri-backend",
+    "pm2:restart": "pm2 restart oficri-backend",
+    "pm2:logs": "pm2 logs oficri-backend"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0",
