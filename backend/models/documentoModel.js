@@ -34,19 +34,16 @@ async function getAllDocumentos(filtros = {}, user = null) {
 async function createDocumento(data) {
   const {
     IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento,
-    OrigenDocumento, Contenido, Estado, FechaDocumento, Procedencia,
-    TipoDocumentoSalida, FechaDocumentoSalida, Observaciones
+    OrigenDocumento, Contenido, Estado, FechaDocumento, Procedencia, Observaciones
   } = data;
 
   const [result] = await pool.query(
     `INSERT INTO Documento (
       IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento,
-      OrigenDocumento, Contenido, Estado, FechaDocumento, Procedencia,
-      TipoDocumentoSalida, FechaDocumentoSalida, Observaciones
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      OrigenDocumento, Contenido, Estado, FechaDocumento, Procedencia, Observaciones
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [IDMesaPartes, IDAreaActual, IDUsuarioCreador, NroRegistro, NumeroOficioDocumento,
-      OrigenDocumento, Contenido, Estado, FechaDocumento, Procedencia,
-      TipoDocumentoSalida, FechaDocumentoSalida, Observaciones]
+      OrigenDocumento, Contenido, Estado, FechaDocumento, Procedencia, Observaciones]
   );
   return { IDDocumento: result.insertId, ...data };
 }
@@ -108,4 +105,4 @@ module.exports = {
   getTrazabilidadById,
   addDocumentoArchivo,
   getDocumentoById,
-}; 
+};

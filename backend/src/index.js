@@ -37,6 +37,10 @@ app.use(express.json());
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(uploadsDir));
 
+// Serve static files from the frontend build (public directory)
+const publicDir = path.join(__dirname, '..', '..', 'public');
+app.use(express.static(publicDir));
+
 // Configuración de la base de datos
 const pool = mysql.createPool(config.database);
 
@@ -58,8 +62,13 @@ app.use('/api/dosaje', dosajeRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/forensedigital', forenseDigitalRoutes);
 
+// Catch-all handler: send back React's index.html file for any non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
+
 // Iniciar el servidor
 const PORT = config.server.port;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT} en modo ${config.server.env}`);
-}); 
+});
